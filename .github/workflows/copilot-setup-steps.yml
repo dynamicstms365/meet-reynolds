@@ -32,13 +32,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install JavaScript dependencies
-        run: npm ci
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: "npm"
+      
+  
       
       - name: Install pac CLI
         run: npm install -g @microsoft/powerplatform-cli
