@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "arLMOMR5b62j8Wxldk6sZwkT/2njmpAlVcju7atLt6/qC6ckLdYYQ9KNzMb3GQUZZELv+sKgT14Yij+PCmOmjA==",
+  "dgSpecHash": "l8lsQELUYuRuklzAAuPUpq5V7BRXUO3j8pTp7DTPPRiNNXA7BFyHVODJVGGEAuwTgH40JYd13X/fMY8I2IPEzw==",
   "success": true,
   "projectFilePath": "/home/runner/work/copilot-powerplatform/copilot-powerplatform/src/CopilotAgent.Tests/CopilotAgent.Tests.csproj",
   "expectedPackageFiles": [
