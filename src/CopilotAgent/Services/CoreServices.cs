@@ -149,17 +149,19 @@ public class EnvironmentManager : IEnvironmentManager
     private string? ExtractEnvironmentId(string output)
     {
         // Parse pac CLI output to extract environment ID
-        // This is a simplified implementation
+        // This is a regex-based implementation for robustness
         try
         {
             if (output.Contains("Environment ID:"))
             {
                 var lines = output.Split('\n');
+                var regex = new Regex(@"Environment ID:\s*(.+)");
                 foreach (var line in lines)
                 {
-                    if (line.Contains("Environment ID:"))
+                    var match = regex.Match(line);
+                    if (match.Success)
                     {
-                        return line.Split(':')[1].Trim();
+                        return match.Groups[1].Value.Trim();
                     }
                 }
             }
