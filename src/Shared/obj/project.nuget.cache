@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "8Kv6VFjGlgFbdalSju5sLfCD5UFg5QudGxYzPtcwh6xrr4pSekT7jYGh7x9+3A2LgScoLgLFoxXUoGXJaYUD0Q==",
+  "success": true,
+  "projectFilePath": "/home/runner/work/copilot-powerplatform/copilot-powerplatform/src/Shared/Shared.csproj",
+  "expectedPackageFiles": [
+    "/home/runner/.nuget/packages/system.text.json/8.0.5/system.text.json.8.0.5.nupkg.sha512"
+  ],
+  "logs": []
+}
