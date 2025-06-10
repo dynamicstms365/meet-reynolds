@@ -1,6 +1,7 @@
 using Shared.Models;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace CopilotAgent.Services;
 
