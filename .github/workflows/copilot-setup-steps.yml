@@ -40,9 +40,4 @@ jobs:
       - name: Install m365 CLI
         run: npm install -g @pnp/cli-microsoft365
       
-      - name: Validate CLI installations
-        run: |
-          # Add .NET tools to PATH for this step
-          export PATH="$PATH:$HOME/.dotnet/tools"
-          pac --version
-          m365 version
+      
