@@ -1,0 +1,91 @@
+name: Build and Test Copilot Agent
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-node@v4
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore src/CopilotAgent.sln
+      
+    - name: Build solution
+      run: dotnet build src/CopilotAgent.sln --no-restore --configuration Release
+      
+    - name: Run tests
+      run: dotnet test src/CopilotAgent.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: coverage.cobertura.xml
+        flags: unittests
+        name: codecov-umbrella
+        
+    - name: Validate environment setup
+      run: ./scripts/validation/validate-environment.sh
+      
+    - name: Security scan
+      uses: securecodewarrior/github-action-add-sarif@v1
+      if: always()
+      with:
+        sarif-file: 'security-scan-results.sarif'
+
+  documentation-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check documentation completeness
+      run: |
+        echo "Checking documentation structure..."
+        
+        # Check main documentation files
+        test -f docs/README.md || (echo "Main docs README missing" && exit 1)
+        test -f docs/github-copilot/extensions-overview.md || (echo "Extensions overview missing" && exit 1)
+        test -f docs/cli-tools/pac-cli.md || (echo "PAC CLI docs missing" && exit 1)
+        test -f docs/cli-tools/m365-cli.md || (echo "M365 CLI docs missing" && exit 1)
+        
+        echo "✅ Documentation structure validated"
+        
+    - name: Lint markdown
+      uses: DavidAnson/markdownlint-cli2-action@v13
+      with:
+        globs: 'docs/**/*.md'
+
+  security-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: csharp
+        
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+        
+    - name: Build for analysis
+      run: dotnet build src/CopilotAgent.sln --configuration Release
+      
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
