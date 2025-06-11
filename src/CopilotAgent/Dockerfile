@@ -9,6 +9,8 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy project files and restore dependencies
+# NOTE: This may fail in GitHub Actions due to firewall restrictions blocking NuGet.org
+# Use the deploy-azure-container.yml workflow approach for production deployments
 COPY ["src/CopilotAgent/CopilotAgent.csproj", "src/CopilotAgent/"]
 COPY ["src/Shared/Shared.csproj", "src/Shared/"]
 RUN dotnet restore "src/CopilotAgent/CopilotAgent.csproj"
