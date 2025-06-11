@@ -17,32 +17,35 @@ public class IntentRecognitionService : IIntentRecognitionService
     {
         [IntentType.EnvironmentManagement] = new()
         {
-            new IntentPattern { Pattern = @"\b(create|make|setup|provision)\s+(env|environment)", Weight = 1.0 },
-            new IntentPattern { Pattern = @"\b(list|show|get)\s+(env|environment)", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\b(create|make|setup|provision).*(env|environment)", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\b(list|show|get).*(env|environment)", Weight = 1.0 },
             new IntentPattern { Pattern = @"\bpac\s+env\b", Weight = 1.0 },
             new IntentPattern { Pattern = @"\benvironment\b", Weight = 0.8 },
-            new IntentPattern { Pattern = @"\bdataverse\b", Weight = 0.7 }
+            new IntentPattern { Pattern = @"\bdataverse\b", Weight = 0.7 },
+            new IntentPattern { Pattern = @"\bcreate.*environment", Weight = 0.9 }
         },
         [IntentType.CliExecution] = new()
         {
             new IntentPattern { Pattern = @"\bpac\s+", Weight = 1.0 },
             new IntentPattern { Pattern = @"\bm365\s+", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\b(run|execute).*(pac|m365|command)", Weight = 1.0 },
             new IntentPattern { Pattern = @"\b(run|execute|command)\b", Weight = 0.8 },
             new IntentPattern { Pattern = @"\b(cli|command\s+line)\b", Weight = 0.7 }
         },
         [IntentType.CodeGeneration] = new()
         {
-            new IntentPattern { Pattern = @"\b(generate|create|make)\s+(code|component|class)\b", Weight = 1.0 },
-            new IntentPattern { Pattern = @"\b(blazor|razor)\s+(component|page)\b", Weight = 1.0 },
-            new IntentPattern { Pattern = @"\bc#\s+(class|method|interface)\b", Weight = 0.9 },
-            new IntentPattern { Pattern = @"\b(scaffold|template)\b", Weight = 0.8 }
+            new IntentPattern { Pattern = @"\b(generate|create|make).*(code|component|class|blazor)", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\b(blazor|razor).*(component|page)", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\bc#.*(class|method|interface)", Weight = 0.9 },
+            new IntentPattern { Pattern = @"\b(scaffold|template)\b", Weight = 0.8 },
+            new IntentPattern { Pattern = @"\bgenerate\b", Weight = 0.7 }
         },
         [IntentType.KnowledgeQuery] = new()
         {
-            new IntentPattern { Pattern = @"\b(how\s+to|what\s+is|explain|help\s+with)\b", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\b(how\s+to|what\s+is|explain|help\s+with)", Weight = 1.0 },
             new IntentPattern { Pattern = @"\b(documentation|docs|guide)\b", Weight = 0.9 },
             new IntentPattern { Pattern = @"\b(help|assist|support)\b", Weight = 0.7 },
-            new IntentPattern { Pattern = @"\?\s*$", Weight = 0.6 }
+            new IntentPattern { Pattern = @"\?\s*$", Weight = 0.8 }
         }
     };
 

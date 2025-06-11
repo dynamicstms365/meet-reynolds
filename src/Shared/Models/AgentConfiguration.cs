@@ -11,7 +11,7 @@ public class AgentConfiguration
 
 public class IntentRecognitionConfig
 {
-    public double ConfidenceThreshold { get; set; } = 0.7;
+    public double ConfidenceThreshold { get; set; } = 0.5; // Lowered from 0.7 for better recognition
     public int MaxAnalysisTimeMs { get; set; } = 1000;
     public Dictionary<string, double> IntentWeights { get; set; } = new()
     {
