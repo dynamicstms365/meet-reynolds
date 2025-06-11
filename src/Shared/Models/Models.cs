@@ -68,3 +68,65 @@ public class ValidationResult
     public static ValidationResult CreateFailure(string error) => new() { Success = false, Error = error };
     public static ValidationResult CreateSuccess() => new() { Success = true };
 }
+
+// GitHub Integration Models
+public class GitHubWebhookPayload
+{
+    public string Action { get; set; } = string.Empty;
+    public string? Event { get; set; }
+    public GitHubRepository? Repository { get; set; }
+    public GitHubInstallation? Installation { get; set; }
+    public GitHubUser? Sender { get; set; }
+    public Dictionary<string, object>? ClientPayload { get; set; }
+}
+
+public class GitHubRepository
+{
+    public long Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool Private { get; set; }
+}
+
+public class GitHubInstallation
+{
+    public long Id { get; set; }
+    public string NodeId { get; set; } = string.Empty;
+    public string Account { get; set; } = string.Empty;
+}
+
+public class GitHubUser
+{
+    public long Id { get; set; }
+    public string Login { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+}
+
+public class GitHubAppAuthentication
+{
+    public string Token { get; set; } = string.Empty;
+    public DateTime ExpiresAt { get; set; }
+    public string[] Permissions { get; set; } = Array.Empty<string>();
+}
+
+public class GitHubConnectivityResult
+{
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public string? InstallationId { get; set; }
+    public string[] Repositories { get; set; } = Array.Empty<string>();
+    public string[] Permissions { get; set; } = Array.Empty<string>();
+    public DateTime? TokenExpiresAt { get; set; }
+}
+
+public class SecurityAuditLog
+{
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public string Event { get; set; } = string.Empty;
+    public string? UserId { get; set; }
+    public string? Repository { get; set; }
+    public string? Action { get; set; }
+    public string? Result { get; set; }
+    public Dictionary<string, object> Details { get; set; } = new();
+}
