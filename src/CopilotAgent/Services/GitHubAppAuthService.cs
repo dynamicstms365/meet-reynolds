@@ -41,34 +41,119 @@ public class GitHubAppAuthService : IGitHubAppAuthService
 
         try
         {
-            var appId = _configuration["NGL_DEVOPS_APP_ID"] ?? 
-                       System.Environment.GetEnvironmentVariable("NGL_DEVOPS_APP_ID");
-            var installationId = _configuration["NGL_DEVOPS_INSTALLATION_ID"] ?? 
-                               System.Environment.GetEnvironmentVariable("NGL_DEVOPS_INSTALLATION_ID");
-            var privateKeyPem = _configuration["NGL_DEVOPS_PRIVATE_KEY"] ?? 
-                              System.Environment.GetEnvironmentVariable("NGL_DEVOPS_PRIVATE_KEY");
-
-            if (string.IsNullOrEmpty(appId) || string.IsNullOrEmpty(installationId) || string.IsNullOrEmpty(privateKeyPem))
+            // Check if we're running in GitHub Actions with a pre-generated token
+            var githubToken = System.Environment.GetEnvironmentVariable("GITHUB_TOKEN");
+            if (!string.IsNullOrEmpty(githubToken) && IsGitHubActionsEnvironment())
             {
-                throw new InvalidOperationException("GitHub App credentials not configured. Required: NGL_DEVOPS_APP_ID, NGL_DEVOPS_INSTALLATION_ID, NGL_DEVOPS_PRIVATE_KEY");
+                _logger.LogInformation("Using GitHub Actions generated token");
+                return await CreateTokenFromGitHubActions(githubToken);
             }
 
-            // Generate JWT token for GitHub App authentication
-            var jwtToken = GenerateJwtToken(appId, privateKeyPem);
-
-            // Exchange JWT for installation access token
-            var installationToken = await GetInstallationAccessTokenAsync(installationId, jwtToken);
-
-            _cachedToken = installationToken;
-            _logger.LogInformation("Successfully obtained GitHub App installation token");
-            
-            return installationToken;
+            // Fall back to manual JWT generation
+            return await GenerateInstallationTokenManually();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to obtain GitHub App installation token");
             throw;
         }
+    }
+
+    private async Task<GitHubAppAuthentication> CreateTokenFromGitHubActions(string githubToken)
+    {
+        // When using GitHub Actions, the token is already scoped to the installation
+        // Test the token to get installation information
+        _httpClient.DefaultRequestHeaders.Clear();
+        _httpClient.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", githubToken);
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CopilotAgent/1.0");
+
+        var response = await _httpClient.GetAsync("https://api.github.com/installation/repositories");
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"GitHub Actions token validation failed: {response.StatusCode}");
+        }
+
+        // GitHub Actions tokens typically expire after the job completion
+        // Set a reasonable expiration time for caching
+        var expiresAt = DateTime.UtcNow.AddHours(1);
+
+        return new GitHubAppAuthentication
+        {
+            Token = githubToken,
+            ExpiresAt = expiresAt,
+            Permissions = new[] { "github-actions-scoped" }
+        };
+    }
+
+    private async Task<GitHubAppAuthentication> GenerateInstallationTokenManually()
+    {
+        var appId = _configuration["NGL_DEVOPS_APP_ID"] ?? 
+                   System.Environment.GetEnvironmentVariable("NGL_DEVOPS_APP_ID");
+        var installationId = _configuration["NGL_DEVOPS_INSTALLATION_ID"] ?? 
+                           System.Environment.GetEnvironmentVariable("NGL_DEVOPS_INSTALLATION_ID");
+        var privateKeyPem = _configuration["NGL_DEVOPS_PRIVATE_KEY"] ?? 
+                          System.Environment.GetEnvironmentVariable("NGL_DEVOPS_PRIVATE_KEY");
+
+        if (string.IsNullOrEmpty(appId) || string.IsNullOrEmpty(privateKeyPem))
+        {
+            throw new InvalidOperationException("GitHub App credentials not configured. Required: NGL_DEVOPS_APP_ID, NGL_DEVOPS_PRIVATE_KEY (and optionally NGL_DEVOPS_INSTALLATION_ID)");
+        }
+
+        // If installation ID is not provided, try to resolve it automatically
+        if (string.IsNullOrEmpty(installationId))
+        {
+            installationId = await ResolveInstallationIdAsync(appId, privateKeyPem);
+        }
+
+        // Generate JWT token for GitHub App authentication
+        var jwtToken = GenerateJwtToken(appId, privateKeyPem);
+
+        // Exchange JWT for installation access token
+        var installationToken = await GetInstallationAccessTokenAsync(installationId, jwtToken);
+
+        _cachedToken = installationToken;
+        _logger.LogInformation("Successfully obtained GitHub App installation token");
+        
+        return installationToken;
+    }
+
+    private async Task<string> ResolveInstallationIdAsync(string appId, string privateKeyPem)
+    {
+        // Generate JWT to call the GitHub App API
+        var jwtToken = GenerateJwtToken(appId, privateKeyPem);
+        
+        _httpClient.DefaultRequestHeaders.Clear();
+        _httpClient.DefaultRequestHeaders.Authorization = 
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwtToken);
+        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CopilotAgent/1.0");
+
+        var response = await _httpClient.GetAsync("https://api.github.com/app/installations");
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"Failed to resolve installation ID: {response.StatusCode}");
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+        var installations = JsonSerializer.Deserialize<JsonElement>(content);
+
+        if (installations.ValueKind == JsonValueKind.Array && installations.GetArrayLength() > 0)
+        {
+            var firstInstallation = installations[0];
+            if (firstInstallation.TryGetProperty("id", out var idElement))
+            {
+                var resolvedId = idElement.GetInt64().ToString();
+                _logger.LogInformation("Automatically resolved installation ID: {InstallationId}", resolvedId);
+                return resolvedId;
+            }
+        }
+
+        throw new InvalidOperationException("No GitHub App installations found. Ensure the app is installed on the organization.");
+    }
+
+    private static bool IsGitHubActionsEnvironment()
+    {
+        return !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("GITHUB_ACTIONS"));
     }
 
     public async Task<GitHubConnectivityResult> TestConnectivityAsync()

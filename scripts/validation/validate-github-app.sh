@@ -231,6 +231,63 @@ main() {
     done
     
     echo ""
+    echo "📋 Step 6: Validating GitHub Actions Integration"
+    echo "---------------------------------------------"
+    
+    # Check for GitHub Actions workflows
+    if [ -f ".github/workflows/copilot-setup-steps.yml" ]; then
+        print_status "SUCCESS" "Copilot setup steps workflow found"
+    else
+        print_status "WARNING" "Copilot setup steps workflow not found"
+    fi
+    
+    if [ -f ".github/workflows/deploy-azure-container.yml" ]; then
+        print_status "SUCCESS" "Azure container deployment workflow found"
+    else
+        print_status "WARNING" "Azure container deployment workflow not found"
+    fi
+    
+    if [ -f ".github/workflows/assign-copilot.yml" ]; then
+        print_status "SUCCESS" "Copilot assignment workflow found"
+        
+        # Check if it uses actions/create-github-app-token
+        if grep -q "actions/create-github-app-token" ".github/workflows/assign-copilot.yml"; then
+            print_status "SUCCESS" "Workflow uses actions/create-github-app-token"
+        else
+            print_status "WARNING" "Workflow does not use GitHub App token generation"
+        fi
+    else
+        print_status "WARNING" "Copilot assignment workflow not found"
+    fi
+    
+    # Check for Docker configuration
+    if [ -f "src/CopilotAgent/Dockerfile" ]; then
+        print_status "SUCCESS" "Docker configuration found"
+    else
+        print_status "WARNING" "Docker configuration not found"
+    fi
+    
+    # Check for Azure deployment scripts
+    if [ -f "scripts/azure/deploy-container-instance.sh" ]; then
+        print_status "SUCCESS" "Azure deployment script found"
+    else
+        print_status "WARNING" "Azure deployment script not found"
+    fi
+    
+    # Check if we're running in GitHub Actions environment
+    if [ -n "$GITHUB_ACTIONS" ]; then
+        print_status "SUCCESS" "Running in GitHub Actions environment"
+        
+        if [ -n "$GITHUB_TOKEN" ]; then
+            print_status "SUCCESS" "GitHub Actions token available"
+        else
+            print_status "WARNING" "GitHub Actions token not available"
+        fi
+    else
+        print_status "INFO" "Not running in GitHub Actions (this is normal for local testing)"
+    fi
+    
+    echo ""
     echo "📊 Validation Summary"
     echo "===================="
     echo "Total tests: $TOTAL_TESTS"
