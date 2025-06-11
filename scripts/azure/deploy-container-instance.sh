@@ -6,7 +6,7 @@
 set -e
 
 # Configuration
-RESOURCE_GROUP="copilot-powerplatform-rg"
+RESOURCE_GROUP="copilot-powerplatform-deploy-rg"
 CONTAINER_NAME="github-app-service"
 LOCATION="eastus"
 IMAGE_NAME="copilot-agent:latest"
