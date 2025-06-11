@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     
     steps:
       - name: Checkout code
@@ -55,24 +56,10 @@ jobs:
             --name ${{ env.AZURE_RESOURCE_GROUP }} \
             --location ${{ env.AZURE_LOCATION }}
 
-      - name: Create Azure Container Registry (if not exists)
-        id: acr
-        run: |
-          ACR_NAME="copilotpowerplatformacr$(date +%s | tail -c 6)"
-          echo "Creating ACR: $ACR_NAME"
-          
-          az acr create \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name $ACR_NAME \
-            --sku Basic \
-            --admin-enabled true || echo "ACR might already exist"
-          
-          # Get the ACR login server
-          ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "loginServer" -o tsv)
-          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
-          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
-
-      - name: Build and Push Docker Image
+      - name: Build and Push to GitHub Container Registry
+        env:
+          REGISTRY: ghcr.io
+          IMAGE_NAME: dynamicstms365/copilot-agent
         run: |
           # Create a simple Dockerfile that uses pre-built output
           cat > Dockerfile.prebuilt << 'EOF'
@@ -103,16 +90,18 @@ jobs:
           EOF
           
           # Build the Docker image using pre-built output
-          docker build -f Dockerfile.prebuilt -t copilot-agent:latest .
+          docker build -f Dockerfile.prebuilt -t $REGISTRY/$IMAGE_NAME:latest .
+          docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:${{ github.sha }}
           
-          # Tag for ACR
-          docker tag copilot-agent:latest ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest
-          docker tag copilot-agent:latest ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:${{ github.sha }}
+          # Login to GitHub Container Registry
+          echo ${{ steps.generate_token.outputs.token }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
           
-          # Login to ACR and push
-          az acr login --name ${{ steps.acr.outputs.acr_name }}
-          docker push ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest
-          docker push ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:${{ github.sha }}
+          # Push to GitHub Container Registry
+          docker push $REGISTRY/$IMAGE_NAME:latest
+          docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          
+          echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT
+        id: build_push
 
       - name: Deploy Container Instance
         id: deploy
@@ -123,22 +112,23 @@ jobs:
             --name ${{ env.CONTAINER_NAME }} \
             --yes || echo "Container did not exist"
           
-          # Deploy new container instance
+          # Deploy new container instance using GitHub Container Registry
           az container create \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --name ${{ env.CONTAINER_NAME }} \
-            --image ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest \
-            --registry-login-server ${{ steps.acr.outputs.acr_login_server }} \
-            --registry-username ${{ steps.acr.outputs.acr_name }} \
-            --registry-password $(az acr credential show --name ${{ steps.acr.outputs.acr_name }} --query "passwords[0].value" -o tsv) \
+            --image ${{ steps.build_push.outputs.image_url }} \
+            --registry-login-server ghcr.io \
+            --registry-username ${{ github.actor }} \
+            --registry-password ${{ steps.generate_token.outputs.token }} \
             --dns-name-label copilot-github-app-$(date +%s | tail -c 6) \
             --ports 80 443 \
+            --os-type Linux \
             --environment-variables \
               "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
               "ASPNETCORE_ENVIRONMENT=Production" \
               "ASPNETCORE_URLS=http://+:80" \
             --secure-environment-variables \
-              "NGL_DEVOPS_PRIVATE_KEY=${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}" \
+              "NGL_DEVOPS_BOT_PEM=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
             --cpu 1 \
             --memory 1.5 \
             --restart-policy Always
