@@ -11,27 +11,78 @@ public class GitHubController : ControllerBase
 {
     private readonly IGitHubAppAuthService _authService;
     private readonly ISecurityAuditService _auditService;
+    private readonly IGitHubWebhookValidator _webhookValidator;
     private readonly ILogger<GitHubController> _logger;
+    private readonly IConfiguration _configuration;
 
     public GitHubController(
         IGitHubAppAuthService authService,
         ISecurityAuditService auditService,
-        ILogger<GitHubController> logger)
+        IGitHubWebhookValidator webhookValidator,
+        ILogger<GitHubController> logger,
+        IConfiguration configuration)
     {
         _authService = authService;
         _auditService = auditService;
+        _webhookValidator = webhookValidator;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost("webhook")]
-    public async Task<IActionResult> HandleWebhook([FromBody] GitHubWebhookPayload payload)
+    public async Task<IActionResult> HandleWebhook()
     {
         try
         {
-            _logger.LogInformation("Received GitHub webhook: {Event} - {Action}", payload.Event, payload.Action);
+            // Read raw body for signature validation
+            var body = await new StreamReader(Request.Body).ReadToEndAsync();
+            
+            // Get GitHub signature from headers
+            var signature = Request.Headers["X-Hub-Signature-256"].FirstOrDefault();
+            var gitHubEvent = Request.Headers["X-GitHub-Event"].FirstOrDefault();
+            
+            _logger.LogInformation("Received GitHub webhook: {Event}", gitHubEvent);
 
-            // Validate webhook signature (in production, this should validate the webhook secret)
-            if (payload.Installation?.Id == null)
+            // Validate webhook signature
+            var webhookSecret = _configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
+                              Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
+            
+            if (!string.IsNullOrEmpty(webhookSecret))
+            {
+                if (string.IsNullOrEmpty(signature))
+                {
+                    _logger.LogWarning("Missing X-Hub-Signature-256 header");
+                    return Unauthorized("Missing signature");
+                }
+
+                if (!_webhookValidator.ValidateSignature(body, signature, webhookSecret))
+                {
+                    _logger.LogWarning("Invalid webhook signature");
+                    await _auditService.LogEventAsync("GitHub_Webhook_Security",
+                        action: "SIGNATURE_VALIDATION_FAILED",
+                        result: "REJECTED");
+                    return Unauthorized("Invalid signature");
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Webhook secret not configured - signature validation skipped");
+            }
+
+            // Validate source IP (optional additional security)
+            var clientIP = Request.Headers["X-Forwarded-For"].FirstOrDefault() ??
+                          Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+            
+            if (!string.IsNullOrEmpty(clientIP) && !_webhookValidator.IsValidGitHubIP(clientIP))
+            {
+                _logger.LogWarning("Webhook from suspicious IP: {IP}", clientIP);
+                // Don't reject based on IP alone as this can be unreliable behind proxies
+            }
+
+            // Parse payload
+            var payload = System.Text.Json.JsonSerializer.Deserialize<GitHubWebhookPayload>(body);
+            
+            if (payload?.Installation?.Id == null)
             {
                 _logger.LogWarning("Webhook payload missing installation ID");
                 await _auditService.LogWebhookEventAsync(payload, "REJECTED_MISSING_INSTALLATION");
@@ -48,7 +99,6 @@ public class GitHubController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing GitHub webhook");
-            await _auditService.LogWebhookEventAsync(payload, "ERROR");
             return StatusCode(500, new { error = "Internal server error processing webhook" });
         }
     }

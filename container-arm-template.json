@@ -1,0 +1,139 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "containerName": {
+      "type": "string",
+      "defaultValue": "github-app-service",
+      "metadata": {
+        "description": "Name for the container group"
+      }
+    },
+    "imageName": {
+      "type": "string",
+      "defaultValue": "ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest",
+      "metadata": {
+        "description": "Container image to deploy"
+      }
+    },
+    "registryUsername": {
+      "type": "string",
+      "defaultValue": "cege7480",
+      "metadata": {
+        "description": "Registry username"
+      }
+    },
+    "registryPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Registry password"
+      }
+    },
+    "githubAppId": {
+      "type": "string",
+      "defaultValue": "1247205",
+      "metadata": {
+        "description": "GitHub App ID"
+      }
+    },
+    "githubAppPrivateKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "GitHub App private key (PEM format)"
+      }
+    },
+    "dnsNameLabel": {
+      "type": "string",
+      "defaultValue": "[concat('copilot-github-app-', uniqueString(resourceGroup().id))]",
+      "metadata": {
+        "description": "DNS name label for the public IP"
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2021-10-01",
+      "name": "[parameters('containerName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "containers": [
+          {
+            "name": "[parameters('containerName')]",
+            "properties": {
+              "image": "[parameters('imageName')]",
+              "ports": [
+                {
+                  "port": 80,
+                  "protocol": "TCP"
+                },
+                {
+                  "port": 443,
+                  "protocol": "TCP"
+                }
+              ],
+              "environmentVariables": [
+                {
+                  "name": "NGL_DEVOPS_APP_ID",
+                  "value": "[parameters('githubAppId')]"
+                },
+                {
+                  "name": "ASPNETCORE_ENVIRONMENT",
+                  "value": "Production"
+                },
+                {
+                  "name": "ASPNETCORE_URLS",
+                  "value": "http://+:80"
+                },
+                {
+                  "name": "NGL_DEVOPS_BOT_PEM",
+                  "secureValue": "[parameters('githubAppPrivateKey')]"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": 1,
+                  "memoryInGb": 1.5
+                }
+              }
+            }
+          }
+        ],
+        "osType": "Linux",
+        "restartPolicy": "Always",
+        "ipAddress": {
+          "type": "Public",
+          "ports": [
+            {
+              "protocol": "TCP",
+              "port": 80
+            },
+            {
+              "protocol": "TCP",
+              "port": 443
+            }
+          ],
+          "dnsNameLabel": "[parameters('dnsNameLabel')]"
+        },
+        "imageRegistryCredentials": [
+          {
+            "server": "ghcr.io",
+            "username": "[parameters('registryUsername')]",
+            "password": "[parameters('registryPassword')]"
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "containerIPv4Address": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.ip]"
+    },
+    "containerFQDN": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.fqdn]"
+    }
+  }
+}

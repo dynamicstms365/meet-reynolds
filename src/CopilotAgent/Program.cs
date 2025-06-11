@@ -32,6 +32,7 @@ builder.Services.AddScoped<IM365CliService, M365CliService>();
 // Register GitHub integration services
 builder.Services.AddHttpClient<IGitHubAppAuthService, GitHubAppAuthService>();
 builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
+builder.Services.AddScoped<IGitHubWebhookValidator, GitHubWebhookValidator>();
 
 var app = builder.Build();
 
