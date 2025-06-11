@@ -355,5 +355,148 @@ public class CliEnhancementTests
             // Assert
             Assert.That(result.Success, Is.True);
         }
+    [TestFixture]
+    public class CliRollbackServiceTests
+    {
+        private CliRollbackService _rollbackService;
+        private Mock<ILogger<CliRollbackService>> _mockLogger;
+        private Mock<ISecurityAuditService> _mockAuditService;
+        private Mock<IPacCliService> _mockPacCliService;
+        private Mock<IM365CliService> _mockM365CliService;
+
+        [SetUp]
+        public void SetUp()
+        {
+            _mockLogger = new Mock<ILogger<CliRollbackService>>();
+            _mockAuditService = new Mock<ISecurityAuditService>();
+            _mockPacCliService = new Mock<IPacCliService>();
+            _mockM365CliService = new Mock<IM365CliService>();
+            
+            _rollbackService = new CliRollbackService(
+                _mockLogger.Object,
+                _mockAuditService.Object,
+                _mockPacCliService.Object,
+                _mockM365CliService.Object);
+        }
+
+        [Test]
+        public async Task RegisterOperationAsync_Should_Store_Rollback_Information()
+        {
+            // Arrange
+            var operationType = "environment_create";
+            var operationId = "test-env-001";
+            var rollbackContext = new Dictionary<string, object>
+            {
+                { "environmentName", "test-environment" }
+            };
+
+            // Act
+            await _rollbackService.RegisterOperationAsync(operationType, operationId, rollbackContext);
+
+            // Assert
+            var canRollback = await _rollbackService.CanRollbackAsync(operationType, operationId);
+            Assert.That(canRollback, Is.True);
+        }
+
+        [Test]
+        public async Task CanRollbackAsync_Should_Return_False_For_Unregistered_Operation()
+        {
+            // Arrange
+            var operationType = "environment_create";
+            var operationId = "non-existent-operation";
+
+            // Act
+            var canRollback = await _rollbackService.CanRollbackAsync(operationType, operationId);
+
+            // Assert
+            Assert.That(canRollback, Is.False);
+        }
+
+        [Test]
+        public async Task CanRollbackAsync_Should_Return_False_For_Unsupported_Operation_Type()
+        {
+            // Arrange
+            var operationType = "unsupported_operation";
+            var operationId = "test-001";
+            var rollbackContext = new Dictionary<string, object>();
+
+            await _rollbackService.RegisterOperationAsync(operationType, operationId, rollbackContext);
+
+            // Act
+            var canRollback = await _rollbackService.CanRollbackAsync(operationType, operationId);
+
+            // Assert
+            Assert.That(canRollback, Is.False);
+        }
+
+        [Test]
+        public async Task ExecuteRollbackAsync_Should_Execute_PAC_Rollback_Command()
+        {
+            // Arrange
+            var operationType = "environment_create";
+            var operationId = "test-env-001";
+            var rollbackContext = new Dictionary<string, object>
+            {
+                { "environmentName", "test-environment" }
+            };
+
+            await _rollbackService.RegisterOperationAsync(operationType, operationId, rollbackContext);
+            
+            _mockPacCliService
+                .Setup(x => x.ExecuteAsync(It.IsAny<string>()))
+                .ReturnsAsync(CliResult.CreateSuccess("Environment deleted successfully"));
+
+            // Act
+            var result = await _rollbackService.ExecuteRollbackAsync(operationType, operationId, new Dictionary<string, object>());
+
+            // Assert
+            Assert.That(result.Success, Is.True);
+            _mockPacCliService.Verify(x => x.ExecuteAsync(It.Is<string>(cmd => cmd.Contains("test-environment"))), Times.Once);
+        }
+
+        [Test]
+        public async Task ExecuteRollbackAsync_Should_Fail_For_Unregistered_Operation()
+        {
+            // Arrange
+            var operationType = "environment_create";
+            var operationId = "non-existent-operation";
+
+            // Act
+            var result = await _rollbackService.ExecuteRollbackAsync(operationType, operationId, new Dictionary<string, object>());
+
+            // Assert
+            Assert.That(result.Success, Is.False);
+            Assert.That(result.Error, Is.EqualTo("Rollback not available for this operation"));
+        }
+
+        [Test]
+        public async Task ExecuteRollbackAsync_Should_Prevent_Double_Rollback()
+        {
+            // Arrange
+            var operationType = "solution_import";
+            var operationId = "test-solution-001";
+            var rollbackContext = new Dictionary<string, object>
+            {
+                { "solutionName", "TestSolution" }
+            };
+
+            await _rollbackService.RegisterOperationAsync(operationType, operationId, rollbackContext);
+            
+            _mockPacCliService
+                .Setup(x => x.ExecuteAsync(It.IsAny<string>()))
+                .ReturnsAsync(CliResult.CreateSuccess("Solution deleted successfully"));
+
+            // Act - First rollback
+            var firstResult = await _rollbackService.ExecuteRollbackAsync(operationType, operationId, new Dictionary<string, object>());
+            
+            // Act - Second rollback attempt
+            var secondResult = await _rollbackService.ExecuteRollbackAsync(operationType, operationId, new Dictionary<string, object>());
+
+            // Assert
+            Assert.That(firstResult.Success, Is.True);
+            Assert.That(secondResult.Success, Is.False);
+            Assert.That(secondResult.Error, Is.EqualTo("Rollback not available for this operation"));
+        }
     }
+}
 }
