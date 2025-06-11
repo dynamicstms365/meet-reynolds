@@ -59,7 +59,7 @@ jobs:
       - name: Build and Push to GitHub Container Registry
         env:
           REGISTRY: ghcr.io
-          IMAGE_NAME: dynamicstms365/copilot-agent
+          IMAGE_NAME: ${{ github.repository }}/copilot-agent
         run: |
           # Create a simple Dockerfile that uses pre-built output
           cat > Dockerfile.prebuilt << 'EOF'
