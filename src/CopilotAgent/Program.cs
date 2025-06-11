@@ -18,6 +18,13 @@ builder.Services.AddScoped<IKnowledgeRetriever, KnowledgeRetriever>();
 builder.Services.AddScoped<IPacCliValidator, PacCliValidator>();
 builder.Services.AddScoped<IM365CliValidator, M365CliValidator>();
 
+// Register enhanced agent framework services
+builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
+builder.Services.AddScoped<IIntentRecognitionService, IntentRecognitionService>();
+builder.Services.AddScoped<IRetryService, RetryService>();
+builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
+builder.Services.AddScoped<IHealthMonitoringService, HealthMonitoringService>();
+
 // Register CLI services
 builder.Services.AddScoped<IPacCliService, PacCliService>();
 builder.Services.AddScoped<IM365CliService, M365CliService>();

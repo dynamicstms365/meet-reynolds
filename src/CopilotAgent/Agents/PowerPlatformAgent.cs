@@ -16,89 +16,124 @@ public class PowerPlatformAgent : IPowerPlatformAgent
     private readonly ICodeGenerator _codeGenerator;
     private readonly IKnowledgeRetriever _knowledgeRetriever;
     private readonly ILogger<PowerPlatformAgent> _logger;
+    private readonly IIntentRecognitionService _intentRecognitionService;
+    private readonly IRetryService _retryService;
+    private readonly ITelemetryService _telemetryService;
+    private readonly IConfigurationService _configurationService;
 
     public PowerPlatformAgent(
         IEnvironmentManager environmentManager,
         ICliExecutor cliExecutor,
         ICodeGenerator codeGenerator,
         IKnowledgeRetriever knowledgeRetriever,
-        ILogger<PowerPlatformAgent> logger)
+        ILogger<PowerPlatformAgent> logger,
+        IIntentRecognitionService intentRecognitionService,
+        IRetryService retryService,
+        ITelemetryService telemetryService,
+        IConfigurationService configurationService)
     {
         _environmentManager = environmentManager;
         _cliExecutor = cliExecutor;
         _codeGenerator = codeGenerator;
         _knowledgeRetriever = knowledgeRetriever;
         _logger = logger;
+        _intentRecognitionService = intentRecognitionService;
+        _retryService = retryService;
+        _telemetryService = telemetryService;
+        _configurationService = configurationService;
     }
 
     public async Task<AgentResponse> ProcessRequestAsync(AgentRequest request)
     {
+        var requestId = Guid.NewGuid().ToString("N")[..8];
+        var startTime = DateTime.UtcNow;
+        var config = _configurationService.GetConfiguration();
+        
         try
         {
-            _logger.LogInformation("Analyzing intent for request: {Message}", request.Message);
+            _logger.LogInformation("Processing request {RequestId}: {Message}", requestId, request.Message);
             
-            var intent = await AnalyzeIntentAsync(request.Message);
+            // Use enhanced intent recognition with retry mechanism
+            var intent = await _retryService.ExecuteWithRetryAsync(async () =>
+                await _intentRecognitionService.AnalyzeIntentAsync(request.Message, config));
             
-            _logger.LogInformation("Identified intent: {IntentType}", intent.Type);
-            
-            return intent.Type switch
+            _logger.LogInformation("Request {RequestId} - Identified intent: {IntentType} (confidence: {Confidence:P2})", 
+                requestId, intent.Type, intent.Confidence);
+
+            // Record intent recognition telemetry
+            _telemetryService.RecordIntentRecognition(intent.Type, intent.Confidence);
+
+            // Process request with timeout
+            var processingTask = intent.Type switch
             {
-                IntentType.EnvironmentManagement => await HandleEnvironmentRequest(request),
-                IntentType.CliExecution => await HandleCliRequest(request),
-                IntentType.CodeGeneration => await HandleCodeRequest(request),
-                IntentType.KnowledgeQuery => await HandleKnowledgeRequest(request),
-                _ => await HandleGeneralRequest(request)
+                IntentType.EnvironmentManagement => HandleEnvironmentRequest(request),
+                IntentType.CliExecution => HandleCliRequest(request),
+                IntentType.CodeGeneration => HandleCodeRequest(request),
+                IntentType.KnowledgeQuery => HandleKnowledgeRequest(request),
+                _ => HandleGeneralRequest(request)
+            };
+
+            var response = await processingTask.WaitAsync(TimeSpan.FromMilliseconds(config.Processing.RequestTimeoutMs));
+            
+            // Enhance response with metadata
+            response.Data ??= new Dictionary<string, object>();
+            response.Data["requestId"] = requestId;
+            response.Data["processingTimeMs"] = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            response.Data["intentConfidence"] = intent.Confidence;
+            response.IntentType = intent.Type;
+
+            // Record telemetry
+            var processingTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            _telemetryService.RecordRequestProcessed(requestId, intent.Type, response.Success, processingTime);
+
+            _logger.LogInformation("Request {RequestId} processed successfully in {ProcessingTime}ms", 
+                requestId, processingTime);
+
+            return response;
+        }
+        catch (TimeoutException)
+        {
+            var processingTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            _telemetryService.RecordError("RequestProcessing", new TimeoutException("Request processing timeout"));
+            _telemetryService.RecordRequestProcessed(requestId, IntentType.General, false, processingTime);
+            
+            _logger.LogWarning("Request {RequestId} timed out after {ProcessingTime}ms", requestId, processingTime);
+            
+            return new AgentResponse
+            {
+                Success = false,
+                Message = "Request processing timed out. Please try again or simplify your request.",
+                Error = "Request timeout",
+                Data = new Dictionary<string, object> 
+                { 
+                    ["requestId"] = requestId,
+                    ["processingTimeMs"] = processingTime
+                }
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing request: {Message}", request.Message);
+            var processingTime = (DateTime.UtcNow - startTime).TotalMilliseconds;
+            _telemetryService.RecordError("RequestProcessing", ex);
+            _telemetryService.RecordRequestProcessed(requestId, IntentType.General, false, processingTime);
+            
+            _logger.LogError(ex, "Request {RequestId} failed after {ProcessingTime}ms", requestId, processingTime);
             
             return new AgentResponse
             {
                 Success = false,
                 Message = "I encountered an error processing your request. Please try again or rephrase your question.",
-                Error = ex.Message
+                Error = ex.Message,
+                Data = new Dictionary<string, object> 
+                { 
+                    ["requestId"] = requestId,
+                    ["processingTimeMs"] = processingTime
+                }
             };
         }
     }
 
-    private async Task<IntentAnalysis> AnalyzeIntentAsync(string message)
-    {
-        await Task.CompletedTask; // Placeholder for async intent analysis
-        
-        var lowerMessage = message.ToLowerInvariant();
-        
-        // Environment management keywords
-        if (lowerMessage.Contains("environment") || lowerMessage.Contains("create env") || 
-            lowerMessage.Contains("list env") || lowerMessage.Contains("pac env"))
-        {
-            return new IntentAnalysis { Type = IntentType.EnvironmentManagement };
-        }
-        
-        // CLI execution keywords
-        if (lowerMessage.Contains("pac ") || lowerMessage.Contains("m365 ") || 
-            lowerMessage.Contains("run command") || lowerMessage.Contains("execute"))
-        {
-            return new IntentAnalysis { Type = IntentType.CliExecution };
-        }
-        
-        // Code generation keywords
-        if (lowerMessage.Contains("generate") || lowerMessage.Contains("create component") || 
-            lowerMessage.Contains("blazor") || lowerMessage.Contains("c#"))
-        {
-            return new IntentAnalysis { Type = IntentType.CodeGeneration };
-        }
-        
-        // Knowledge query keywords
-        if (lowerMessage.Contains("how to") || lowerMessage.Contains("what is") || 
-            lowerMessage.Contains("help") || lowerMessage.Contains("documentation"))
-        {
-            return new IntentAnalysis { Type = IntentType.KnowledgeQuery };
-        }
-        
-        return new IntentAnalysis { Type = IntentType.General };
-    }
+
 
     private async Task<AgentResponse> HandleEnvironmentRequest(AgentRequest request)
     {
@@ -109,7 +144,10 @@ public class PowerPlatformAgent : IPowerPlatformAgent
             if (message.Contains("create"))
             {
                 var spec = ExtractEnvironmentSpec(request.Message);
-                var result = await _environmentManager.CreateEnvironmentAsync(spec);
+                
+                // Use retry mechanism for environment creation
+                var result = await _retryService.ExecuteWithRetryAsync(async () =>
+                    await _environmentManager.CreateEnvironmentAsync(spec));
                 
                 return new AgentResponse
                 {
@@ -124,7 +162,8 @@ public class PowerPlatformAgent : IPowerPlatformAgent
             
             if (message.Contains("list"))
             {
-                var environments = await _environmentManager.ListEnvironmentsAsync();
+                var environments = await _retryService.ExecuteWithRetryAsync(async () =>
+                    await _environmentManager.ListEnvironmentsAsync());
                 
                 return new AgentResponse
                 {
@@ -144,11 +183,12 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         }
         catch (Exception ex)
         {
+            _telemetryService.RecordError("HandleEnvironmentRequest", ex);
             _logger.LogError(ex, "Error handling environment request");
             return new AgentResponse
             {
                 Success = false,
-                Message = "Error processing environment request",
+                Message = "Error processing environment request. Please try again.",
                 Error = ex.Message,
                 IntentType = IntentType.EnvironmentManagement
             };
@@ -160,7 +200,10 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         try
         {
             var command = ExtractCliCommand(request.Message);
-            var result = await _cliExecutor.ExecuteAsync(command, new CliOptions());
+            
+            // Use retry mechanism for CLI execution
+            var result = await _retryService.ExecuteWithRetryAsync(async () =>
+                await _cliExecutor.ExecuteAsync(command, new CliOptions()));
             
             return new AgentResponse
             {
@@ -171,18 +214,20 @@ public class PowerPlatformAgent : IPowerPlatformAgent
                 Data = new Dictionary<string, object> 
                 { 
                     ["output"] = result.Output,
-                    ["exitCode"] = result.ExitCode
+                    ["exitCode"] = result.ExitCode,
+                    ["command"] = command
                 },
                 IntentType = IntentType.CliExecution
             };
         }
         catch (Exception ex)
         {
+            _telemetryService.RecordError("HandleCliRequest", ex);
             _logger.LogError(ex, "Error handling CLI request");
             return new AgentResponse
             {
                 Success = false,
-                Message = "Error executing CLI command",
+                Message = "Error executing CLI command. Please verify the command syntax and try again.",
                 Error = ex.Message,
                 IntentType = IntentType.CliExecution
             };
@@ -194,7 +239,10 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         try
         {
             var codeSpec = ExtractCodeSpec(request.Message);
-            var result = await _codeGenerator.GenerateCodeAsync(codeSpec);
+            
+            // Use retry mechanism for code generation
+            var result = await _retryService.ExecuteWithRetryAsync(async () =>
+                await _codeGenerator.GenerateCodeAsync(codeSpec));
             
             return new AgentResponse
             {
@@ -208,11 +256,12 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         }
         catch (Exception ex)
         {
+            _telemetryService.RecordError("HandleCodeRequest", ex);
             _logger.LogError(ex, "Error handling code generation request");
             return new AgentResponse
             {
                 Success = false,
-                Message = "Error generating code",
+                Message = "Error generating code. Please review your request and try again.",
                 Error = ex.Message,
                 IntentType = IntentType.CodeGeneration
             };
@@ -223,7 +272,9 @@ public class PowerPlatformAgent : IPowerPlatformAgent
     {
         try
         {
-            var knowledge = await _knowledgeRetriever.RetrieveKnowledgeAsync(request.Message);
+            // Use retry mechanism for knowledge retrieval
+            var knowledge = await _retryService.ExecuteWithRetryAsync(async () =>
+                await _knowledgeRetriever.RetrieveKnowledgeAsync(request.Message));
             
             return new AgentResponse
             {
@@ -239,11 +290,12 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         }
         catch (Exception ex)
         {
+            _telemetryService.RecordError("HandleKnowledgeRequest", ex);
             _logger.LogError(ex, "Error handling knowledge request");
             return new AgentResponse
             {
                 Success = false,
-                Message = "Error retrieving knowledge",
+                Message = "I'm unable to retrieve that information right now. Please try rephrasing your question.",
                 Error = ex.Message,
                 IntentType = IntentType.KnowledgeQuery
             };
@@ -341,8 +393,3 @@ public class PowerPlatformAgent : IPowerPlatformAgent
     }
 }
 
-public class IntentAnalysis
-{
-    public IntentType Type { get; set; }
-    public double Confidence { get; set; } = 1.0;
-}

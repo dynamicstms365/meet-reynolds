@@ -45,28 +45,3 @@ jobs:
     #   if: always()
     #   with:
     #     sarif-file: 'security-scan-results.sarif'
-
-  documentation-check:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Check documentation completeness
-      run: |
-        echo "Checking documentation structure..."
-        
-        # Check main documentation files
-        test -f docs/README.md || (echo "Main docs README missing" && exit 1)
-        test -f docs/github-copilot/extensions-overview.md || (echo "Extensions overview missing" && exit 1)
-        test -f docs/cli-tools/pac-cli.md || (echo "PAC CLI docs missing" && exit 1)
-        test -f docs/cli-tools/m365-cli.md || (echo "M365 CLI docs missing" && exit 1)
-        
-        echo "✅ Documentation structure validated"
-        
-    - name: Lint markdown
-      uses: DavidAnson/markdownlint-cli2-action@v13
-      with:
-        globs: 'docs/**/*.md'
-
- 

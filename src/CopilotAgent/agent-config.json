@@ -1,0 +1,41 @@
+{
+  "IntentRecognition": {
+    "ConfidenceThreshold": 0.5,
+    "MaxAnalysisTimeMs": 1000,
+    "IntentWeights": {
+      "environment": 1,
+      "pac": 1,
+      "m365": 1,
+      "create": 0.8,
+      "generate": 0.8,
+      "help": 0.6
+    }
+  },
+  "RetryPolicy": {
+    "MaxRetries": 3,
+    "BaseDelayMs": 1000,
+    "BackoffMultiplier": 2,
+    "MaxDelayMs": 30000,
+    "RetriableExceptions": [
+      "TimeoutException",
+      "HttpRequestException",
+      "SocketException"
+    ]
+  },
+  "Telemetry": {
+    "EnableDetailedLogging": true,
+    "EnablePerformanceMetrics": true,
+    "EnableUserAnalytics": false,
+    "MetricsRetentionDays": 30
+  },
+  "HealthCheck": {
+    "HealthCheckIntervalMs": 30000,
+    "UnhealthyThresholdMs": 5000,
+    "EnableDependencyChecks": true
+  },
+  "Processing": {
+    "RequestTimeoutMs": 30000,
+    "MaxConcurrentRequests": 10,
+    "AccuracyTarget": 0.9
+  }
+}
