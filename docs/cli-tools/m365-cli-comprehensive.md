@@ -1,12 +1,14 @@
 # Microsoft 365 CLI - Comprehensive Guide for AI Agents
 
 > **Sources:**
+>
 > - [CLI Microsoft 365 Documentation](https://pnp.github.io/cli-microsoft365/cmd/docs)
 > - [CLI Microsoft 365 Sample Scripts](https://pnp.github.io/cli-microsoft365/sample-scripts/introduction)
 
 ## Quick Reference for AI Agents
 
 ### Command Categories Overview
+
 ```yaml
 m365_cli_categories:
   authentication:
@@ -35,6 +37,7 @@ m365_cli_categories:
 ```
 
 ### Common Usage Patterns
+
 ```yaml
 typical_workflows:
   environment_setup:
@@ -56,6 +59,7 @@ typical_workflows:
 ## Authentication Commands
 
 ### Core Authentication
+
 ```bash
 # Interactive login
 m365 login
@@ -77,6 +81,7 @@ m365 logout
 ```
 
 ### Authentication Automation
+
 ```csharp
 public class M365AuthenticationService
 {
@@ -90,8 +95,10 @@ public class M365AuthenticationService
             var command = config.AuthType switch
             {
                 AuthType.Interactive => "m365 login",
-                AuthType.ServicePrincipal => $"m365 login --authType secret --appId {config.AppId} --tenant {config.TenantId} --secret {config.Secret}",
-                AuthType.Certificate => $"m365 login --authType certificate --certificateFile {config.CertificatePath} --password {config.CertificatePassword}",
+                AuthType.ServicePrincipal => $"m365 login --authType secret " +
+                    $"--appId {config.AppId} --tenant {config.TenantId} --secret {config.Secret}",
+                AuthType.Certificate => $"m365 login --authType certificate " +
+                    $"--certificateFile {config.CertificatePath} --password {config.CertificatePassword}",
                 _ => throw new NotSupportedException($"Auth type {config.AuthType} not supported")
             };
             

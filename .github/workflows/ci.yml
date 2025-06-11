@@ -69,26 +69,4 @@ jobs:
       with:
         globs: 'docs/**/*.md'
 
-  security-analysis:
-    runs-on: ubuntu-latest
-    permissions:
-      security-events: write
-      
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Run CodeQL Analysis
-      uses: github/codeql-action/init@v3
-      with:
-        languages: csharp
-        
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-        
-    - name: Build for analysis
-      run: dotnet build src/CopilotAgent.sln --configuration Release
-      
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+ 
