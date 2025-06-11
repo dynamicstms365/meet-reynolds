@@ -27,10 +27,10 @@ jobs:
 
       - name: Generate GitHub App Token
         id: generate_token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
-          private-key: ${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}
+          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
 
       - name: Azure Login
         uses: azure/login@v1
