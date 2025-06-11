@@ -3,8 +3,25 @@ name: Copilot PR Review Orchestration
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 jobs:
+  demo_app_authentication:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Use the token
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          gh api octocat
+
   copilot_pr_orchestration:
     runs-on: ubuntu-latest
     permissions:
@@ -23,36 +40,19 @@ jobs:
 
       - name: Install Copilot CLI (if not present)
         run: |
-          if ! command -v copilot &> /dev/null; then
-            echo "Copilot CLI not found. Please install it as needed."
-            # Placeholder for Copilot CLI installation if available
+          if ! gh extension list | grep -q gh-copilot; then
+            gh extension install github/gh-copilot
           fi
-
-      - name: Analyze PR with Copilot CLI via gh CLI
-        id: copilot_review
-        run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          PR_URL=${{ github.event.pull_request.html_url }}
-          echo "Analyzing PR #$PR_NUMBER ($PR_URL) with Copilot CLI..."
-          # Example: Use gh CLI to fetch PR details and pipe to copilot CLI
-          gh pr view $PR_NUMBER --json body,title,headRefName,baseRefName > pr.json
-          # Placeholder: Replace with actual Copilot CLI invocation
-          # copilot review pr.json > copilot_suggestion.txt
-          echo "Simulated Copilot CLI output: Next best action is to request changes if tests fail." > copilot_suggestion.txt
 
       - name: Copilot CLI Suggestion for PR
         id: copilot_suggest
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_TITLE="Demo Title"
+          PR_BODY="Demo Body"
           PROMPT_FILE=".github/prompts/pr-review.txt"
-          # Replace placeholders in the prompt file with PR details
           sed "s/\\$PR_TITLE/$PR_TITLE/g; s/\\$PR_BODY/$PR_BODY/g" $PROMPT_FILE > pr_prompt.txt
           gh copilot suggest "$(cat pr_prompt.txt)" > copilot_suggestion.txt
 
-      - name: Comment Copilot suggestion on PR
+      - name: Output Copilot suggestion
         run: |
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          COMMENT_BODY=$(cat copilot_suggestion.txt)
-          gh pr comment $PR_NUMBER --body "$COMMENT_BODY"
+          cat copilot_suggestion.txt
