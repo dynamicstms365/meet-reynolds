@@ -1,0 +1,115 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "containerName": {
+            "type": "string",
+            "defaultValue": "github-app-service"
+        },
+        "imageName": {
+            "type": "string",
+            "defaultValue": "ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest"
+        },
+        "registryUsername": {
+            "type": "string",
+            "defaultValue": "cege7480"
+        },
+        "registryPassword": {
+            "type": "securestring"
+        },
+        "appId": {
+            "type": "string",
+            "defaultValue": "1247205"
+        },
+        "privateKey": {
+            "type": "securestring"
+        },
+        "dnsNameLabel": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2023-05-01",
+            "name": "[parameters('containerName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "containers": [
+                    {
+                        "name": "[parameters('containerName')]",
+                        "properties": {
+                            "image": "[parameters('imageName')]",
+                            "ports": [
+                                {
+                                    "port": 80,
+                                    "protocol": "TCP"
+                                },
+                                {
+                                    "port": 443,
+                                    "protocol": "TCP"
+                                }
+                            ],
+                            "environmentVariables": [
+                                {
+                                    "name": "NGL_DEVOPS_APP_ID",
+                                    "value": "[parameters('appId')]"
+                                },
+                                {
+                                    "name": "ASPNETCORE_ENVIRONMENT",
+                                    "value": "Production"
+                                },
+                                {
+                                    "name": "ASPNETCORE_URLS",
+                                    "value": "http://+:80"
+                                },
+                                {
+                                    "name": "NGL_DEVOPS_PRIVATE_KEY",
+                                    "secureValue": "[parameters('privateKey')]"
+                                }
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "cpu": 1.0,
+                                    "memoryInGb": 1.5
+                                }
+                            }
+                        }
+                    }
+                ],
+                "osType": "Linux",
+                "restartPolicy": "Always",
+                "imageRegistryCredentials": [
+                    {
+                        "server": "ghcr.io",
+                        "username": "[parameters('registryUsername')]",
+                        "password": "[parameters('registryPassword')]"
+                    }
+                ],
+                "ipAddress": {
+                    "type": "Public",
+                    "ports": [
+                        {
+                            "port": 80,
+                            "protocol": "TCP"
+                        },
+                        {
+                            "port": 443,
+                            "protocol": "TCP"
+                        }
+                    ],
+                    "dnsNameLabel": "[parameters('dnsNameLabel')]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "fqdn": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.fqdn]"
+        }
+    }
+}

@@ -1,0 +1,74 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "containerName": {
+            "type": "string",
+            "defaultValue": "test-minimal"
+        },
+        "dnsNameLabel": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2023-05-01",
+            "name": "[parameters('containerName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "containers": [
+                    {
+                        "name": "[parameters('containerName')]",
+                        "properties": {
+                            "image": "mcr.microsoft.com/dotnet/samples:aspnetapp",
+                            "ports": [
+                                {
+                                    "port": 80,
+                                    "protocol": "TCP"
+                                }
+                            ],
+                            "environmentVariables": [
+                                {
+                                    "name": "ASPNETCORE_ENVIRONMENT",
+                                    "value": "Production"
+                                },
+                                {
+                                    "name": "ASPNETCORE_URLS",
+                                    "value": "http://+:80"
+                                }
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "cpu": 0.5,
+                                    "memoryInGb": 0.5
+                                }
+                            }
+                        }
+                    }
+                ],
+                "osType": "Linux",
+                "restartPolicy": "OnFailure",
+                "ipAddress": {
+                    "type": "Public",
+                    "ports": [
+                        {
+                            "port": 80,
+                            "protocol": "TCP"
+                        }
+                    ],
+                    "dnsNameLabel": "[parameters('dnsNameLabel')]"
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "fqdn": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.fqdn]"
+        }
+    }
+}
