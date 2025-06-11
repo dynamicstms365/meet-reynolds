@@ -7,6 +7,9 @@ public interface ISecurityAuditService
     Task LogEventAsync(string eventName, string? userId = null, string? repository = null, string? action = null, string? result = null, object? details = null);
     Task LogWebhookEventAsync(GitHubWebhookPayload payload, string result);
     Task LogAuthenticationEventAsync(string result, string? error = null);
+    Task LogCliOperationAsync(string cliTool, string command, string? userId, string result, TimeSpan executionTime, string? error = null);
+    Task LogCliValidationAsync(string cliTool, string command, string? userId, bool isValid, string? validationError = null);
+    Task LogCliRetryAsync(string cliTool, string command, string? userId, int attemptNumber, string? error = null);
 }
 
 public class SecurityAuditService : ISecurityAuditService
@@ -66,6 +69,63 @@ public class SecurityAuditService : ISecurityAuditService
                 Error = error,
                 Timestamp = DateTime.UtcNow
             });
+    }
+
+    public async Task LogCliOperationAsync(string cliTool, string command, string? userId, string result, TimeSpan executionTime, string? error = null)
+    {
+        await LogEventAsync(
+            eventName: "CLI_Operation",
+            userId: userId,
+            action: SanitizeCommand(command),
+            result: result,
+            details: new
+            {
+                CliTool = cliTool,
+                ExecutionTimeMs = executionTime.TotalMilliseconds,
+                Error = error,
+                Timestamp = DateTime.UtcNow
+            });
+    }
+
+    public async Task LogCliValidationAsync(string cliTool, string command, string? userId, bool isValid, string? validationError = null)
+    {
+        await LogEventAsync(
+            eventName: "CLI_Validation",
+            userId: userId,
+            action: SanitizeCommand(command),
+            result: isValid ? "Valid" : "Invalid",
+            details: new
+            {
+                CliTool = cliTool,
+                ValidationError = validationError,
+                Timestamp = DateTime.UtcNow
+            });
+    }
+
+    public async Task LogCliRetryAsync(string cliTool, string command, string? userId, int attemptNumber, string? error = null)
+    {
+        await LogEventAsync(
+            eventName: "CLI_Retry",
+            userId: userId,
+            action: SanitizeCommand(command),
+            result: "Retry",
+            details: new
+            {
+                CliTool = cliTool,
+                AttemptNumber = attemptNumber,
+                Error = error,
+                Timestamp = DateTime.UtcNow
+            });
+    }
+
+    private static string SanitizeCommand(string command)
+    {
+        // Remove sensitive information from audit logs
+        return command
+            .Replace("--secret", "--secret ***")
+            .Replace("--password", "--password ***")
+            .Replace("--token", "--token ***")
+            .Replace("--clientSecret", "--clientSecret ***");
     }
 
     private static Dictionary<string, object> ConvertToStringDictionary(object obj)
