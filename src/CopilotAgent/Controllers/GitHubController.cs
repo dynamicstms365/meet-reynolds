@@ -69,22 +69,14 @@ public class GitHubController : ControllerBase
                 _logger.LogWarning("Webhook secret not configured - signature validation skipped");
             }
 
-            // Validate source IP (optional additional security)
-            var clientIP = Request.Headers["X-Forwarded-For"].FirstOrDefault() ??
-                          Request.HttpContext.Connection.RemoteIpAddress?.ToString();
-            
-            if (!string.IsNullOrEmpty(clientIP) && !_webhookValidator.IsValidGitHubIP(clientIP))
-            {
-                _logger.LogWarning("Webhook from suspicious IP: {IP}", clientIP);
-                // Don't reject based on IP alone as this can be unreliable behind proxies
-            }
 
             // Parse payload
             var payload = System.Text.Json.JsonSerializer.Deserialize<GitHubWebhookPayload>(body);
             
-            if (payload?.Installation?.Id == null)
+            // Ping events and some other events don't require installation context
+            if (gitHubEvent != "ping" && payload?.Installation?.Id == null)
             {
-                _logger.LogWarning("Webhook payload missing installation ID");
+                _logger.LogWarning("Webhook payload missing installation ID for event: {Event}", gitHubEvent);
                 await _auditService.LogWebhookEventAsync(payload, "REJECTED_MISSING_INSTALLATION");
                 return BadRequest("Invalid webhook payload: missing installation");
             }
