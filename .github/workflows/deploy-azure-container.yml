@@ -11,7 +11,8 @@ on:
 
 env:
   AZURE_RESOURCE_GROUP: 'copilot-powerplatform-rg'
-  CONTAINER_NAME: 'github-app-service'
+  CONTAINER_APP_NAME: 'github-copilot-bot'
+  CONTAINER_APP_ENV: 'github-copilot-bot-env'
   AZURE_LOCATION: 'eastus'
 
 jobs:
@@ -48,13 +49,13 @@ jobs:
           dotnet restore src/CopilotAgent.sln
           dotnet build src/CopilotAgent.sln -c Release
           dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj
-          dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish
+          dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish          
 
       - name: Create Resource Group
         run: |
           az group create \
             --name ${{ env.AZURE_RESOURCE_GROUP }} \
-            --location ${{ env.AZURE_LOCATION }}
+            --location ${{ env.AZURE_LOCATION }}          
 
       - name: Build and Push to GitHub Container Registry
         env:
@@ -65,8 +66,8 @@ jobs:
           cat > Dockerfile.prebuilt << 'EOF'
           FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
           WORKDIR /app
-          EXPOSE 80
-          EXPOSE 443
+          EXPOSE 8080
+          EXPOSE 8443
 
           # Create non-root user for security
           RUN groupadd -r copilot && useradd --no-log-init -r -g copilot copilot
@@ -80,10 +81,10 @@ jobs:
 
           # Health check
           HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-              CMD curl -f http://localhost/api/github/health || exit 1
+              CMD curl -f http://localhost:8080/api/github/health || exit 1
 
           # Set environment variables
-          ENV ASPNETCORE_URLS=http://+:80
+          ENV ASPNETCORE_URLS=http://+:8080
           ENV ASPNETCORE_ENVIRONMENT=Production
 
           ENTRYPOINT ["dotnet", "CopilotAgent.dll"]
@@ -100,69 +101,110 @@ jobs:
           docker push $REGISTRY/$IMAGE_NAME:latest
           docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
           
-          echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT
+          echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT          
         id: build_push
 
-      - name: Deploy Container Instance
+      - name: Install Azure Container Apps Extension
+        run: |
+          az extension add --name containerapp --upgrade
+
+      - name: Deploy to Azure Container Apps
         id: deploy
         run: |
-          # Remove existing container if it exists
-          az container delete \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.CONTAINER_NAME }} \
-            --yes || echo "Container did not exist"
+          # Check if Container Apps environment exists
+          if ! az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
+            echo "Creating Container Apps environment..."
+            az containerapp env create \
+              --name ${{ env.CONTAINER_APP_ENV }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --location ${{ env.AZURE_LOCATION }}
+          fi
           
-          # Deploy new container instance using GitHub Container Registry
-          az container create \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --name ${{ env.CONTAINER_NAME }} \
-            --image ${{ steps.build_push.outputs.image_url }} \
-            --registry-login-server ghcr.io \
-            --registry-username ${{ github.actor }} \
-            --registry-password ${{ github.token }} \
-            --dns-name-label copilot-github-app-$(date +%s | tail -c 6) \
-            --ports 80 443 \
-            --os-type Linux \
-            --environment-variables \
-              "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
-              "ASPNETCORE_ENVIRONMENT=Production" \
-              "ASPNETCORE_URLS=http://+:80" \
-            --secure-environment-variables \
-              "NGL_DEVOPS_BOT_PEM=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-            --cpu 1 \
-            --memory 1.5 \
-            --restart-policy Always
+          # Check if Container App exists
+          if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
+            echo "Updating existing Container App..."
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ${{ steps.build_push.outputs.image_url }} \
+              --registry-server ghcr.io \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ github.token }} \
+              --set-env-vars \
+                "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
+                "ASPNETCORE_ENVIRONMENT=Production" \
+                "ASPNETCORE_URLS=http://+:8080" \
+              --secrets \
+                "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+                "ngl-devops-webhook-secret=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}" \
+              --set-env-vars \
+                "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+                "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
+              --cpu 1.0 \
+              --memory 2.0Gi \
+              --min-replicas 1 \
+              --max-replicas 3
+          else
+            echo "Creating new Container App..."
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.CONTAINER_APP_ENV }} \
+              --image ${{ steps.build_push.outputs.image_url }} \
+              --registry-server ghcr.io \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ github.token }} \
+              --target-port 8080 \
+              --ingress external \
+              --set-env-vars \
+                "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
+                "ASPNETCORE_ENVIRONMENT=Production" \
+                "ASPNETCORE_URLS=http://+:8080" \
+              --secrets \
+                "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+                "ngl-devops-webhook-secret=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}" \
+              --set-env-vars \
+                "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+                "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
+              --cpu 1.0 \
+              --memory 2.0Gi \
+              --min-replicas 1 \
+              --max-replicas 3
+          fi
           
-          # Get container information
-          FQDN=$(az container show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "ipAddress.fqdn" -o tsv)
-          IP=$(az container show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "ipAddress.ip" -o tsv)
+          # Get container app information
+          FQDN=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
           
-          echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
-          echo "ip=$IP" >> $GITHUB_OUTPUT
+          echo "fqdn=$FQDN" >> $GITHUB_OUTPUT          
 
       - name: Validate Deployment
         run: |
           echo "🎉 Deployment successful!"
-          echo "📍 Container FQDN: ${{ steps.deploy.outputs.fqdn }}"
-          echo "📍 Container IP: ${{ steps.deploy.outputs.ip }}"
+          echo "📍 Container App FQDN: ${{ steps.deploy.outputs.fqdn }}"
           echo "🔗 Webhook URL: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
           echo "🔗 Health Check: https://${{ steps.deploy.outputs.fqdn }}/api/github/health"
           echo "🔗 Test Endpoint: https://${{ steps.deploy.outputs.fqdn }}/api/github/test"
+          echo "🔗 MCP Capabilities: https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities"
+          echo "🔗 MCP SSE: https://${{ steps.deploy.outputs.fqdn }}/mcp/sse"
           
           # Wait for container to be ready and test health endpoint
-          echo "⏳ Waiting for container to be ready..."
-          sleep 30
+          echo "⏳ Waiting for container app to be ready..."
+          sleep 60
           
           # Test health endpoint
-          for i in {1..5}; do
+          for i in {1..10}; do
             if curl -f "https://${{ steps.deploy.outputs.fqdn }}/api/github/health" 2>/dev/null; then
               echo "✅ Health check passed on attempt $i"
               break
             else
-              echo "⏳ Health check failed on attempt $i, retrying in 10 seconds..."
-              sleep 10
+              echo "⏳ Health check failed on attempt $i, retrying in 15 seconds..."
+              sleep 15
             fi
           done
+          
+          # Test MCP capabilities endpoint
+          echo "🧪 Testing MCP capabilities endpoint..."
+          curl -f "https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities" || echo "⚠️ MCP capabilities endpoint not responding"         
 
       - name: Update GitHub App Webhook URL
         env:
@@ -170,36 +212,60 @@ jobs:
         run: |
           echo "📝 GitHub App webhook should be updated to: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
           echo "💡 This step would typically update the GitHub App configuration, but requires app-level permissions"
-          
+                    
       - name: Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## 🚀 GitHub App Service Deployment Summary
+          ## 🚀 Enhanced GitHub Copilot Bot Deployment Summary
           
           ### ✅ Deployment Status: SUCCESS
           
           | Property | Value |
           |----------|-------|
-          | **Container FQDN** | \`${{ steps.deploy.outputs.fqdn }}\` |
-          | **Container IP** | \`${{ steps.deploy.outputs.ip }}\` |
+          | **Container App FQDN** | \`${{ steps.deploy.outputs.fqdn }}\` |
           | **Webhook URL** | \`https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook\` |
           | **Health Check** | \`https://${{ steps.deploy.outputs.fqdn }}/api/github/health\` |
           | **Test Endpoint** | \`https://${{ steps.deploy.outputs.fqdn }}/api/github/test\` |
+          | **MCP Capabilities** | \`https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities\` |
+          | **MCP SSE Stream** | \`https://${{ steps.deploy.outputs.fqdn }}/mcp/sse\` |
+          
+          ### 🔧 Enhanced Features Deployed:
+          - ✅ **Semantic Search** - Cross-repository search with relevance scoring
+          - ✅ **Discussion Management** - Create, search, update discussions with duplicate detection
+          - ✅ **Issue Management** - Create, search, update issues with validation
+          - ✅ **MCP Server** - 12 specialized tools for AI agent integration
+          - ✅ **Workflow Orchestration** - Event-driven processing and automation
+          - ✅ **Organization-wide Operations** - Manage content across 30+ repositories
+          
+          ### 🛠️ MCP Tools Available:
+          1. **semantic_search** - Cross-repository semantic search
+          2. **create_discussion** - Create discussions with duplicate detection
+          3. **create_issue** - Create issues with validation
+          4. **add_comment** - Add comments to discussions/issues
+          5. **update_content** - Update existing content
+          6. **get_discussion** - Retrieve specific discussions
+          7. **get_issue** - Retrieve specific issues
+          8. **search_discussions** - Search discussions specifically
+          9. **search_issues** - Search issues specifically
+          10. **organization_discussions** - Get all org discussions
+          11. **organization_issues** - Get all org issues
+          12. **prompt_action** - Natural language action execution
           
           ### 📋 Next Steps:
           1. Update GitHub App webhook URL in organization settings
           2. Test webhook delivery from GitHub
-          3. Monitor container logs: \`az container logs --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}\`
+          3. Test MCP integration with other AI agents
+          4. Monitor container app logs and metrics
           
           ### 🔧 Management Commands:
           \`\`\`bash
-          # View container logs
-          az container logs --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}
+          # View container app logs
+          az containerapp logs show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
           
-          # Restart container
-          az container restart --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}
+          # Scale container app
+          az containerapp update --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --min-replicas 1 --max-replicas 5
           
-          # Delete container
-          az container delete --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}
+          # View container app status
+          az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }}
           \`\`\`
           EOF
