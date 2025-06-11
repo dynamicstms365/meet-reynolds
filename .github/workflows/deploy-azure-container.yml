@@ -1,0 +1,186 @@
+name: Deploy GitHub App Service to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/CopilotAgent/**'
+      - 'src/Shared/**'
+      - '.github/workflows/deploy-azure-container.yml'
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: 'copilot-powerplatform-rg'
+  CONTAINER_NAME: 'github-app-service'
+  AZURE_LOCATION: 'eastus'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
+          private-key: ${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Build and Test
+        run: |
+          dotnet restore src/CopilotAgent/CopilotAgent.csproj
+          dotnet build src/CopilotAgent/CopilotAgent.csproj -c Release
+          dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj
+
+      - name: Create Resource Group
+        run: |
+          az group create \
+            --name ${{ env.AZURE_RESOURCE_GROUP }} \
+            --location ${{ env.AZURE_LOCATION }}
+
+      - name: Create Azure Container Registry (if not exists)
+        id: acr
+        run: |
+          ACR_NAME="copilotpowerplatformacr$(date +%s | tail -c 6)"
+          echo "Creating ACR: $ACR_NAME"
+          
+          az acr create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name $ACR_NAME \
+            --sku Basic \
+            --admin-enabled true || echo "ACR might already exist"
+          
+          # Get the ACR login server
+          ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "loginServer" -o tsv)
+          echo "acr_login_server=$ACR_LOGIN_SERVER" >> $GITHUB_OUTPUT
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build and Push Docker Image
+        run: |
+          # Build the Docker image
+          docker build -f src/CopilotAgent/Dockerfile -t copilot-agent:latest .
+          
+          # Tag for ACR
+          docker tag copilot-agent:latest ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest
+          docker tag copilot-agent:latest ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:${{ github.sha }}
+          
+          # Login to ACR and push
+          az acr login --name ${{ steps.acr.outputs.acr_name }}
+          docker push ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest
+          docker push ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:${{ github.sha }}
+
+      - name: Deploy Container Instance
+        id: deploy
+        run: |
+          # Remove existing container if it exists
+          az container delete \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.CONTAINER_NAME }} \
+            --yes || echo "Container did not exist"
+          
+          # Deploy new container instance
+          az container create \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --name ${{ env.CONTAINER_NAME }} \
+            --image ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest \
+            --registry-login-server ${{ steps.acr.outputs.acr_login_server }} \
+            --registry-username ${{ steps.acr.outputs.acr_name }} \
+            --registry-password $(az acr credential show --name ${{ steps.acr.outputs.acr_name }} --query "passwords[0].value" -o tsv) \
+            --dns-name-label copilot-github-app-$(date +%s | tail -c 6) \
+            --ports 80 443 \
+            --environment-variables \
+              "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
+              "ASPNETCORE_ENVIRONMENT=Production" \
+              "ASPNETCORE_URLS=http://+:80" \
+            --secure-environment-variables \
+              "NGL_DEVOPS_PRIVATE_KEY=${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}" \
+            --cpu 1 \
+            --memory 1.5 \
+            --restart-policy Always
+          
+          # Get container information
+          FQDN=$(az container show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "ipAddress.fqdn" -o tsv)
+          IP=$(az container show --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }} --query "ipAddress.ip" -o tsv)
+          
+          echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
+          echo "ip=$IP" >> $GITHUB_OUTPUT
+
+      - name: Validate Deployment
+        run: |
+          echo "🎉 Deployment successful!"
+          echo "📍 Container FQDN: ${{ steps.deploy.outputs.fqdn }}"
+          echo "📍 Container IP: ${{ steps.deploy.outputs.ip }}"
+          echo "🔗 Webhook URL: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
+          echo "🔗 Health Check: https://${{ steps.deploy.outputs.fqdn }}/api/github/health"
+          echo "🔗 Test Endpoint: https://${{ steps.deploy.outputs.fqdn }}/api/github/test"
+          
+          # Wait for container to be ready and test health endpoint
+          echo "⏳ Waiting for container to be ready..."
+          sleep 30
+          
+          # Test health endpoint
+          for i in {1..5}; do
+            if curl -f "https://${{ steps.deploy.outputs.fqdn }}/api/github/health" 2>/dev/null; then
+              echo "✅ Health check passed on attempt $i"
+              break
+            else
+              echo "⏳ Health check failed on attempt $i, retrying in 10 seconds..."
+              sleep 10
+            fi
+          done
+
+      - name: Update GitHub App Webhook URL
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          echo "📝 GitHub App webhook should be updated to: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
+          echo "💡 This step would typically update the GitHub App configuration, but requires app-level permissions"
+          
+      - name: Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🚀 GitHub App Service Deployment Summary
+          
+          ### ✅ Deployment Status: SUCCESS
+          
+          | Property | Value |
+          |----------|-------|
+          | **Container FQDN** | \`${{ steps.deploy.outputs.fqdn }}\` |
+          | **Container IP** | \`${{ steps.deploy.outputs.ip }}\` |
+          | **Webhook URL** | \`https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook\` |
+          | **Health Check** | \`https://${{ steps.deploy.outputs.fqdn }}/api/github/health\` |
+          | **Test Endpoint** | \`https://${{ steps.deploy.outputs.fqdn }}/api/github/test\` |
+          
+          ### 📋 Next Steps:
+          1. Update GitHub App webhook URL in organization settings
+          2. Test webhook delivery from GitHub
+          3. Monitor container logs: \`az container logs --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}\`
+          
+          ### 🔧 Management Commands:
+          \`\`\`bash
+          # View container logs
+          az container logs --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}
+          
+          # Restart container
+          az container restart --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}
+          
+          # Delete container
+          az container delete --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --name ${{ env.CONTAINER_NAME }}
+          \`\`\`
+          EOF

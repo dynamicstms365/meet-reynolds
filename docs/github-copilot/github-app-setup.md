@@ -97,28 +97,53 @@ Add the following secrets to your GitHub organization:
 
 ## Service Configuration
 
-### 1. Environment Variables
+### 1. GitHub Actions Integration (Recommended)
 
-The application will automatically detect credentials from:
+For optimal security and integration, use GitHub Actions with organization secrets and variables:
 
-1. **Configuration** (appsettings.json):
+#### Organization Variables
+- `NGL_DEVOPS_APP_ID`: The GitHub App ID (can be public)
+
+#### Organization Secrets  
+- `NGL_DEVOPS_PRIVATE_KEY`: The GitHub App private key (PEM format)
+
+#### GitHub Actions Workflow Example
+```yaml
+steps:
+  - name: Generate GitHub App Token
+    id: generate_token
+    uses: actions/create-github-app-token@v1
+    with:
+      app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
+      private-key: ${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}
+      
+  - name: Use GitHub App Token
+    env:
+      GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+    run: |
+      # The generated token automatically handles installation context
+      # and provides scoped access to the organization repositories
+```
+
+### 2. Alternative Configuration Methods
+
+#### Configuration File (appsettings.json):
 ```json
 {
   "NGL_DEVOPS_APP_ID": "your-app-id",
-  "NGL_DEVOPS_INSTALLATION_ID": "your-installation-id",
+  "NGL_DEVOPS_INSTALLATION_ID": "your-installation-id", 
   "NGL_DEVOPS_PRIVATE_KEY": "your-private-key-pem"
 }
 ```
 
-2. **Environment Variables**:
+#### Environment Variables:
 ```bash
 export NGL_DEVOPS_APP_ID="your-app-id"
 export NGL_DEVOPS_INSTALLATION_ID="your-installation-id"
 export NGL_DEVOPS_PRIVATE_KEY="your-private-key-pem"
 ```
 
-3. **GitHub Actions Secrets** (preferred for CI/CD):
-The application automatically uses organization secrets when running in GitHub Actions.
+> **Note**: When using GitHub Actions with `actions/create-github-app-token@v1`, the installation ID is automatically resolved and you don't need to set `NGL_DEVOPS_INSTALLATION_ID`.
 
 ### 2. Service Registration
 
@@ -129,6 +154,85 @@ The services are automatically registered in `Program.cs`:
 builder.Services.AddHttpClient<IGitHubAppAuthService, GitHubAppAuthService>();
 builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
 ```
+
+### 3. Azure Container Deployment (Recommended for Production)
+
+For production orchestration and scalability, deploy the service using Azure Container Instances or Azure Container Environment:
+
+#### Azure Container Instance Deployment
+```yaml
+# azure-container-deployment.yml
+name: Deploy GitHub App Service
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy Container Instance
+        uses: azure/container-instances-deploy@v1
+        with:
+          resource-group: 'copilot-powerplatform-rg'
+          name: 'github-app-service'
+          image: 'your-registry/copilot-agent:latest'
+          environment-variables: |
+            NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
+          secure-environment-variables: |
+            NGL_DEVOPS_PRIVATE_KEY=${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}
+          ports: '80'
+          location: 'eastus'
+```
+
+#### Azure Container Environment
+For more complex orchestration with multiple containers:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-app-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: github-app-service
+  template:
+    metadata:
+      labels:
+        app: github-app-service
+    spec:
+      containers:
+      - name: copilot-agent
+        image: your-registry/copilot-agent:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: NGL_DEVOPS_APP_ID
+          valueFrom:
+            configMapKeyRef:
+              name: github-config
+              key: app-id
+        - name: NGL_DEVOPS_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: github-secrets
+              key: private-key
+```
+
+> **Benefits of Container Deployment:**
+> - **Auto-scaling**: Handle webhook spikes automatically
+> - **High Availability**: Multiple instances for redundancy  
+> - **Security**: Isolated environment with Azure RBAC
+> - **Cost Optimization**: Pay-per-use scaling
+> - **Easy Management**: Azure portal integration
 
 ## API Endpoints
 
