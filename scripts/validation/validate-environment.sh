@@ -100,11 +100,27 @@ else
     exit 1
 fi
 
+# Run GitHub App validation
+echo "📋 Running GitHub App validation..."
+if [ -f "$PROJECT_ROOT/scripts/validation/validate-github-app.sh" ]; then
+    echo "Running GitHub App setup validation..."
+    cd "$PROJECT_ROOT"
+    if ./scripts/validation/validate-github-app.sh > /dev/null 2>&1; then
+        echo "✅ GitHub App setup validation passed"
+    else
+        echo "⚠️  GitHub App setup needs attention (check with: ./scripts/validation/validate-github-app.sh)"
+    fi
+else
+    echo "⚠️  GitHub App validation script not found"
+fi
+
 echo ""
 echo "🎉 Environment validation completed successfully!"
 echo "✅ Ready for Power Platform Copilot Agent development"
 echo ""
 echo "Next steps:"
-echo "1. Configure authentication: pac auth create --name dev-auth"
-echo "2. Verify M365 access: m365 login"
-echo "3. Start development: cd src && dotnet run --project CopilotAgent"
+echo "1. Configure GitHub App credentials (see docs/github-copilot/github-app-setup.md)"
+echo "2. Configure authentication: pac auth create --name dev-auth"
+echo "3. Verify M365 access: m365 login"
+echo "4. Start development: cd src && dotnet run --project CopilotAgent"
+echo "5. Test GitHub integration: ./scripts/validation/validate-github-app.sh"
