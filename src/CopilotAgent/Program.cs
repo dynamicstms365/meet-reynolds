@@ -22,6 +22,10 @@ builder.Services.AddScoped<IM365CliValidator, M365CliValidator>();
 builder.Services.AddScoped<IPacCliService, PacCliService>();
 builder.Services.AddScoped<IM365CliService, M365CliService>();
 
+// Register GitHub integration services
+builder.Services.AddHttpClient<IGitHubAppAuthService, GitHubAppAuthService>();
+builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
