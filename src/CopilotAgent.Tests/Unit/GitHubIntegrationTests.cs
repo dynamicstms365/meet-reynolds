@@ -256,7 +256,7 @@ public class GitHubIntegrationTests
     }
 
     [Test]
-    public async Task GetInstallationTokenAsync_WithoutInstallationId_ShouldResolveAutomatically()
+    public void GetInstallationTokenAsync_WithoutInstallationId_ShouldResolveAutomatically()
     {
         // Arrange
         var privateKey = """
@@ -304,9 +304,13 @@ public class GitHubIntegrationTests
 
         // Act & Assert - This test will fail due to invalid private key, but that's expected
         // We're testing the flow, not the actual RSA key validation
-        var exception = Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await service.GetInstallationTokenAsync());
+        var exception = Assert.Throws<AggregateException>(
+            () => 
+            {
+                var task = service.GetInstallationTokenAsync();
+                task.Wait();
+            });
         
-        Assert.That(exception!.Message, Does.Contain("Failed to parse private key"));
+        Assert.That(exception!.InnerException!.Message, Does.Contain("Failed to parse private key"));
     }
 }

@@ -44,9 +44,10 @@ jobs:
 
       - name: Build and Test
         run: |
-          dotnet restore src/CopilotAgent/CopilotAgent.csproj
-          dotnet build src/CopilotAgent/CopilotAgent.csproj -c Release
+          dotnet restore src/CopilotAgent.sln
+          dotnet build src/CopilotAgent.sln -c Release
           dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj
+          dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish
 
       - name: Create Resource Group
         run: |
@@ -73,8 +74,36 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          # Build the Docker image
-          docker build -f src/CopilotAgent/Dockerfile -t copilot-agent:latest .
+          # Create a simple Dockerfile that uses pre-built output
+          cat > Dockerfile.prebuilt << 'EOF'
+          FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+          WORKDIR /app
+          EXPOSE 80
+          EXPOSE 443
+
+          # Create non-root user for security
+          RUN groupadd -r copilot && useradd --no-log-init -r -g copilot copilot
+
+          # Copy published application
+          COPY ./publish .
+
+          # Set ownership and permissions
+          RUN chown -R copilot:copilot /app
+          USER copilot
+
+          # Health check
+          HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+              CMD curl -f http://localhost/api/github/health || exit 1
+
+          # Set environment variables
+          ENV ASPNETCORE_URLS=http://+:80
+          ENV ASPNETCORE_ENVIRONMENT=Production
+
+          ENTRYPOINT ["dotnet", "CopilotAgent.dll"]
+          EOF
+          
+          # Build the Docker image using pre-built output
+          docker build -f Dockerfile.prebuilt -t copilot-agent:latest .
           
           # Tag for ACR
           docker tag copilot-agent:latest ${{ steps.acr.outputs.acr_login_server }}/copilot-agent:latest
