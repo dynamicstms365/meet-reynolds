@@ -1,0 +1,8 @@
+# Copilot PR Review Prompt
+
+Review the following pull request and suggest the next best action for code review. Consider code quality, test coverage, documentation, and alignment with project goals. Respond with a clear, actionable recommendation for the reviewer or author.
+
+---
+
+Title: $PR_TITLE
+Body: $PR_BODY

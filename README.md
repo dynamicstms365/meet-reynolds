@@ -44,3 +44,21 @@ See `docs/org-profiles/README.md` for details.
 - **Automation:** All analytics and dashboards will be auto-updating, supporting the self-improving AI ecosystem vision.
 
 See `docs/org-profiles/README.md` for details and progress.
+
+# Milestone & Iteration Automation
+
+A new script automates the creation of milestones for each evolutionary phase, assigns issues to milestones based on their phase label, and (optionally) sets project iteration values:
+
+- **Script:** `scripts/setup/setup-milestones-and-iterations.sh`
+- **Usage:**
+  ```bash
+  ./scripts/setup/setup-milestones-and-iterations.sh <org/repo> [project-number]
+  ```
+- **Features:**
+  - Creates milestones for: Foundation, Self-Acceleration, Orchestration, Evolution
+  - Assigns issues to milestones by label
+  - Optionally sets project iteration field (if project number provided)
+
+---
+
+*This supports dependency management and order-of-operations for the AI-first development process.*
