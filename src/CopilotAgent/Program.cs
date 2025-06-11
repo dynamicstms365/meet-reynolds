@@ -34,6 +34,14 @@ builder.Services.AddHttpClient<IGitHubAppAuthService, GitHubAppAuthService>();
 builder.Services.AddScoped<ISecurityAuditService, SecurityAuditService>();
 builder.Services.AddScoped<IGitHubWebhookValidator, GitHubWebhookValidator>();
 
+// Register GitHub discussions and issues services
+builder.Services.AddHttpClient<IGitHubDiscussionsService, GitHubDiscussionsService>();
+builder.Services.AddHttpClient<IGitHubIssuesService, GitHubIssuesService>();
+builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearchService>();
+
+// Register GitHub workflow orchestrator
+builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline

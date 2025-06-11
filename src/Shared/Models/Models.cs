@@ -78,6 +78,55 @@ public class GitHubWebhookPayload
     public GitHubInstallation? Installation { get; set; }
     public GitHubUser? Sender { get; set; }
     public Dictionary<string, object>? ClientPayload { get; set; }
+    public GitHubDiscussionPayload? Discussion { get; set; }
+    public GitHubIssuePayload? Issue { get; set; }
+    public GitHubCommentPayload? Comment { get; set; }
+    public GitHubPullRequestPayload? PullRequest { get; set; }
+}
+
+public class GitHubDiscussionPayload
+{
+    public long Id { get; set; }
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public GitHubUser? Author { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class GitHubIssuePayload
+{
+    public long Id { get; set; }
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public GitHubUser? User { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class GitHubCommentPayload
+{
+    public long Id { get; set; }
+    public string Body { get; set; } = string.Empty;
+    public GitHubUser? User { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class GitHubPullRequestPayload
+{
+    public long Id { get; set; }
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public GitHubUser? User { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class GitHubRepository
