@@ -96,7 +96,7 @@ jobs:
           REVIEW_REQUESTS_COUNT=$(echo "$PR_DATA" | jq '.reviewRequests | length')
           
           # Analyze checks
-          CHECKS_STATUS=$(echo "$PR_DATA" | jq -r '.statusCheckRollup.state // "PENDING"')
+          CHECKS_STATUS=$(echo "$PR_DATA" | jq -r '.statusCheckRollup.state // .statusCheckRollup[0].state // "PENDING"')
           
           # Get commit messages
           COMMIT_MESSAGES=$(echo "$PR_DATA" | jq -r '.commits[].messageHeadline' | head -10 | paste -sd '\n')
