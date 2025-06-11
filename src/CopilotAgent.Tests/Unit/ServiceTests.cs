@@ -134,12 +134,14 @@ public class PacCliValidatorTests
 {
     private PacCliValidator _validator;
     private Mock<ILogger<PacCliValidator>> _mockLogger;
+    private Mock<ISecurityAuditService> _mockAuditService;
 
     [SetUp]
     public void SetUp()
     {
         _mockLogger = new Mock<ILogger<PacCliValidator>>();
-        _validator = new PacCliValidator(_mockLogger.Object);
+        _mockAuditService = new Mock<ISecurityAuditService>();
+        _validator = new PacCliValidator(_mockLogger.Object, _mockAuditService.Object);
     }
 
     [Test]
