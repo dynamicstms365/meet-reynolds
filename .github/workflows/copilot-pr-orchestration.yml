@@ -61,11 +61,17 @@ jobs:
         run: |
           PR_INFO=$(gh pr view $PR_NUMBER --json title,body,headRefName,baseRefName,author,labels,files)
           echo "title=$(echo "$PR_INFO" | jq -r '.title')" >> $GITHUB_OUTPUT
-          echo "body=$(echo "$PR_INFO" | jq -r '.body // ""')" >> $GITHUB_OUTPUT
           echo "head_branch=$(echo "$PR_INFO" | jq -r '.headRefName')" >> $GITHUB_OUTPUT
           echo "base_branch=$(echo "$PR_INFO" | jq -r '.baseRefName')" >> $GITHUB_OUTPUT
           echo "author=$(echo "$PR_INFO" | jq -r '.author.login')" >> $GITHUB_OUTPUT
           echo "files_changed=$(echo "$PR_INFO" | jq -r '.files | length')" >> $GITHUB_OUTPUT
+          
+          # Handle multiline PR body safely
+          {
+            echo 'body<<EOF'
+            echo "$PR_INFO" | jq -r '.body // ""'
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
 
       - name: Generate PR diff for review
         id: pr_diff
