@@ -94,7 +94,7 @@ jobs:
           docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:${{ github.sha }}
           
           # Login to GitHub Container Registry
-          echo ${{ steps.generate_token.outputs.token }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+          echo ${{ github.token }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
           
           # Push to GitHub Container Registry
           docker push $REGISTRY/$IMAGE_NAME:latest
@@ -119,7 +119,7 @@ jobs:
             --image ${{ steps.build_push.outputs.image_url }} \
             --registry-login-server ghcr.io \
             --registry-username ${{ github.actor }} \
-            --registry-password ${{ steps.generate_token.outputs.token }} \
+            --registry-password ${{ github.token }} \
             --dns-name-label copilot-github-app-$(date +%s | tail -c 6) \
             --ports 80 443 \
             --os-type Linux \
