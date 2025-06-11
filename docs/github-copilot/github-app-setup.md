@@ -180,7 +180,7 @@ jobs:
       - name: Deploy Container Instance
         uses: azure/container-instances-deploy@v1
         with:
-          resource-group: 'copilot-powerplatform-rg'
+          resource-group: 'copilot-powerplatform-deploy-rg'
           name: 'github-app-service'
           image: 'your-registry/copilot-agent:latest'
           environment-variables: |

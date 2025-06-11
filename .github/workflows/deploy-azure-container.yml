@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_RESOURCE_GROUP: 'copilot-powerplatform-rg'
+  AZURE_RESOURCE_GROUP: 'copilot-powerplatform-deploy-rg'
   CONTAINER_APP_NAME: 'github-copilot-bot'
   CONTAINER_APP_ENV: 'github-copilot-bot-env'
   AZURE_LOCATION: 'eastus'
