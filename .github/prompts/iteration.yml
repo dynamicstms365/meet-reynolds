@@ -1,0 +1,15 @@
+# Prompt for Project Field: Iteration
+# Use this prompt to ensure only valid values are used for the Iteration field in GitHub Projects v2.
+
+name: iteration
+values:
+  - Iteration 1
+  - Iteration 2
+  - Iteration 3
+  # Add additional iteration names as configured in your project
+
+strict: true
+usage: |
+  Only use the above values for the Iteration field in Projects v2. If a value is not present, request an update to the prompt and the project configuration.
+notes: |
+  This prompt is designed to prevent API/CLI failures due to invalid iteration values. Use with gh copilot or models extensions for input validation.

@@ -1,0 +1,13 @@
+# Prompt for Project Field: Assignees
+# Use this prompt to ensure only valid values are used for the Assignees field in GitHub Projects v2.
+
+name: assignees
+values:
+  - Use only users with access to the repository or organization.
+  - If an assignee is missing, add them to the org or repo first or request their addition.
+
+strict: true
+usage: |
+  Only use existing users for the Assignees field in Projects v2. If a value is not present, request an update to the prompt and the project configuration.
+notes: |
+  This prompt is designed to prevent API/CLI failures due to invalid assignee values. Use with gh copilot or models extensions for input validation.

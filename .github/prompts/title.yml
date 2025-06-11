@@ -1,0 +1,13 @@
+# Prompt for Project Field: Title
+# Use this prompt to ensure only valid values are used for the Title field in GitHub Projects v2.
+
+name: title
+values:
+  - Use a concise, descriptive title for the project item.
+  - Avoid special characters that may cause API/CLI issues.
+
+strict: true
+usage: |
+  Only use valid, descriptive titles for the Title field in Projects v2. If a value is not present, request an update to the prompt and the project configuration.
+notes: |
+  This prompt is designed to prevent API/CLI failures due to invalid title values. Use with gh copilot or models extensions for input validation.
