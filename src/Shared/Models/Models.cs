@@ -130,3 +130,32 @@ public class SecurityAuditLog
     public string? Result { get; set; }
     public Dictionary<string, object> Details { get; set; } = new();
 }
+
+public class CliOperationMetrics
+{
+    public string CliTool { get; set; } = string.Empty;
+    public string Command { get; set; } = string.Empty;
+    public TimeSpan ExecutionTime { get; set; }
+    public bool Success { get; set; }
+    public string? Error { get; set; }
+    public int RetryCount { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}
+
+public class RetryOptions
+{
+    public int MaxRetries { get; set; } = 3;
+    public TimeSpan InitialDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public double BackoffMultiplier { get; set; } = 2.0;
+    public TimeSpan MaxDelay { get; set; } = TimeSpan.FromSeconds(30);
+    public Func<Exception, bool>? ShouldRetry { get; set; }
+}
+
+public class CliMonitoringOptions
+{
+    public bool EnablePerformanceTracking { get; set; } = true;
+    public bool EnableSuccessRateTracking { get; set; } = true;
+    public double SuccessRateThreshold { get; set; } = 0.98;
+    public TimeSpan MonitoringWindow { get; set; } = TimeSpan.FromMinutes(5);
+    public bool EnableAlerting { get; set; } = true;
+}
