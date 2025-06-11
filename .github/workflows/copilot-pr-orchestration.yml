@@ -1,58 +1,168 @@
 name: Copilot PR Review Orchestration
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review (optional - if not provided, will find open PRs)'
+        required: false
+        type: string
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
 
 jobs:
-  demo_app_authentication:
+  copilot_pr_review:
     runs-on: ubuntu-latest
-    steps:
-      - name: Generate a token
-        id: generate-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
-      - name: Use the token
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: |
-          gh api octocat
-
-  copilot_pr_orchestration:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
+    if: ${{ !github.event.pull_request.draft }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up GitHub CLI
-        uses: cli/gh-action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Install Copilot CLI (if not present)
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
+          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
+
+      - name: Install GitHub CLI Copilot extension
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          if ! gh extension list | grep -q gh-copilot; then
-            gh extension install github/gh-copilot
+          gh extension install github/gh-copilot || true
+          gh copilot --version
+
+      - name: Determine PR to review
+        id: pr_info
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          if [[ -n "$PR_NUMBER" ]]; then
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          else
+            # Find the most recent open PR if none specified
+            LATEST_PR=$(gh pr list --state open --limit 1 --json number --jq '.[0].number')
+            if [[ -n "$LATEST_PR" && "$LATEST_PR" != "null" ]]; then
+              echo "pr_number=$LATEST_PR" >> $GITHUB_OUTPUT
+            else
+              echo "No open PRs found"
+              exit 1
+            fi
           fi
 
-      - name: Copilot CLI Suggestion for PR
-        id: copilot_suggest
+      - name: Get PR details
+        id: pr_details
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr_info.outputs.pr_number }}
         run: |
-          PR_TITLE="Demo Title"
-          PR_BODY="Demo Body"
-          PROMPT_FILE=".github/prompts/pr-review.txt"
-          sed "s/\\$PR_TITLE/$PR_TITLE/g; s/\\$PR_BODY/$PR_BODY/g" $PROMPT_FILE > pr_prompt.txt
-          gh copilot suggest "$(cat pr_prompt.txt)" > copilot_suggestion.txt
+          PR_INFO=$(gh pr view $PR_NUMBER --json title,body,headRefName,baseRefName,author,labels,files)
+          echo "title=$(echo "$PR_INFO" | jq -r '.title')" >> $GITHUB_OUTPUT
+          echo "body=$(echo "$PR_INFO" | jq -r '.body // ""')" >> $GITHUB_OUTPUT
+          echo "head_branch=$(echo "$PR_INFO" | jq -r '.headRefName')" >> $GITHUB_OUTPUT
+          echo "base_branch=$(echo "$PR_INFO" | jq -r '.baseRefName')" >> $GITHUB_OUTPUT
+          echo "author=$(echo "$PR_INFO" | jq -r '.author.login')" >> $GITHUB_OUTPUT
+          echo "files_changed=$(echo "$PR_INFO" | jq -r '.files | length')" >> $GITHUB_OUTPUT
 
-      - name: Output Copilot suggestion
+      - name: Generate PR diff for review
+        id: pr_diff
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr_info.outputs.pr_number }}
         run: |
-          cat copilot_suggestion.txt
+          # Get the diff with context
+          gh pr diff $PR_NUMBER --name-only > changed_files.txt
+          gh pr diff $PR_NUMBER > pr_diff.patch
+          
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          cat changed_files.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Load PR review prompt template
+        id: review_prompt
+        env:
+          PR_TITLE: ${{ steps.pr_details.outputs.title }}
+          PR_BODY: ${{ steps.pr_details.outputs.body }}
+          PR_AUTHOR: ${{ steps.pr_details.outputs.author }}
+          HEAD_BRANCH: ${{ steps.pr_details.outputs.head_branch }}
+          BASE_BRANCH: ${{ steps.pr_details.outputs.base_branch }}
+          FILES_CHANGED: ${{ steps.pr_details.outputs.files_changed }}
+          CHANGED_FILES: ${{ steps.pr_diff.outputs.changed_files }}
+        run: |
+          # Replace placeholders in the prompt template
+          PROMPT_TEMPLATE=$(cat .github/prompts/pr-review.txt)
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{PR_TITLE\}\}/$PR_TITLE}
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{PR_BODY\}\}/$PR_BODY}
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{PR_AUTHOR\}\}/$PR_AUTHOR}
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{HEAD_BRANCH\}\}/$HEAD_BRANCH}
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{BASE_BRANCH\}\}/$BASE_BRANCH}
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{FILES_CHANGED\}\}/$FILES_CHANGED}
+          PROMPT_TEMPLATE=${PROMPT_TEMPLATE//\{\{CHANGED_FILES\}\}/$CHANGED_FILES}
+          
+          echo "$PROMPT_TEMPLATE" > review_prompt.txt
+
+      - name: Run Copilot PR Review
+        id: copilot_review
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          # Use GitHub Copilot CLI to review the PR
+          echo "Running Copilot review for PR..."
+          
+          # Combine the prompt with the diff for comprehensive review
+          {
+            cat review_prompt.txt
+            echo -e "\n\n## Code Changes:\n"
+            cat pr_diff.patch
+          } > full_review_input.txt
+          
+          # Run Copilot review and capture output
+          REVIEW_OUTPUT=$(gh copilot suggest --target shell "$(cat full_review_input.txt)" | head -50)
+          
+          echo "review_output<<EOF" >> $GITHUB_OUTPUT
+          echo "$REVIEW_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post review comment
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr_info.outputs.pr_number }}
+          REVIEW_OUTPUT: ${{ steps.copilot_review.outputs.review_output }}
+        run: |
+          # Create a comprehensive review comment
+          cat > review_comment.md << 'EOF'
+          ## 🤖 Copilot PR Review
+
+          **Automated review generated by GitHub Copilot CLI**
+
+          ### Review Summary
+          ${{ env.REVIEW_OUTPUT }}
+
+          ### Files Reviewed
+          ${{ steps.pr_diff.outputs.changed_files }}
+
+          ---
+          *This review was automatically generated using GitHub Copilot and the NGL DevOps Bot.*
+          EOF
+          
+          # Post the review comment
+          gh pr comment $PR_NUMBER --body-file review_comment.md
+          
+          echo "✅ Posted Copilot review comment to PR #$PR_NUMBER"
+
+      - name: Update check status
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_NUMBER: ${{ steps.pr_info.outputs.pr_number }}
+        run: |
+          # Create a check run for the review
+          gh api -X POST /repos/${{ github.repository }}/check-runs \
+            -f name="Copilot PR Review" \
+            -f head_sha="${{ github.event.pull_request.head.sha || github.sha }}" \
+            -f status="completed" \
+            -f conclusion="success" \
+            -f summary="Automated PR review completed using GitHub Copilot CLI" \
+            -f text="Review posted as comment on PR #$PR_NUMBER"
