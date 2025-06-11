@@ -1,0 +1,10 @@
+# Prompt for Project Field: Date Fields
+# Use this prompt to ensure only valid values are used for Start Date and End Date fields in GitHub Projects v2.
+
+name: date
+format: YYYY-MM-DD
+strict: true
+usage: |
+  Only use ISO 8601 date format (YYYY-MM-DD) for Start Date and End Date fields in Projects v2. If a value is not present, request an update to the prompt and the project configuration.
+notes: |
+  This prompt is designed to prevent API/CLI failures due to invalid date values. Use with gh copilot or models extensions for input validation.

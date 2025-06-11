@@ -1,0 +1,14 @@
+# Prompt for Project Field: Priority
+# Use this prompt to ensure only valid values are used for the Priority field in GitHub Projects v2.
+
+name: priority
+values:
+  - P0
+  - P1
+  - P2
+
+strict: true
+usage: |
+  Only use the above values for the Priority field in Projects v2. If a value is not present, request an update to the prompt and the project configuration.
+notes: |
+  This prompt is designed to prevent API/CLI failures due to invalid priority values. Use with gh copilot or models extensions for input validation.

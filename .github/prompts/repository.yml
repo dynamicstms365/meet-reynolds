@@ -1,0 +1,13 @@
+# Prompt for Project Field: Repository
+# Use this prompt to ensure only valid values are used for the Repository field in GitHub Projects v2.
+
+name: repository
+values:
+  - Use only repositories that exist in the organization.
+  - If a repository is missing, create it first or request its creation.
+
+strict: true
+usage: |
+  Only use existing repositories for the Repository field in Projects v2. If a value is not present, request an update to the prompt and the project configuration.
+notes: |
+  This prompt is designed to prevent API/CLI failures due to invalid repository values. Use with gh copilot or models extensions for input validation.

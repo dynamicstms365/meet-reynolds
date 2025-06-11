@@ -1,3 +1,49 @@
+## 🦾 Copilot Agent Operating Principles (NGL_DEVOPS Edition)
+
+### 1. Operate Like a Squad of Four
+- **Work in squads of four**: Tackle tasks in small, focused teams—each agent with a clear role, always feeding back learnings to the group.
+- **Continuous feedback**: After every major action, share what worked, what didn’t, and how to improve. Rapid iteration and learning are core.
+- **Mission-first mindset**: Prioritize what delivers the most value to the organization and the team, not just the individual task.
+
+### 2. GitHub Organization Awareness & Cross-Repo Operations
+- **Know the org**: Always be aware of all repositories in the organization. Before implementing features, check for related work or dependencies in sibling repos.
+- **Cross-repo orchestration**: When tasks require coordination across multiple repositories, generate GitHub Actions that use application tokens (available in org secrets/variables prefixed with `NGL_DEVOPS`) instead of the default `GITHUB_TOKEN`.
+- **Project v2 & Extensions**: Proactively leverage GitHub Project v2 and available extensions for tracking, automation, and collaboration. Integrate with these systems whenever possible.
+
+### 3. GitHub Action Authentication & Error Handling
+- **Handle 401/403 errors**: If a GitHub Action fails with a 401 or 403, run the terminal alias:
+  ```bash
+  ghsa
+  # (This runs: unset GITHUB_TOKEN && gh auth switch)
+  ```
+  This switches to an environment with elevated API access.
+- **Escalate smartly**: If authentication issues persist, escalate with context and suggest using org-level secrets or tokens.
+
+### 4. Self-Improvement & Feedback Loops
+- **Squad debriefs**: After every major task or deployment, generate a feedback summary—what worked, what didn’t, and what can be improved. Share learnings across squads.
+- **Pattern replication**: When a squad finds a successful pattern, document and propagate it across the ecosystem.
+- **Learning metrics**: Track and report on improvement over time, both for code and for team processes.
+
+### 5. Documentation & Knowledge Sharing
+- **Living documentation**: All code and automation must update documentation automatically. Use squad feedback to improve docs continuously.
+- **Context-aware help**: Generate help and onboarding content based on real usage and squad feedback.
+
+### 6. Security, Resilience, and Autonomy
+- **Least privilege**: Always use the minimum required permissions, especially for cross-repo and org-level operations.
+- **Graceful fallback**: If a squad or agent fails, ensure the rest of the system degrades gracefully and can recover or escalate as needed.
+
+---
+
+**Remember:**
+- Operate as a disciplined, feedback-driven squad.
+- Be aware of the whole org, not just your repo.
+- Automate cross-repo work with the right tokens.
+- Leverage Project v2 and extensions.
+- Debrief, learn, and improve—every time.
+- When working with GitHub, always check for cross-repo dependencies, use org-level secrets for tokens, and handle authentication errors with the `ghsa` alias.
+
+---
+
 # Copilot Agent Development Guide
 
 > **Source:** [About building Copilot agents](https://docs.github.com/en/enterprise-cloud@latest/copilot/building-copilot-extensions/building-a-copilot-agent-for-your-copilot-extension/about-copilot-agents)
@@ -186,3 +232,13 @@ public async Task Should_Execute_Pac_Commands_Safely()
 2. Configure [CLI Tools Integration](../cli-tools/README.md)
 3. Set up [RAG Knowledge Base](../implementation/rag-integration.md)
 4. Implement [Validation Framework](../implementation/validation-testing.md)
+
+## 🛠️ GitHub Projects v2 Prompt Usage
+
+All Copilot agents, CLI, and automation must:
+- Use the `.github/prompts/` YAML files for strict field value validation when interacting with GitHub Projects v2.
+- Only use values listed in the prompts for each field (Status, Priority, Size, Iteration, Estimate, Dates, etc.).
+- If a value is missing, update the prompt and project configuration before proceeding.
+- Leverage `gh copilot` CLI or compatible extensions to enforce prompt-based validation and avoid API/CLI failures.
+- For new projects or fields, always align with the canonical set of fields/options as defined in the prompts.
+- See `.github/prompts/README.md` for details and field-by-field guidance.
