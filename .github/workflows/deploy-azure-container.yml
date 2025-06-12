@@ -239,14 +239,38 @@ jobs:
             process.exit(1);
           }
           
-          // Fix private key formatting - replace literal \n with actual newlines
+          // Comprehensive private key formatting
+          // 1. Replace literal \n with actual newlines
           privateKey = privateKey.replace(/\\n/g, '\n');
           
-          // Ensure proper PEM format
-          if (!privateKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
-            console.error('Private key does not appear to be in PEM format');
+          // 2. Remove any extra whitespace and normalize
+          privateKey = privateKey.trim();
+          
+          // 3. Ensure proper PEM headers/footers if missing
+          if (!privateKey.startsWith('-----BEGIN')) {
+            console.error('Private key missing PEM header');
             process.exit(1);
           }
+          
+          // 4. Handle potential base64 encoding issues
+          if (!privateKey.includes('\n') && privateKey.length > 100) {
+            // Key might be base64 encoded without newlines, try to format it
+            const lines = privateKey.match(/.{1,64}/g);
+            if (lines) {
+              privateKey = lines.join('\n');
+            }
+          }
+          
+          // 5. Final validation
+          if (!privateKey.includes('-----BEGIN RSA PRIVATE KEY-----') &&
+              !privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+            console.error('Private key does not appear to be in valid PEM format');
+            console.error('Key preview:', privateKey.substring(0, 50) + '...');
+            process.exit(1);
+          }
+          
+          console.log('Private key format validation passed');
+          console.log('Key starts with:', privateKey.substring(0, 30) + '...');
           
           // JWT payload for GitHub App
           const now = Math.floor(Date.now() / 1000);
