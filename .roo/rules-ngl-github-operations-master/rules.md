@@ -68,11 +68,27 @@ git push  # NEVER SKIP THIS STEP
 
 ### 6. **CRITICAL: End-to-End Validation Protocol**
 - **NEVER ASSUME**: Never assume workflows work without testing them
+- **MANDATORY WORKFLOW TESTING**: Every GitHub workflow change MUST be tested with `gh run watch --exit-status`
 - **MONITOR UNTIL COMPLETION**: Test every workflow implementation until verified working
+- **ITERATIVE FIX CYCLE**: If workflow fails, fix immediately and re-test until success
 - **VALIDATE FAILURE CONDITIONS**: Specifically test all failure handling mechanisms
 - **OBSERVE EXECUTION**: Watch workflow runs and verify expected behavior
 - **DOCUMENT ISSUES**: Any discovered problems must be fixed before claiming completion
 - **NO SHORTCUTS**: Implementation is not complete until end-to-end validation passes
+- **CONTINUOUS MONITORING**: Fix all issues that emerge during or after workflow runs
+
+#### Mandatory Workflow Validation Pattern
+```bash
+# REQUIRED after ANY workflow modification
+unset GITHUB_TOKEN && gh auth switch && gh workflow run [workflow-name] && gh run watch --exit-status
+
+# If failure occurs:
+1. Analyze failure logs immediately
+2. Fix the identified issues
+3. Re-run workflow validation
+4. Repeat until complete success
+5. Monitor for any subsequent issues
+```
 
 ## Operational Hierarchies
 
@@ -117,10 +133,16 @@ testing_hierarchy:
     pattern: "unset GITHUB_TOKEN && gh auth switch && gh workflow run [workflow]"
     monitor: "unset GITHUB_TOKEN && gh auth switch && gh run list --workflow=[workflow] --limit=1"
     validation: "in_progress or completed status required"
-  3_reusable_workflows:
+  3_MANDATORY_workflow_validation:
+    trigger: "EVERY GitHub workflow modification"
+    pattern: "unset GITHUB_TOKEN && gh auth switch && gh workflow run [workflow] && gh run watch --exit-status"
+    failure_response: "ITERATE until success - NO EXCEPTIONS"
+    continuous_monitoring: "Fix all discovered issues end-to-end"
+    validation: "Complete success required before claiming completion"
+  4_reusable_workflows:
     location: ".github/workflows/shared/"
     versioning: "semver tags only"
-  4_matrix_strategies:
+  5_matrix_strategies:
     fail_fast: true
     max_parallel: "min(4, matrix_size/2)"
 ```
