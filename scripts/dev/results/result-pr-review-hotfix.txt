@@ -1,0 +1,5 @@
+
+✗ Error: No valid GitHub CLI OAuth token detected
+
+To get started with GitHub Copilot in the CLI, please run: gh auth login --web -h github.com to authenticate via web browser.
+

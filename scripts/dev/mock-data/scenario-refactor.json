@@ -1,0 +1,17 @@
+{
+  "pr_number": "125",
+  "pr_title": "refactor: migrate legacy API endpoints to new architecture",
+  "pr_author": "architect",
+  "head_branch": "refactor/api-migration",
+  "base_branch": "develop",
+  "pr_state": "OPEN",
+  "mergeable_state": "CONFLICTED",
+  "files_changed": 45,
+  "additions": 1250,
+  "deletions": 890,
+  "approvals_count": 1,
+  "review_requests_count": 3,
+  "checks_status": "FAILURE",
+  "commit_messages": "refactor: update API endpoints structure\nrefactor: migrate user endpoints\nrefactor: migrate data endpoints\ntest: update integration tests\ndocs: update API documentation",
+  "changed_files": "src/api/v2/users.ts\nsrc/api/v2/data.ts\nsrc/api/legacy/users.ts\nsrc/api/legacy/data.ts\ntests/api/integration.test.ts\ndocs/api-reference.md"
+}
