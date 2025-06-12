@@ -186,7 +186,7 @@ jobs:
                 --target-port 8080 \
                 --ingress external \
                 --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }} ngl-devops-webhook-secret=$WEBHOOK_SECRET" \
-                --set-env-vars "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }} ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://+:8080 NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
+                --env "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://+:8080" "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
                 --cpu 1.0 \
                 --memory 2.0Gi \
                 --min-replicas 1 \
@@ -203,7 +203,7 @@ jobs:
                 --target-port 8080 \
                 --ingress external \
                 --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                --set-env-vars "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }} ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://+:8080 NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+                --env "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://+:8080" "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
                 --cpu 1.0 \
                 --memory 2.0Gi \
                 --min-replicas 1 \
