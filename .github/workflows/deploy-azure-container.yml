@@ -199,6 +199,26 @@ jobs:
         run: |
           echo "🔧 Configuring container app resources and secrets..."
           
+          # Validate required secrets exist and are not empty
+          echo "🔍 Validating GitHub secrets..."
+          
+          PRIVATE_KEY_SECRET="${{ secrets.NGL_DEVOPS_BOT_PEM }}"
+          WEBHOOK_SECRET="${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"
+          
+          if [[ -z "$PRIVATE_KEY_SECRET" ]]; then
+            echo "❌ ERROR: GitHub secret 'NGL_DEVOPS_BOT_PEM' is not set or is empty"
+            echo "📝 Please set this secret in repository settings"
+            exit 1
+          fi
+          
+          if [[ -z "$WEBHOOK_SECRET" ]]; then
+            echo "❌ ERROR: GitHub secret 'NGL_DEVOPS_WEBHOOK_SECRET' is not set or is empty"
+            echo "📝 Please set this secret in repository settings"
+            exit 1
+          fi
+          
+          echo "✅ Required secrets validation passed"
+          
           # Function to perform configuration with retry logic
           configure_with_retry() {
             local max_attempts=5
@@ -223,11 +243,13 @@ jobs:
               fi
               
               echo "🔐 Setting container app secrets..."
+              echo "📝 Secret names being set: ngl-devops-private-key, ngl-devops-webhook-secret"
+              
               if az containerapp secret set \
                 --name ${{ env.CONTAINER_APP_NAME }} \
                 --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-                --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                          "ngl-devops-webhook-secret=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"; then
+                --secrets "ngl-devops-private-key=$PRIVATE_KEY_SECRET" \
+                          "ngl-devops-webhook-secret=$WEBHOOK_SECRET"; then
                 
                 echo "🔧 Updating container app configuration..."
                 if az containerapp update \
@@ -243,6 +265,21 @@ jobs:
                   echo "✅ Container app configuration completed successfully"
                   return 0
                 fi
+              else
+                echo "❌ Secret configuration failed"
+                echo "🔍 Checking Azure CLI error details..."
+                
+                # Show more detailed error information
+                az containerapp secret list \
+                  --name ${{ env.CONTAINER_APP_NAME }} \
+                  --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                  --output table 2>/dev/null || echo "Could not list existing secrets"
+                
+                echo "🔍 Current container app status:"
+                az containerapp show \
+                  --name ${{ env.CONTAINER_APP_NAME }} \
+                  --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                  --query "properties.provisioningState" -o tsv 2>/dev/null || echo "Could not get status"
               fi
               
               echo "⚠️  Configuration attempt $attempt failed"
@@ -256,6 +293,11 @@ jobs:
             done
             
             echo "❌ Configuration failed after $max_attempts attempts"
+            echo "📋 Final diagnostic information:"
+            echo "  - Container App: ${{ env.CONTAINER_APP_NAME }}"
+            echo "  - Resource Group: ${{ env.AZURE_RESOURCE_GROUP }}"
+            echo "  - Private Key Secret Length: ${#PRIVATE_KEY_SECRET}"
+            echo "  - Webhook Secret Length: ${#WEBHOOK_SECRET}"
             return 1
           }
           
@@ -267,6 +309,10 @@ jobs:
             if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.provisioningState" -o tsv | grep -q "Succeeded"; then
               echo "⚠️  Deployment appears successful despite configuration issues"
               echo "📝 This may indicate missing secrets or temporary Azure API issues"
+              echo "💡 Possible solutions:"
+              echo "   1. Check GitHub repository secrets are properly set"
+              echo "   2. Verify Azure Container Apps service is operational"
+              echo "   3. Manual secret configuration may be required"
             else
               echo "❌ Deployment verification failed"
               exit 1
