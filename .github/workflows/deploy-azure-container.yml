@@ -129,12 +129,35 @@ jobs:
 
       - name: Deploy to Azure Container Apps
         id: deploy
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
+          imageToDeploy: ${{ needs.build.outputs.image_url }}
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          location: ${{ env.AZURE_LOCATION }}
+          targetPort: 8080
+          ingress: external
+          environmentVariables: |
+            NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
+            ASPNETCORE_ENVIRONMENT=Production
+            ASPNETCORE_URLS=http://+:8080
+            NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key
+          secrets: |
+            ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}
+          cpu: 1.0
+          memory: 2.0Gi
+          minReplicas: 1
+          maxReplicas: 3
+
+      - name: Validate Image URL and Get FQDN
+        id: validate_deploy
         run: |
           # Validate the image URL from build output
           IMAGE_URL="${{ needs.build.outputs.image_url }}"
           echo "DEBUG: Received image URL: $IMAGE_URL"
           
-          # Validate image URL format before proceeding
+          # Validate image URL format
           if [[ -z "$IMAGE_URL" ]]; then
             echo "ERROR: No image URL received from build job"
             exit 1
@@ -143,77 +166,24 @@ jobs:
           if [[ ! "$IMAGE_URL" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:(latest|[a-z0-9._-]+)$ ]]; then
             echo "ERROR: Invalid image URL format received: $IMAGE_URL"
             echo "Expected format: ghcr.io/owner/repository/image-name:tag (lowercase)"
-            echo "This will cause Azure Container Apps deployment to fail"
             exit 1
           fi
           
           echo "SUCCESS: Image URL validation passed: $IMAGE_URL"
           
-          # Check if Container Apps environment exists
-          if ! az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
-            echo "Creating Container Apps environment..."
-            az containerapp env create \
-              --name ${{ env.CONTAINER_APP_ENV }} \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --location ${{ env.AZURE_LOCATION }}
-          fi
-          
-          # Check if Container App exists
-          if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
-            echo "Updating existing Container App..."
-            
-            # Update secrets first
-            az containerapp secret set \
-              --name ${{ env.CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --secrets \
-                "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}"
-            
-            # Update container app with new image (registry auth already configured)
-            az containerapp update \
-              --name ${{ env.CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --image "$IMAGE_URL" \
-              --replace-env-vars \
-                "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
-                "ASPNETCORE_ENVIRONMENT=Production" \
-                "ASPNETCORE_URLS=http://+:8080" \
-                "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
-              --cpu 1.0 \
-              --memory 2.0Gi \
-              --min-replicas 1 \
-              --max-replicas 3
-          else
-            echo "Creating new Container App..."
-            az containerapp create \
-              --name ${{ env.CONTAINER_APP_NAME }} \
-              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --environment ${{ env.CONTAINER_APP_ENV }} \
-              --image "$IMAGE_URL" \
-              --target-port 8080 \
-              --ingress external \
-              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-              --env-vars "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://+:8080" "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
-              --cpu 1.0 \
-              --memory 2.0Gi \
-              --min-replicas 1 \
-              --max-replicas 3
-          fi
-          
-          # Get container app information
+          # Get container app FQDN
           FQDN=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
-          
           echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
 
       - name: Validate Deployment
         run: |
           echo "🎉 Deployment successful!"
-          echo "📍 Container App FQDN: ${{ steps.deploy.outputs.fqdn }}"
-          echo "🔗 Webhook URL: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
-          echo "🔗 Health Check: https://${{ steps.deploy.outputs.fqdn }}/api/github/health"
-          echo "🔗 Test Endpoint: https://${{ steps.deploy.outputs.fqdn }}/api/github/test"
-          echo "🔗 MCP Capabilities: https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities"
-          echo "🔗 MCP SSE: https://${{ steps.deploy.outputs.fqdn }}/mcp/sse"
+          echo "📍 Container App FQDN: ${{ steps.validate_deploy.outputs.fqdn }}"
+          echo "🔗 Webhook URL: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/webhook"
+          echo "🔗 Health Check: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/health"
+          echo "🔗 Test Endpoint: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/test"
+          echo "🔗 MCP Capabilities: https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/capabilities"
+          echo "🔗 MCP SSE: https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/sse"
           
           # Wait for container to be ready and test health endpoint
           echo "⏳ Waiting for container app to be ready..."
@@ -221,7 +191,7 @@ jobs:
           
           # Test health endpoint
           for i in {1..10}; do
-            if curl -f "https://${{ steps.deploy.outputs.fqdn }}/api/github/health" 2>/dev/null; then
+            if curl -f "https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/health" 2>/dev/null; then
               echo "✅ Health check passed on attempt $i"
               break
             else
@@ -232,7 +202,7 @@ jobs:
           
           # Test MCP capabilities endpoint
           echo "🧪 Testing MCP capabilities endpoint..."
-          curl -f "https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities" || echo "⚠️ MCP capabilities endpoint not responding"
+          curl -f "https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/capabilities" || echo "⚠️ MCP capabilities endpoint not responding"
 
       - name: Generate GitHub App JWT Token
         id: generate_jwt
@@ -356,7 +326,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.generate_jwt.outputs.token }}
         run: |
-          WEBHOOK_URL="https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
+          WEBHOOK_URL="https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/webhook"
           echo "📝 Updating GitHub App webhook URL to: $WEBHOOK_URL"
           
           # Validate JWT token is available
@@ -435,11 +405,11 @@ jobs:
           echo "🚀 **Deployment Complete!**"
           echo ""
           echo "### 📍 Endpoints"
-          echo "- **App URL**: https://${{ steps.deploy.outputs.fqdn }}"
-          echo "- **Health Check**: https://${{ steps.deploy.outputs.fqdn }}/api/github/health"
-          echo "- **Webhook**: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
-          echo "- **MCP Capabilities**: https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities"
-          echo "- **MCP SSE**: https://${{ steps.deploy.outputs.fqdn }}/mcp/sse"
+          echo "- **App URL**: https://${{ steps.validate_deploy.outputs.fqdn }}"
+          echo "- **Health Check**: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/health"
+          echo "- **Webhook**: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/webhook"
+          echo "- **MCP Capabilities**: https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/capabilities"
+          echo "- **MCP SSE**: https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/sse"
           echo ""
           echo "### 🔧 Next Steps"
           echo "1. Test the health endpoint"
