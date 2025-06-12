@@ -236,11 +236,10 @@ jobs:
 
       - name: Generate GitHub App JWT Token
         id: generate_jwt
-        uses: tibdex/github-app-token@v2
+        uses: github-jwt/github-jwt@v1.2
         with:
-          app_id: ${{ vars.NGL_DEVOPS_APP_ID }}
-          private_key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
-          installation_retrieval_mode: none
+          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
+          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
 
       - name: Generate GitHub App Installation Token
         id: generate_installation_token
