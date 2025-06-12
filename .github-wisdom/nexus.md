@@ -90,6 +90,35 @@ gh [operation]  # Fails - authentication lost
 
 ## Security & Configuration Patterns
 
+### [2025-06-12 22:23] §octokit-migration-strategy: Enterprise-grade GitHub API client adoption
+↳ expansion: Strategic migration from custom webhook implementation to Octokit.NET + Octokit.Webhooks.NET
+⟷ synergy: Type-safe webhook processing + automatic signature validation + ASP.NET Core integration
+⚡ automation: WebhookEventProcessor inheritance → override event-specific methods → strong typing benefits
+
+**Migration Benefits**:
+- **Type Safety**: Compile-time validation vs runtime string parsing errors
+- **Security**: Built-in signature validation replaces manual implementation
+- **Maintainability**: Override pattern vs switch statement complexity
+- **Performance**: Optimized JSON deserialization and webhook routing
+- **Framework Integration**: Native ASP.NET Core support with DI container registration
+
+**Implementation Pattern**:
+```csharp
+// Replace custom controller with WebhookEventProcessor inheritance
+public sealed class MyWebhookEventProcessor : WebhookEventProcessor
+{
+    protected override Task ProcessPullRequestWebhookAsync(
+        WebhookHeaders headers, PullRequestEvent pullRequestEvent, PullRequestAction action)
+    {
+        // Type-safe event processing with automatic signature validation
+        return Task.CompletedTask;
+    }
+}
+
+// Registration: builder.Services.AddSingleton<WebhookEventProcessor, MyWebhookEventProcessor>();
+// Endpoint mapping: endpoints.MapGitHubWebhooks("/api/github/webhook", "secret");
+```
+
 ### [2025-06-12 22:06] §webhook-security-validation: Multi-layer webhook security with graceful degradation
 ↳ expansion: Webhook signature validation with fallback modes for missing configuration
 ⟷ synergy: GitHub webhook secrets + Azure secret management + application security validation
@@ -104,8 +133,9 @@ gh [operation]  # Fails - authentication lost
 
 ## Knowledge Compression Dictionary
 
+- **§octokit-migration-strategy**: Enterprise-grade GitHub API client adoption with type-safe webhook processing
 - **§webhook-deployment**: Complete webhook endpoint deployment and validation
-- **§azure-secret-validation**: Azure Container Apps secret management patterns  
+- **§azure-secret-validation**: Azure Container Apps secret management patterns
 - **§container-log-debugging**: Live container log analysis methodology
 - **§webhook-event-validation**: GitHub webhook event type validation patterns
 - **§deployment-pipeline-debugging**: End-to-end deployment validation methodology
