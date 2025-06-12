@@ -44,8 +44,36 @@ jobs:
         id: build_push
         env:
           REGISTRY: ghcr.io
-          IMAGE_NAME: ${{ github.repository }}/copilot-agent
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: copilot-powerplatform
+          IMAGE_NAME: copilot-agent
         run: |
+          # Debug: Print environment variables and repository info
+          echo "DEBUG: REGISTRY=$REGISTRY"
+          echo "DEBUG: REPO_OWNER=$REPO_OWNER"
+          echo "DEBUG: REPO_NAME=$REPO_NAME"
+          echo "DEBUG: IMAGE_NAME=$IMAGE_NAME"
+          echo "DEBUG: github.repository=${{ github.repository }}"
+          echo "DEBUG: github.repository_owner=${{ github.repository_owner }}"
+          echo "DEBUG: github.actor=${{ github.actor }}"
+          echo "DEBUG: github.sha=${{ github.sha }}"
+          
+          # Construct the full image name using individual components
+          FULL_IMAGE_NAME="$REPO_OWNER/$REPO_NAME/$IMAGE_NAME"
+          echo "DEBUG: FULL_IMAGE_NAME=$FULL_IMAGE_NAME"
+          
+          # Validate that the components are not empty and image name is well-formed
+          if [[ -z "$REPO_OWNER" || -z "$REPO_NAME" || -z "$IMAGE_NAME" ]]; then
+            echo "ERROR: One or more image name components are empty"
+            echo "REPO_OWNER='$REPO_OWNER', REPO_NAME='$REPO_NAME', IMAGE_NAME='$IMAGE_NAME'"
+            exit 1
+          fi
+          
+          if [[ ! "$FULL_IMAGE_NAME" =~ ^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$ ]]; then
+            echo "ERROR: FULL_IMAGE_NAME appears to be invalid: $FULL_IMAGE_NAME"
+            echo "Expected format: owner/repository/image-name"
+            exit 1
+          fi
           # Create a simple Dockerfile that uses pre-built output
           cat > Dockerfile.prebuilt << 'EOF'
           FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
@@ -75,17 +103,29 @@ jobs:
           EOF
           
           # Build the Docker image using pre-built output
-          docker build -f Dockerfile.prebuilt -t $REGISTRY/$IMAGE_NAME:latest .
-          docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          docker build -f Dockerfile.prebuilt -t $REGISTRY/$FULL_IMAGE_NAME:latest .
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:${{ github.sha }}
           
           # Login to GitHub Container Registry using native token
           echo ${{ secrets.GITHUB_TOKEN }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
           
           # Push to GitHub Container Registry
-          docker push $REGISTRY/$IMAGE_NAME:latest
-          docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          docker push $REGISTRY/$FULL_IMAGE_NAME:latest
+          docker push $REGISTRY/$FULL_IMAGE_NAME:${{ github.sha }}
           
-          echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT
+          # Construct and validate the final image URL
+          FINAL_IMAGE_URL="$REGISTRY/$FULL_IMAGE_NAME:latest"
+          echo "DEBUG: Final image URL: $FINAL_IMAGE_URL"
+          
+          # Validate the image URL format
+          if [[ ! "$FINAL_IMAGE_URL" =~ ^ghcr\.io/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+:(latest|[a-zA-Z0-9._-]+)$ ]]; then
+            echo "ERROR: Generated image URL is invalid: $FINAL_IMAGE_URL"
+            echo "Expected format: ghcr.io/owner/repository/image-name:tag"
+            exit 1
+          fi
+          
+          echo "image_url=$FINAL_IMAGE_URL" >> $GITHUB_OUTPUT
+          echo "SUCCESS: Image URL validated and set: $FINAL_IMAGE_URL"
 
   deploy:
     runs-on: ubuntu-latest
@@ -117,6 +157,24 @@ jobs:
       - name: Deploy to Azure Container Apps
         id: deploy
         run: |
+          # Validate the image URL from build output
+          IMAGE_URL="${{ needs.build.outputs.image_url }}"
+          echo "DEBUG: Received image URL: $IMAGE_URL"
+          
+          # Validate image URL format before proceeding
+          if [[ -z "$IMAGE_URL" ]]; then
+            echo "ERROR: No image URL received from build job"
+            exit 1
+          fi
+          
+          if [[ ! "$IMAGE_URL" =~ ^ghcr\.io/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+:(latest|[a-zA-Z0-9._-]+)$ ]]; then
+            echo "ERROR: Invalid image URL format received: $IMAGE_URL"
+            echo "Expected format: ghcr.io/owner/repository/image-name:tag"
+            echo "This will cause Azure Container Apps deployment to fail"
+            exit 1
+          fi
+          
+          echo "SUCCESS: Image URL validation passed: $IMAGE_URL"
           # Check if Container Apps environment exists
           if ! az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Creating Container Apps environment..."
@@ -142,7 +200,7 @@ jobs:
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --image ${{ needs.build.outputs.image_url }} \
+              --image "$IMAGE_URL" \
               --registry-server ghcr.io \
               --registry-username ${{ github.actor }} \
               --registry-password ${{ secrets.GITHUB_TOKEN }} \
@@ -161,7 +219,7 @@ jobs:
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --environment ${{ env.CONTAINER_APP_ENV }} \
-              --image ${{ needs.build.outputs.image_url }} \
+              --image "$IMAGE_URL" \
               --registry-server ghcr.io \
               --registry-username ${{ github.actor }} \
               --registry-password ${{ secrets.GITHUB_TOKEN }} \
