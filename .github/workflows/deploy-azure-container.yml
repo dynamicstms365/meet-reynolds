@@ -236,7 +236,7 @@ jobs:
 
       - name: Generate GitHub App JWT Token
         id: generate_jwt
-        uses: github-jwt/github-jwt@v1.2
+        uses: gha-utils/jwt-generator@v1
         with:
           app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
           private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
