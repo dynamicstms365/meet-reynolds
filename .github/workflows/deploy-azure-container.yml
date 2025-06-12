@@ -85,11 +85,8 @@ jobs:
           docker push $REGISTRY/$IMAGE_NAME:latest
           docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
           
-          # Make the package public so Azure can pull it
-          GH_TOKEN=${{ secrets.GITHUB_TOKEN }} gh api \
-            --method PATCH \
-            /user/packages/container/copilot-powerplatform%2Fcopilot-agent \
-            -f visibility=public || echo "⚠️ Could not make package public - may need manual intervention"
+          # Set up registry credentials for Azure Container Apps
+          echo "Setting up registry credentials for Azure Container Apps..."
           
           echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT
 
@@ -99,6 +96,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: read
     
     steps:
       - name: Checkout code
@@ -135,18 +133,23 @@ jobs:
           if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Updating existing Container App..."
             
-            # Update secrets first
+            # Update secrets first (including registry credentials)
             az containerapp secret set \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --secrets \
-                "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}"
+                "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+                "ghcr-username=${{ github.actor }}" \
+                "ghcr-password=${{ secrets.GITHUB_TOKEN }}"
             
-            # Update without webhook secret (no GitHub token needed)
+            # Update container app with registry authentication
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --image ${{ needs.build.outputs.image_url }} \
+              --registry-server ghcr.io \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
@@ -163,6 +166,9 @@ jobs:
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --environment ${{ env.CONTAINER_APP_ENV }} \
               --image ${{ needs.build.outputs.image_url }} \
+              --registry-server ghcr.io \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
               --target-port 8080 \
               --ingress external \
               --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
