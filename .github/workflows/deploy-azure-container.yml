@@ -321,8 +321,10 @@ jobs:
 
       - name: Alternative Token Generation (Fallback)
         id: fallback_token
-        if: steps.generate_token.outputs.token == ''
+        if: steps.generate_token.outputs.token == '' || !startsWith(steps.generate_token.outputs.token, 'eyJ')
         run: |
+          echo "🔄 Attempting alternative token generation method"
+          echo "Reason: ${{ steps.generate_token.outputs.token == '' && 'No token generated' || 'Installation token detected, need JWT for app operations' }}"
           echo "🔄 Attempting alternative token generation method"
           
           # Try manual JWT generation using openssl and base64
@@ -364,16 +366,19 @@ jobs:
           WEBHOOK_URL="https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
           echo "📝 Updating GitHub App webhook URL to: $WEBHOOK_URL"
           
-          # Determine which token to use (primary or fallback)
+          # Determine which token to use (prefer JWT for app operations)
           PRIMARY_TOKEN="${{ steps.generate_token.outputs.token }}"
           FALLBACK_TOKEN="${{ steps.fallback_token.outputs.fallback_token }}"
           
-          if [[ -n "$PRIMARY_TOKEN" ]]; then
-            echo "🎫 Using primary token from github-app-token action"
-            GITHUB_TOKEN="$PRIMARY_TOKEN"
-          elif [[ -n "$FALLBACK_TOKEN" ]]; then
-            echo "🎫 Using fallback manually-generated token"
+          # For app-level operations like webhook config, prefer JWT tokens
+          if [[ -n "$FALLBACK_TOKEN" ]]; then
+            echo "🎫 Using fallback JWT token for app-level operations"
+            echo "✅ JWT token is required for /app/hook/config endpoint"
             GITHUB_TOKEN="$FALLBACK_TOKEN"
+          elif [[ -n "$PRIMARY_TOKEN" ]]; then
+            echo "🎫 Using primary token from github-app-token action"
+            echo "⚠️  Note: Installation tokens may not work for app-level operations"
+            GITHUB_TOKEN="$PRIMARY_TOKEN"
           else
             echo "❌ ERROR: No GitHub token available (neither primary nor fallback)"
             echo "Token generation completely failed - check app configuration"
