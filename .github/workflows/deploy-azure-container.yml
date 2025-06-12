@@ -152,13 +152,15 @@ jobs:
           az containerapp secret set \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}"
+            --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+                      "ngl-devops-webhook-secret=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"
           
-          # Update container app with resource constraints and secret reference
+          # Update container app with resource constraints and secret references
           az containerapp update \
             --name ${{ env.CONTAINER_APP_NAME }} \
             --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
             --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+                          "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
             --cpu 1.0 \
             --memory 2.0Gi \
             --min-replicas 1 \
