@@ -147,6 +147,122 @@ testing_hierarchy:
     max_parallel: "min(4, matrix_size/2)"
 ```
 
+### **CRITICAL: Reverse Stack Workflow Debugging Protocol**
+```yaml
+reverse_stack_methodology:
+  principle: "Start testing from workflow leaves, work up to root"
+  rationale: "Avoid repeating long-running stable steps to test problematic components"
+  
+  workflow_decomposition:
+    1_identify_problem_zones:
+      - Map workflow execution times per step/job
+      - Identify stable vs unstable components
+      - Calculate cumulative wait time for end-to-end testing
+    
+    2_extract_reusable_components:
+      location: ".github/workflows/components/"
+      naming: "[component-name]-reusable.yml"
+      structure: |
+        # Extract problematic steps into standalone reusable workflows
+        # Enable independent testing without dependencies
+      
+    3_testing_hierarchy:
+      level_0_leaf_validation:
+        target: "Individual problematic components"
+        method: "Standalone reusable workflow execution"
+        benefit: "2min test cycle vs 10min full workflow"
+        command: |
+          unset GITHUB_TOKEN && gh auth switch && \
+          gh workflow run component-test.yml && \
+          gh run watch --exit-status
+      
+      level_1_branch_integration:
+        target: "Combinations of working components"
+        method: "Reusable workflow composition"
+        validation: "Binary tree approach - test pairs first"
+      
+      level_2_full_integration:
+        target: "Complete workflow execution"
+        method: "Only after all components validated independently"
+        timing: "Final validation, not iterative debugging"
+
+  reusable_workflow_patterns:
+    component_extraction: |
+      # .github/workflows/components/deploy-validation.yml
+      name: Deploy Validation Component
+      on:
+        workflow_call:
+          inputs:
+            environment:
+              required: true
+              type: string
+          outputs:
+            validation_result:
+              description: "Deployment validation status"
+              value: ${{ jobs.validate.outputs.result }}
+      
+      jobs:
+        validate: # Extracted problematic component
+          runs-on: ubuntu-latest
+          steps: [isolated test steps]
+    
+    component_composition: |
+      # Main workflow references components
+      jobs:
+        validate_deployment:
+          uses: ./.github/workflows/components/deploy-validation.yml
+          with:
+            environment: production
+
+  debugging_strategy:
+    problem_isolation:
+      - "Never test full workflow during component debugging"
+      - "Extract failing step into minimal reusable workflow"
+      - "Test component in isolation until stable"
+      - "Integrate back into main workflow only after validation"
+    
+    time_optimization:
+      traditional_approach: "10min full workflow × 5 iterations = 50min debugging"
+      reverse_stack_approach: "2min component × 5 iterations + 10min integration = 20min total"
+      efficiency_gain: "60% reduction in debugging time"
+    
+    failure_localization:
+      - "Pinpoint exact failing component without infrastructure noise"
+      - "Eliminate dependency chain failures masking root cause"
+      - "Enable parallel debugging of multiple components"
+
+  implementation_checklist:
+    extract_components:
+      - [ ] Identify workflow steps with >2min execution time
+      - [ ] Map stable vs problematic components
+      - [ ] Create reusable workflows for problem areas
+      - [ ] Add workflow_call triggers with proper inputs/outputs
+    
+    test_components:
+      - [ ] Execute extracted components independently
+      - [ ] Validate all failure scenarios in isolation
+      - [ ] Confirm component outputs meet main workflow expectations
+      - [ ] Test component with various input combinations
+    
+    integrate_validated:
+      - [ ] Replace main workflow steps with reusable component calls
+      - [ ] Execute full workflow for final integration validation
+      - [ ] Monitor for integration-specific failures
+      - [ ] Document component dependencies and requirements
+
+  automation_triggers:
+    component_failure_detection: |
+      # Auto-extract failing workflow components
+      if workflow_failure_rate > 30% and execution_time > 5min:
+        suggest_component_extraction()
+        create_reusable_workflow_template()
+    
+    reverse_stack_recommendation: |
+      # Proactively suggest when debugging will benefit from decomposition
+      if estimated_debug_cycles > 3 and workflow_duration > 5min:
+        recommend_reverse_stack_approach()
+```
+
 #### Local Tool Discovery Protocol
 ```bash
 # Priority order for tool resolution
