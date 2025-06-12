@@ -1,0 +1,17 @@
+{
+  "pr_number": "123",
+  "pr_title": "feat: implement user authentication with OAuth2",
+  "pr_author": "developer1",
+  "head_branch": "feature/oauth2-auth",
+  "base_branch": "main",
+  "pr_state": "OPEN",
+  "mergeable_state": "MERGEABLE",
+  "files_changed": 8,
+  "additions": 245,
+  "deletions": 12,
+  "approvals_count": 0,
+  "review_requests_count": 2,
+  "checks_status": "PENDING",
+  "commit_messages": "feat: add OAuth2 authentication\nfeat: implement user session management\ntest: add authentication tests",
+  "changed_files": "src/auth/oauth.ts\nsrc/auth/session.ts\nsrc/middleware/auth.ts\ntests/auth.test.ts\npackage.json\nREADME.md\ndocs/authentication.md\n.env.example"
+}

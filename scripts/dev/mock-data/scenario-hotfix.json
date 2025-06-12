@@ -1,0 +1,17 @@
+{
+  "pr_number": "124",
+  "pr_title": "fix: resolve memory leak in data processing pipeline",
+  "pr_author": "senior-dev",
+  "head_branch": "hotfix/memory-leak",
+  "base_branch": "main",
+  "pr_state": "OPEN",
+  "mergeable_state": "MERGEABLE",
+  "files_changed": 3,
+  "additions": 15,
+  "deletions": 8,
+  "approvals_count": 2,
+  "review_requests_count": 0,
+  "checks_status": "SUCCESS",
+  "commit_messages": "fix: resolve memory leak in data processing\ntest: add memory usage test",
+  "changed_files": "src/processing/pipeline.ts\ntests/pipeline.test.ts\nsrc/utils/memory.ts"
+}
