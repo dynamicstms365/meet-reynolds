@@ -1,6 +1,8 @@
 using CopilotAgent.Agents;
 using CopilotAgent.Services;
 using CopilotAgent.Skills;
+using Octokit.Webhooks;
+using Octokit.Webhooks.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +45,9 @@ builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearc
 // Register GitHub workflow orchestrator
 builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
 
+// Register Octokit webhook processor (replaces custom webhook controller)
+builder.Services.AddSingleton<WebhookEventProcessor, OctokitWebhookEventProcessor>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -60,5 +65,12 @@ if (!app.Environment.IsProduction())
 
 app.UseAuthorization();
 app.MapControllers();
+
+// Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore
+// This replaces the custom webhook controller endpoint
+var webhookSecret = builder.Configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
+                   Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
+
+app.MapGitHubWebhooks("/api/github/webhook", webhookSecret);
 
 app.Run();

@@ -41,89 +41,9 @@ public class GitHubController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpPost("webhook")]
-    public async Task<IActionResult> HandleWebhook()
-    {
-        try
-        {
-            // Read raw body for signature validation
-            var body = await new StreamReader(Request.Body).ReadToEndAsync();
-            if (string.IsNullOrWhiteSpace(body))
-            {
-                _logger.LogError("Webhook request body is empty");
-                return BadRequest(new { error = "Empty request body" });
-            }
-            
-            // Get GitHub signature from headers
-            var signature = Request.Headers["X-Hub-Signature-256"].FirstOrDefault();
-            var gitHubEvent = Request.Headers["X-GitHub-Event"].FirstOrDefault();
-            _logger.LogInformation("Received GitHub webhook: {Event}, Body: {Body}", gitHubEvent, body);
-
-            // Validate webhook signature
-            var webhookSecret = _configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
-                              System.Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
-            
-            if (!string.IsNullOrEmpty(webhookSecret))
-            {
-                if (string.IsNullOrEmpty(signature))
-                {
-                    _logger.LogWarning("Missing X-Hub-Signature-256 header");
-                    return Unauthorized("Missing signature");
-                }
-
-                if (!_webhookValidator.ValidateSignature(body, signature, webhookSecret))
-                {
-                    _logger.LogWarning("Invalid webhook signature");
-                    await _auditService.LogEventAsync("GitHub_Webhook_Security",
-                        action: "SIGNATURE_VALIDATION_FAILED",
-                        result: "REJECTED");
-                    return Unauthorized("Invalid signature");
-                }
-            }
-            else
-            {
-                _logger.LogWarning("Webhook secret not configured - signature validation skipped");
-            }
-
-
-            // Parse payload
-            var payload = System.Text.Json.JsonSerializer.Deserialize<GitHubWebhookPayload>(body);
-            
-            // Ping events and some other events don't require installation context
-            if (gitHubEvent != "ping" && payload?.Installation?.Id == null)
-            {
-                _logger.LogWarning("Webhook payload missing installation ID for event: {Event}", gitHubEvent);
-                if (payload != null)
-                {
-                    await _auditService.LogWebhookEventAsync(payload, "REJECTED_MISSING_INSTALLATION");
-                }
-                return BadRequest("Invalid webhook payload: missing installation");
-            }
-
-            if (payload == null)
-            {
-                _logger.LogWarning("Failed to deserialize webhook payload");
-                return BadRequest("Invalid webhook payload format");
-            }
-
-            // Process webhook event through workflow orchestrator
-            var workflowResult = await _workflowOrchestrator.ProcessWebhookEventAsync(payload);
-            
-            await _auditService.LogWebhookEventAsync(payload, workflowResult.Success ? "SUCCESS" : "FAILED");
-            
-            return Ok(new {
-                success = workflowResult.Success,
-                workflowType = workflowResult.WorkflowType,
-                actionsCount = workflowResult.Actions.Count,
-                error = workflowResult.Error
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing GitHub webhook");
-            return StatusCode(500, new { error = "Internal server error processing webhook" });
-        }
-    }
+    // Webhook endpoint has been migrated to Octokit.Webhooks.AspNetCore
+    // See OctokitWebhookEventProcessor for the new implementation
+    // Endpoint is now mapped at /api/github/webhook using app.MapGitHubWebhooks()
 
     [HttpGet("test")]
     public async Task<ActionResult<GitHubConnectivityResult>> TestConnectivity()
