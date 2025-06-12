@@ -21,6 +21,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     outputs:
       image_url: ${{ steps.build_push.outputs.image_url }}
     
@@ -58,8 +59,8 @@ jobs:
           echo "DEBUG: github.actor=${{ github.actor }}"
           echo "DEBUG: github.sha=${{ github.sha }}"
           
-          # Construct the full image name using individual components
-          FULL_IMAGE_NAME="$REPO_OWNER/$REPO_NAME/$IMAGE_NAME"
+          # Construct the full image name using individual components and convert to lowercase
+          FULL_IMAGE_NAME=$(echo "$REPO_OWNER/$REPO_NAME/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
           echo "DEBUG: FULL_IMAGE_NAME=$FULL_IMAGE_NAME"
           
           # Validate that the components are not empty and image name is well-formed
@@ -69,9 +70,9 @@ jobs:
             exit 1
           fi
           
-          if [[ ! "$FULL_IMAGE_NAME" =~ ^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$ ]]; then
+          if [[ ! "$FULL_IMAGE_NAME" =~ ^[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+$ ]]; then
             echo "ERROR: FULL_IMAGE_NAME appears to be invalid: $FULL_IMAGE_NAME"
-            echo "Expected format: owner/repository/image-name"
+            echo "Expected format: owner/repository/image-name (lowercase)"
             exit 1
           fi
           # Create a simple Dockerfile that uses pre-built output
@@ -106,8 +107,8 @@ jobs:
           docker build -f Dockerfile.prebuilt -t $REGISTRY/$FULL_IMAGE_NAME:latest .
           docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:${{ github.sha }}
           
-          # Login to GitHub Container Registry using existing ghcrio-cege7480 credentials
-          echo ${{ secrets.GHCRIO_CEGE7480 }} | docker login $REGISTRY -u cege7480 --password-stdin
+          # Login to GitHub Container Registry using GitHub token
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
           
           # Push to GitHub Container Registry
           docker push $REGISTRY/$FULL_IMAGE_NAME:latest
@@ -118,9 +119,9 @@ jobs:
           echo "DEBUG: Final image URL: $FINAL_IMAGE_URL"
           
           # Validate the image URL format
-          if [[ ! "$FINAL_IMAGE_URL" =~ ^ghcr\.io/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+:(latest|[a-zA-Z0-9._-]+)$ ]]; then
+          if [[ ! "$FINAL_IMAGE_URL" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:(latest|[a-z0-9._-]+)$ ]]; then
             echo "ERROR: Generated image URL is invalid: $FINAL_IMAGE_URL"
-            echo "Expected format: ghcr.io/owner/repository/image-name:tag"
+            echo "Expected format: ghcr.io/owner/repository/image-name:tag (lowercase)"
             exit 1
           fi
           
@@ -167,18 +168,18 @@ jobs:
             exit 1
           fi
           
-          if [[ ! "$IMAGE_URL" =~ ^ghcr\.io/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+:(latest|[a-zA-Z0-9._-]+)$ ]]; then
+          if [[ ! "$IMAGE_URL" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:(latest|[a-z0-9._-]+)$ ]]; then
             echo "ERROR: Invalid image URL format received: $IMAGE_URL"
-            echo "Expected format: ghcr.io/owner/repository/image-name:tag"
+            echo "Expected format: ghcr.io/owner/repository/image-name:tag (lowercase)"
             echo "This will cause Azure Container Apps deployment to fail"
             exit 1
           fi
           
           echo "SUCCESS: Image URL validation passed: $IMAGE_URL"
           
-          # Test registry authentication before deployment using existing ghcrio-cege7480 credentials
+          # Test registry authentication before deployment using GitHub token
           echo "Testing registry authentication..."
-          echo ${{ secrets.GHCRIO_CEGE7480 }} | docker login ghcr.io -u cege7480 --password-stdin
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
           if ! docker pull "$IMAGE_URL"; then
             echo "ERROR: Failed to pull image from registry. Check authentication and image availability."
             exit 1
@@ -198,22 +199,22 @@ jobs:
           if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Updating existing Container App..."
             
-            # Update secrets first (using existing ghcrio-cege7480 credentials)
+            # Update secrets first
             az containerapp secret set \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --secrets \
                 "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                "ghcrio-cege7480=${{ secrets.GHCRIO_CEGE7480 }}"
+                "github-token=${{ secrets.GITHUB_TOKEN }}"
             
-            # Update container app with ghcr.io authentication using existing ghcrio-cege7480 secret
+            # Update container app with ghcr.io authentication
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --image "$IMAGE_URL" \
               --registry-server ghcr.io \
-              --registry-username cege7480 \
-              --registry-password-secret ghcrio-cege7480 \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
@@ -231,11 +232,11 @@ jobs:
               --environment ${{ env.CONTAINER_APP_ENV }} \
               --image "$IMAGE_URL" \
               --registry-server ghcr.io \
-              --registry-username cege7480 \
-              --registry-password ${{ secrets.GHCRIO_CEGE7480 }} \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
               --target-port 8080 \
               --ingress external \
-              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" "ghcrio-cege7480=${{ secrets.GHCRIO_CEGE7480 }}" \
+              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" "github-token=${{ secrets.GITHUB_TOKEN }}" \
               --env-vars "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://+:8080" "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
               --cpu 1.0 \
               --memory 2.0Gi \
