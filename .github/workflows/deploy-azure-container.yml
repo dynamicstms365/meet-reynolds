@@ -102,7 +102,7 @@ jobs:
           docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
           
           # Make the package public so Azure can pull it
-          gh api \
+          GH_TOKEN=${{ secrets.GITHUB_TOKEN }} gh api \
             --method PATCH \
             /user/packages/container/copilot-powerplatform%2Fcopilot-agent \
             -f visibility=public || echo "⚠️ Could not make package public - may need manual intervention"
@@ -145,6 +145,9 @@ jobs:
                 --name ${{ env.CONTAINER_APP_NAME }} \
                 --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
                 --image ${{ steps.build_push.outputs.image_url }} \
+                --registry-server ghcr.io \
+                --registry-username ${{ github.actor }} \
+                --registry-password ${{ secrets.GITHUB_TOKEN }} \
                 --replace-env-vars \
                   "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                   "ASPNETCORE_ENVIRONMENT=Production" \
@@ -167,6 +170,9 @@ jobs:
                 --name ${{ env.CONTAINER_APP_NAME }} \
                 --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
                 --image ${{ steps.build_push.outputs.image_url }} \
+                --registry-server ghcr.io \
+                --registry-username ${{ github.actor }} \
+                --registry-password ${{ secrets.GITHUB_TOKEN }} \
                 --replace-env-vars \
                   "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                   "ASPNETCORE_ENVIRONMENT=Production" \
