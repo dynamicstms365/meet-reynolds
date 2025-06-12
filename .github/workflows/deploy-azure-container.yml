@@ -234,180 +234,107 @@ jobs:
           echo "🧪 Testing MCP capabilities endpoint..."
           curl -f "https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities" || echo "⚠️ MCP capabilities endpoint not responding"
 
-      - name: Generate GitHub App Token
-        id: generate_token
-        uses: actions/create-github-app-token@v2
+      - name: Generate GitHub App JWT Token
+        id: generate_jwt
+        uses: tibdex/github-app-token@v2
         with:
-          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
-          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
+          app_id: ${{ vars.NGL_DEVOPS_APP_ID }}
+          private_key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
+          installation_retrieval_mode: none
 
-      - name: Comprehensive Token Diagnostics
+      - name: Generate GitHub App Installation Token
+        id: generate_installation_token
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ vars.NGL_DEVOPS_APP_ID }}
+          private_key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
+
+      - name: Token Validation and Diagnostics
         run: |
-          echo "🔍 Comprehensive GitHub App Token Diagnostics"
-          echo "================================================"
+          echo "🔍 GitHub App Token Validation"
+          echo "=============================="
           
           # App ID validation
-          echo "📋 App ID Information:"
-          echo "  App ID: ${{ vars.NGL_DEVOPS_APP_ID }}"
-          echo "  App ID length: ${#APP_ID}"
-          echo "  App ID is numeric: $([[ "$APP_ID" =~ ^[0-9]+$ ]] && echo 'YES' || echo 'NO')"
+          echo "📋 App ID: ${{ vars.NGL_DEVOPS_APP_ID }}"
           
-          # Private key validation (without exposing content)
+          # JWT Token validation
+          JWT_TOKEN="${{ steps.generate_jwt.outputs.token }}"
           echo ""
-          echo "🔑 Private Key Validation:"
-          PEM_KEY="${{ secrets.NGL_DEVOPS_BOT_PEM }}"
-          echo "  Key present: $([[ -n "$PEM_KEY" ]] && echo 'YES' || echo 'NO')"
-          echo "  Key length: ${#PEM_KEY}"
-          
-          # Check for common PEM format issues
-          if [[ "$PEM_KEY" == *"BEGIN PRIVATE KEY"* ]]; then
-            echo "  ✅ Has BEGIN PRIVATE KEY header"
-          elif [[ "$PEM_KEY" == *"BEGIN RSA PRIVATE KEY"* ]]; then
-            echo "  ✅ Has BEGIN RSA PRIVATE KEY header"
-          else
-            echo "  ❌ Missing proper BEGIN header"
+          echo "🎫 JWT Token (for app-level operations):"
+          echo "  Generated: $([[ -n "$JWT_TOKEN" ]] && echo 'YES' || echo 'NO')"
+          echo "  Length: ${#JWT_TOKEN}"
+          if [[ -n "$JWT_TOKEN" ]]; then
+            echo "  Format: $([[ "$JWT_TOKEN" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]] && echo 'JWT ✅' || echo 'Other ❌')"
+            echo "  Prefix: ${JWT_TOKEN:0:20}..."
           fi
           
-          if [[ "$PEM_KEY" == *"END PRIVATE KEY"* ]]; then
-            echo "  ✅ Has END PRIVATE KEY footer"
-          elif [[ "$PEM_KEY" == *"END RSA PRIVATE KEY"* ]]; then
-            echo "  ✅ Has END RSA PRIVATE KEY footer"
-          else
-            echo "  ❌ Missing proper END footer"
-          fi
-          
-          # Check for common formatting issues
-          if [[ "$PEM_KEY" == *$'\n'* ]]; then
-            echo "  ✅ Contains newlines"
-          else
-            echo "  ⚠️  No newlines found (may need proper formatting)"
-          fi
-          
-          # Token generation results
+          # Installation Token validation
+          INSTALL_TOKEN="${{ steps.generate_installation_token.outputs.token }}"
           echo ""
-          echo "🎫 Token Generation Results:"
-          TOKEN="${{ steps.generate_token.outputs.token }}"
-          echo "  Token generated: $([[ -n "$TOKEN" ]] && echo 'YES' || echo 'NO')"
-          echo "  Token length: ${#TOKEN}"
-          
-          if [[ -n "$TOKEN" ]]; then
-            echo "  Token prefix: ${TOKEN:0:20}..."
-            echo "  Token format: $([[ "$TOKEN" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]] && echo 'JWT' || echo 'Other')"
-          else
-            echo "  ❌ No token generated - check previous step for errors"
+          echo "🔐 Installation Token (for repository operations):"
+          echo "  Generated: $([[ -n "$INSTALL_TOKEN" ]] && echo 'YES' || echo 'NO')"
+          echo "  Length: ${#INSTALL_TOKEN}"
+          if [[ -n "$INSTALL_TOKEN" ]]; then
+            echo "  Format: $([[ "$INSTALL_TOKEN" =~ ^ghs_ ]] && echo 'GitHub App Installation ✅' || echo 'Other ❌')"
+            echo "  Prefix: ${INSTALL_TOKEN:0:20}..."
           fi
           
-          # GitHub App validation attempt
+          # Test JWT token with app endpoint
           echo ""
-          echo "🧪 GitHub API Connectivity Test:"
-          if [[ -n "$TOKEN" ]]; then
-            echo "  Testing GitHub API access..."
-            export GITHUB_TOKEN="$TOKEN"
-            
-            # Try to get app info
+          echo "🧪 JWT Token API Test:"
+          if [[ -n "$JWT_TOKEN" ]]; then
+            export GITHUB_TOKEN="$JWT_TOKEN"
             if APP_INFO=$(gh api /app 2>&1); then
-              echo "  ✅ Successfully accessed GitHub App info"
+              echo "  ✅ JWT token works for app-level operations"
               echo "  App name: $(echo "$APP_INFO" | jq -r '.name // "N/A"')"
-              echo "  App owner: $(echo "$APP_INFO" | jq -r '.owner.login // "N/A"')"
             else
-              echo "  ❌ Failed to access GitHub App info"
+              echo "  ❌ JWT token failed for app-level operations"
               echo "  Error: $APP_INFO"
             fi
           else
-            echo "  ⏭️  Skipping API test - no token available"
+            echo "  ⏭️  No JWT token to test"
           fi
-        env:
-          APP_ID: ${{ vars.NGL_DEVOPS_APP_ID }}
 
-      - name: Alternative Token Generation (Fallback)
-        id: fallback_token
-        if: steps.generate_token.outputs.token == '' || !startsWith(steps.generate_token.outputs.token, 'eyJ')
-        run: |
-          echo "🔄 Attempting alternative token generation method"
-          echo "Reason: ${{ steps.generate_token.outputs.token == '' && 'No token generated' || 'Installation token detected, need JWT for app operations' }}"
-          echo "🔄 Attempting alternative token generation method"
-          
-          # Try manual JWT generation using openssl and base64
-          APP_ID="${{ vars.NGL_DEVOPS_APP_ID }}"
-          PRIVATE_KEY="${{ secrets.NGL_DEVOPS_BOT_PEM }}"
-          
-          # Create JWT payload
-          NOW=$(date +%s)
-          IAT=$((NOW - 60))
-          EXP=$((NOW + 600))
-          
-          HEADER='{"alg":"RS256","typ":"JWT"}'
-          PAYLOAD='{"iat":'$IAT',"exp":'$EXP',"iss":"'$APP_ID'"}'
-          
-          # Base64 encode (URL-safe)
-          HEADER_B64=$(echo -n "$HEADER" | base64 -w 0 | tr '+/' '-_' | tr -d '=')
-          PAYLOAD_B64=$(echo -n "$PAYLOAD" | base64 -w 0 | tr '+/' '-_' | tr -d '=')
-          
-          # Create signature
-          UNSIGNED_TOKEN="$HEADER_B64.$PAYLOAD_B64"
-          
-          # Save private key to temp file
-          echo "$PRIVATE_KEY" > /tmp/private_key.pem
-          
-          # Generate signature
-          if SIGNATURE=$(echo -n "$UNSIGNED_TOKEN" | openssl dgst -sha256 -sign /tmp/private_key.pem | base64 -w 0 | tr '+/' '-_' | tr -d '='); then
-            JWT="$UNSIGNED_TOKEN.$SIGNATURE"
-            echo "✅ Manual JWT generation successful"
-            echo "fallback_token=$JWT" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Manual JWT generation failed"
-          fi
-          
-          # Clean up
-          rm -f /tmp/private_key.pem
 
       - name: Update GitHub App Webhook URL
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_jwt.outputs.token }}
         run: |
           WEBHOOK_URL="https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
           echo "📝 Updating GitHub App webhook URL to: $WEBHOOK_URL"
           
-          # Determine which token to use (prefer JWT for app operations)
-          PRIMARY_TOKEN="${{ steps.generate_token.outputs.token }}"
-          FALLBACK_TOKEN="${{ steps.fallback_token.outputs.fallback_token }}"
-          
-          # For app-level operations like webhook config, prefer JWT tokens
-          if [[ -n "$FALLBACK_TOKEN" ]]; then
-            echo "🎫 Using fallback JWT token for app-level operations"
-            echo "✅ JWT token is required for /app/hook/config endpoint"
-            GITHUB_TOKEN="$FALLBACK_TOKEN"
-          elif [[ -n "$PRIMARY_TOKEN" ]]; then
-            echo "🎫 Using primary token from github-app-token action"
-            echo "⚠️  Note: Installation tokens may not work for app-level operations"
-            GITHUB_TOKEN="$PRIMARY_TOKEN"
-          else
-            echo "❌ ERROR: No GitHub token available (neither primary nor fallback)"
-            echo "Token generation completely failed - check app configuration"
+          # Validate JWT token is available
+          if [[ -z "$GITHUB_TOKEN" ]]; then
+            echo "❌ ERROR: No JWT token available"
+            echo "Cannot update webhook without app-level JWT token"
             exit 1
           fi
           
-          export GITHUB_TOKEN
+          echo "🎫 Using JWT token for app-level webhook operations"
+          echo "🔍 Token validation:"
+          echo "  Length: ${#GITHUB_TOKEN}"
+          echo "  Format: $([[ "$GITHUB_TOKEN" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]] && echo 'JWT ✅' || echo 'Other ❌')"
+          echo "  Prefix: ${GITHUB_TOKEN:0:20}..."
           
-          echo "🔍 Final token validation:"
-          echo "Token length: ${#GITHUB_TOKEN}"
-          echo "Token starts with: ${GITHUB_TOKEN:0:10}..."
-          echo "Token format: $([[ "$GITHUB_TOKEN" =~ ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]] && echo 'JWT' || echo 'Other')"
-          
-          # Test token validity with a simple API call first
-          echo "🧪 Testing token validity with /app endpoint..."
+          # Test token validity with app endpoint
+          echo ""
+          echo "🧪 Testing JWT token with /app endpoint..."
           if APP_RESPONSE=$(gh api /app 2>&1); then
-            echo "✅ Token validation passed"
+            echo "✅ JWT token validation passed"
             echo "App name: $(echo "$APP_RESPONSE" | jq -r '.name // "N/A"')"
           else
-            echo "❌ ERROR: Token validation failed - cannot access /app endpoint"
+            echo "❌ ERROR: JWT token validation failed"
             echo "API Response: $APP_RESPONSE"
-            echo "This suggests:"
-            echo "  - Token is malformed or expired"
-            echo "  - App ID doesn't match the private key"
+            echo ""
+            echo "🚨 This suggests:"
+            echo "  - JWT token is malformed or expired"
+            echo "  - App ID (${{ vars.NGL_DEVOPS_APP_ID }}) doesn't match the private key"
             echo "  - GitHub App doesn't exist or is misconfigured"
             exit 1
           fi
           
-          # Get current GitHub App configuration
+          # Get current webhook configuration
+          echo ""
           echo "📋 Getting current webhook configuration..."
           if CURRENT_CONFIG=$(gh api /app/hook/config 2>&1); then
             echo "Current webhook config: $CURRENT_CONFIG"
@@ -417,7 +344,8 @@ jobs:
             echo "Proceeding with webhook update anyway..."
           fi
           
-          # Update the webhook URL using GitHub CLI with app-level token
+          # Update the webhook URL using GitHub CLI with JWT token
+          echo ""
           echo "🔄 Updating webhook URL..."
           if UPDATE_RESPONSE=$(gh api \
             --method PATCH \
@@ -435,14 +363,13 @@ jobs:
             echo ""
             echo "🔧 Troubleshooting Information:"
             echo "  - Webhook URL: $WEBHOOK_URL"
-            echo "  - Token source: $([[ -n "$PRIMARY_TOKEN" ]] && echo 'Primary' || echo 'Fallback')"
+            echo "  - Token type: JWT (app-level)"
             echo "  - App ID: ${{ vars.NGL_DEVOPS_APP_ID }}"
             echo ""
             echo "🚨 Possible Issues:"
             echo "  1. GitHub App webhook configuration permissions missing"
-            echo "  2. App ID/Private Key mismatch"
-            echo "  3. Private key format incorrect"
-            echo "  4. GitHub App not properly configured"
+            echo "  2. Webhook URL format invalid"
+            echo "  3. GitHub App settings misconfigured"
             
             exit 1
           fi
