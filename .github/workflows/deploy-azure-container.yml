@@ -95,11 +95,17 @@ jobs:
           docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:${{ github.sha }}
           
           # Login to GitHub Container Registry
-          echo ${{ github.token }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
           
           # Push to GitHub Container Registry
           docker push $REGISTRY/$IMAGE_NAME:latest
           docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          
+          # Make the package public so Azure can pull it
+          gh api \
+            --method PATCH \
+            /user/packages/container/copilot-powerplatform%2Fcopilot-agent \
+            -f visibility=public || echo "⚠️ Could not make package public - may need manual intervention"
           
           echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT          
         id: build_push
