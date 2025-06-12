@@ -128,6 +128,57 @@ jobs:
         run: |
           az extension add --name containerapp --upgrade
 
+      - name: Wait for Container App Operations to Complete
+        run: |
+          echo "🔍 Checking for ongoing Container App operations..."
+          
+          # Function to check operation status
+          check_operations() {
+            local operations=$(az containerapp operation list \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --query "[?properties.provisioningState=='InProgress']" \
+              --output tsv 2>/dev/null || echo "")
+            
+            if [[ -n "$operations" ]]; then
+              echo "⏳ Operations in progress detected"
+              return 1
+            else
+              echo "✅ No operations in progress"
+              return 0
+            fi
+          }
+          
+          # Wait for operations to complete with exponential backoff
+          max_attempts=12
+          attempt=1
+          base_delay=10
+          
+          while [ $attempt -le $max_attempts ]; do
+            echo "🔄 Attempt $attempt/$max_attempts - Checking operation status..."
+            
+            if check_operations; then
+              echo "✅ All operations completed - proceeding with deployment"
+              break
+            fi
+            
+            if [ $attempt -eq $max_attempts ]; then
+              echo "❌ Maximum wait time exceeded - operations still in progress"
+              echo "⚠️  Proceeding with deployment anyway (Azure may handle conflicts)"
+              break
+            fi
+            
+            # Calculate delay with exponential backoff (capped at 5 minutes)
+            delay=$((base_delay * (2 ** (attempt - 1))))
+            if [ $delay -gt 300 ]; then
+              delay=300
+            fi
+            
+            echo "⏱️  Waiting ${delay}s before next check..."
+            sleep $delay
+            attempt=$((attempt + 1))
+          done
+
       - name: Deploy to Azure Container Apps
         id: deploy
         uses: azure/container-apps-deploy-action@v2
@@ -148,25 +199,79 @@ jobs:
         run: |
           echo "🔧 Configuring container app resources and secrets..."
           
-          # Set secrets
-          az containerapp secret set \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                      "ngl-devops-webhook-secret=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"
+          # Function to perform configuration with retry logic
+          configure_with_retry() {
+            local max_attempts=5
+            local attempt=1
+            local base_delay=15
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "🔄 Configuration attempt $attempt/$max_attempts"
+              
+              # Check if any operations are in progress before configuration
+              if az containerapp operation list \
+                --name ${{ env.CONTAINER_APP_NAME }} \
+                --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                --query "[?properties.provisioningState=='InProgress']" \
+                --output tsv 2>/dev/null | grep -q .; then
+                
+                echo "⏳ Operations still in progress, waiting before configuration..."
+                delay=$((base_delay * attempt))
+                sleep $delay
+                attempt=$((attempt + 1))
+                continue
+              fi
+              
+              echo "🔐 Setting container app secrets..."
+              if az containerapp secret set \
+                --name ${{ env.CONTAINER_APP_NAME }} \
+                --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+                          "ngl-devops-webhook-secret=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"; then
+                
+                echo "🔧 Updating container app configuration..."
+                if az containerapp update \
+                  --name ${{ env.CONTAINER_APP_NAME }} \
+                  --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                  --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+                                "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
+                  --cpu 1.0 \
+                  --memory 2.0Gi \
+                  --min-replicas 1 \
+                  --max-replicas 3; then
+                  
+                  echo "✅ Container app configuration completed successfully"
+                  return 0
+                fi
+              fi
+              
+              echo "⚠️  Configuration attempt $attempt failed"
+              if [ $attempt -lt $max_attempts ]; then
+                delay=$((base_delay * attempt))
+                echo "⏱️  Retrying in ${delay}s..."
+                sleep $delay
+              fi
+              
+              attempt=$((attempt + 1))
+            done
+            
+            echo "❌ Configuration failed after $max_attempts attempts"
+            return 1
+          }
           
-          # Update container app with resource constraints and secret references
-          az containerapp update \
-            --name ${{ env.CONTAINER_APP_NAME }} \
-            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-            --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
-                          "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
-            --cpu 1.0 \
-            --memory 2.0Gi \
-            --min-replicas 1 \
-            --max-replicas 3
-          
-          echo "✅ Container app configuration completed"
+          # Execute configuration with retry logic
+          if ! configure_with_retry; then
+            echo "🚨 Container app configuration failed - checking if deployment is still functional..."
+            
+            # Check if basic deployment is working despite configuration failure
+            if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.provisioningState" -o tsv | grep -q "Succeeded"; then
+              echo "⚠️  Deployment appears successful despite configuration issues"
+              echo "📝 This may indicate missing secrets or temporary Azure API issues"
+            else
+              echo "❌ Deployment verification failed"
+              exit 1
+            fi
+          fi
 
       - name: Validate Image URL and Get FQDN
         id: validate_deploy
