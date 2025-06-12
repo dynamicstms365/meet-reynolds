@@ -232,10 +232,19 @@ jobs:
           
           // Read environment variables
           const appId = process.env.APP_ID;
-          const privateKey = process.env.PRIVATE_KEY;
+          let privateKey = process.env.PRIVATE_KEY;
           
           if (!appId || !privateKey) {
             console.error('Missing APP_ID or PRIVATE_KEY environment variables');
+            process.exit(1);
+          }
+          
+          // Fix private key formatting - replace literal \n with actual newlines
+          privateKey = privateKey.replace(/\\n/g, '\n');
+          
+          // Ensure proper PEM format
+          if (!privateKey.includes('-----BEGIN RSA PRIVATE KEY-----')) {
+            console.error('Private key does not appear to be in PEM format');
             process.exit(1);
           }
           
