@@ -177,9 +177,9 @@ jobs:
           
           echo "SUCCESS: Image URL validation passed: $IMAGE_URL"
           
-          # Test registry authentication before deployment using GitHub token
+          # Test registry authentication before deployment using existing ghcrio-cege7480 credentials
           echo "Testing registry authentication..."
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo ${{ secrets.GHCRIO_CEGE7480 }} | docker login ghcr.io -u cege7480 --password-stdin
           if ! docker pull "$IMAGE_URL"; then
             echo "ERROR: Failed to pull image from registry. Check authentication and image availability."
             exit 1
@@ -199,22 +199,22 @@ jobs:
           if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Updating existing Container App..."
             
-            # Update secrets first
+            # Update secrets first (using existing ghcrio-cege7480 credentials)
             az containerapp secret set \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --secrets \
                 "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                "github-token=${{ secrets.GITHUB_TOKEN }}"
+                "ghcrio-cege7480=${{ secrets.GHCRIO_CEGE7480 }}"
             
-            # Update container app with ghcr.io authentication
+            # Update container app with ghcr.io authentication using existing ghcrio-cege7480 secret
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --image "$IMAGE_URL" \
               --registry-server ghcr.io \
-              --registry-username ${{ github.actor }} \
-              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --registry-username cege7480 \
+              --registry-password-secret ghcrio-cege7480 \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
@@ -232,11 +232,11 @@ jobs:
               --environment ${{ env.CONTAINER_APP_ENV }} \
               --image "$IMAGE_URL" \
               --registry-server ghcr.io \
-              --registry-username ${{ github.actor }} \
-              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --registry-username cege7480 \
+              --registry-password ${{ secrets.GHCRIO_CEGE7480 }} \
               --target-port 8080 \
               --ingress external \
-              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" "github-token=${{ secrets.GITHUB_TOKEN }}" \
+              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" "ghcrio-cege7480=${{ secrets.GHCRIO_CEGE7480 }}" \
               --env-vars "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://+:8080" "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
               --cpu 1.0 \
               --memory 2.0Gi \
