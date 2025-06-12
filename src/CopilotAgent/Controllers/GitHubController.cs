@@ -48,12 +48,16 @@ public class GitHubController : ControllerBase
         {
             // Read raw body for signature validation
             var body = await new StreamReader(Request.Body).ReadToEndAsync();
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                _logger.LogError("Webhook request body is empty");
+                return BadRequest(new { error = "Empty request body" });
+            }
             
             // Get GitHub signature from headers
             var signature = Request.Headers["X-Hub-Signature-256"].FirstOrDefault();
             var gitHubEvent = Request.Headers["X-GitHub-Event"].FirstOrDefault();
-            
-            _logger.LogInformation("Received GitHub webhook: {Event}", gitHubEvent);
+            _logger.LogInformation("Received GitHub webhook: {Event}, Body: {Body}", gitHubEvent, body);
 
             // Validate webhook signature
             var webhookSecret = _configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
