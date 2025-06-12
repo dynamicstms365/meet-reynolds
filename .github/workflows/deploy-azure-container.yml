@@ -27,13 +27,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Generate GitHub App Token
-        id: generate_token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
-          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
-
       - name: Azure Login
         uses: azure/login@v1
         with:
@@ -211,7 +204,7 @@ jobs:
                 --image ${{ steps.build_push.outputs.image_url }} \
                 --registry-server ghcr.io \
                 --registry-username ${{ github.actor }} \
-                --registry-password ${{ github.token }} \
+                --registry-password ${{ secrets.GITHUB_TOKEN }} \
                 --target-port 8080 \
                 --ingress external \
                 --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
@@ -256,6 +249,13 @@ jobs:
           # Test MCP capabilities endpoint
           echo "🧪 Testing MCP capabilities endpoint..."
           curl -f "https://${{ steps.deploy.outputs.fqdn }}/mcp/capabilities" || echo "⚠️ MCP capabilities endpoint not responding"         
+
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
+          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
 
       - name: Update GitHub App Webhook URL
         env:
