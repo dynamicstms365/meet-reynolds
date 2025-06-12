@@ -236,10 +236,67 @@ jobs:
 
       - name: Generate GitHub App JWT Token
         id: generate_jwt
-        uses: gha-utils/jwt-generator@v1
-        with:
-          app-id: ${{ vars.NGL_DEVOPS_APP_ID }}
-          private-key: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
+        run: |
+          # Install jsonwebtoken package for JWT generation
+          npm install jsonwebtoken
+          
+          # Create JWT generation script
+          cat > generate_jwt.js << 'EOF'
+          const jwt = require('jsonwebtoken');
+          const fs = require('fs');
+          
+          // Read environment variables
+          const appId = process.env.APP_ID;
+          const privateKey = process.env.PRIVATE_KEY;
+          
+          if (!appId || !privateKey) {
+            console.error('Missing APP_ID or PRIVATE_KEY environment variables');
+            process.exit(1);
+          }
+          
+          // JWT payload for GitHub App
+          const now = Math.floor(Date.now() / 1000);
+          const payload = {
+            iss: parseInt(appId),
+            iat: now - 60,  // Issued 60 seconds ago to account for clock skew
+            exp: now + (10 * 60)  // Expires in 10 minutes
+          };
+          
+          try {
+            // Generate JWT token
+            const token = jwt.sign(payload, privateKey, { algorithm: 'RS256' });
+            console.log('jwt_token=' + token);
+          } catch (error) {
+            console.error('Error generating JWT:', error.message);
+            process.exit(1);
+          }
+          EOF
+          
+          # Generate JWT and capture output
+          JWT_OUTPUT=$(node generate_jwt.js)
+          
+          # Extract token from output
+          JWT_TOKEN=$(echo "$JWT_OUTPUT" | grep "jwt_token=" | cut -d'=' -f2)
+          
+          if [[ -z "$JWT_TOKEN" ]]; then
+            echo "❌ Failed to generate JWT token"
+            echo "Output: $JWT_OUTPUT"
+            exit 1
+          fi
+          
+          # Validate JWT format
+          if [[ ! "$JWT_TOKEN" =~ ^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$ ]]; then
+            echo "❌ Generated token doesn't match JWT format"
+            echo "Token: $JWT_TOKEN"
+            exit 1
+          fi
+          
+          echo "✅ JWT token generated successfully"
+          echo "🔍 Token prefix: ${JWT_TOKEN:0:50}..."
+          echo "jwt_token=$JWT_TOKEN" >> $GITHUB_OUTPUT
+        env:
+          APP_ID: ${{ vars.NGL_DEVOPS_APP_ID }}
+          PRIVATE_KEY: ${{ secrets.NGL_DEVOPS_BOT_PEM }}
 
       - name: Generate GitHub App Installation Token
         id: generate_installation_token
