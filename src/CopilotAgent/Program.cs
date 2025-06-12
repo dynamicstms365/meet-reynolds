@@ -69,7 +69,7 @@ app.MapControllers();
 // Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore
 // This replaces the custom webhook controller endpoint
 var webhookSecret = builder.Configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
-                   Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
+                   System.Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
 
 app.MapGitHubWebhooks("/api/github/webhook", webhookSecret);
 
