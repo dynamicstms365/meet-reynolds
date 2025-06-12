@@ -1,0 +1,11 @@
+{
+  "conversation_topic": "GitHub Copilot integration patterns",
+  "user_intent": "discussing MCP server implementation strategies",
+  "keywords": ["GitHub Copilot", "MCP server", "integration", "AI agent", "implementation"],
+  "repository": "dynamicstms365/copilot-powerplatform",
+  "username": "architect-dev",
+  "discussion_search_results": "[{\"title\": \"Best practices for MCP server development with GitHub Copilot\", \"number\": 42, \"category\": \"Development\", \"created_at\": \"2024-12-01T10:30:00Z\", \"author\": \"copilot-expert\", \"body\": \"This discussion covers implementation strategies for MCP servers, including tool registration, authentication patterns, and integration with GitHub Copilot agents...\", \"comments_count\": 15, \"participants_count\": 8, \"labels\": [\"mcp\", \"copilot\", \"best-practices\"], \"state\": \"open\"}]",
+  "conversation_history": "User: I'm working on implementing MCP server tools for our GitHub Copilot agent. What are the recommended patterns for handling authentication and tool registration?\n\nContext: User is asking about MCP implementation which matches an existing discussion topic.",
+  "expected_action": "confirm_existing_discussion",
+  "scenario_description": "User asks about topic that matches existing discussion - should ask for confirmation and offer connection"
+}
