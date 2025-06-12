@@ -175,6 +175,16 @@ jobs:
           fi
           
           echo "SUCCESS: Image URL validation passed: $IMAGE_URL"
+          
+          # Test registry authentication before deployment
+          echo "Testing registry authentication..."
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          if ! docker pull "$IMAGE_URL"; then
+            echo "ERROR: Failed to pull image from registry. Check authentication and image availability."
+            exit 1
+          fi
+          echo "SUCCESS: Registry authentication and image pull confirmed"
+          
           # Check if Container Apps environment exists
           if ! az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Creating Container Apps environment..."
@@ -188,22 +198,22 @@ jobs:
           if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Updating existing Container App..."
             
-            # Update secrets first
+            # Update secrets first (including registry password as secret for better security)
             az containerapp secret set \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --secrets \
                 "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                "ghcr-password=${{ secrets.GITHUB_TOKEN }}"
+                "ghcr-registry-password=${{ secrets.GITHUB_TOKEN }}"
             
-            # Update container app with ghcr.io authentication
+            # Update container app with ghcr.io authentication using secret reference
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --image "$IMAGE_URL" \
               --registry-server ghcr.io \
               --registry-username ${{ github.actor }} \
-              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --registry-password-secret ghcr-registry-password \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
@@ -225,7 +235,7 @@ jobs:
               --registry-password ${{ secrets.GITHUB_TOKEN }} \
               --target-port 8080 \
               --ingress external \
-              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+              --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" "ghcr-registry-password=${{ secrets.GITHUB_TOKEN }}" \
               --env-vars "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" "ASPNETCORE_ENVIRONMENT=Production" "ASPNETCORE_URLS=http://+:8080" "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
               --cpu 1.0 \
               --memory 2.0Gi \

@@ -4,7 +4,7 @@
   "parameters": {
     "containerName": {
       "type": "string",
-      "defaultValue": "github-app-service",
+      "defaultValue": "github-copilot-bot",
       "metadata": {
         "description": "Name for the container group"
       }

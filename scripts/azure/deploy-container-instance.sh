@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 RESOURCE_GROUP="copilot-powerplatform-deploy-rg"
-CONTAINER_NAME="github-app-service"
+CONTAINER_NAME="github-copilot-bot"
 LOCATION="eastus"
 IMAGE_NAME="copilot-agent:latest"
 DNS_LABEL="copilot-github-app"
