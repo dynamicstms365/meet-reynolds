@@ -52,7 +52,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Skip HTTPS redirection in production container environment
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
