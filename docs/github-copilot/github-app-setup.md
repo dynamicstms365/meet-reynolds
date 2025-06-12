@@ -181,14 +181,32 @@ jobs:
         uses: azure/container-instances-deploy@v1
         with:
           resource-group: 'copilot-powerplatform-deploy-rg'
-          name: 'github-app-service'
-          image: 'your-registry/copilot-agent:latest'
+          name: 'github-copilot-bot'
+          image: 'ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest'
+          registry-server: 'ghcr.io'
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
           environment-variables: |
             NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
           secure-environment-variables: |
             NGL_DEVOPS_PRIVATE_KEY=${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}
-          ports: '80'
+          ports: '8080'
           location: 'eastus'
+```
+
+> **⚠️ Container Registry Authentication**
+> 
+> When deploying to Azure Container Apps, ensure proper authentication to GitHub Container Registry:
+> 
+> 1. **GitHub Token Permissions**: The `GITHUB_TOKEN` must have `packages:read` permission
+> 2. **Registry Credentials**: Use `--registry-password-secret` for enhanced security
+> 3. **Container Naming**: Ensure consistent naming (`github-copilot-bot`) across all configurations
+> 4. **Pre-deployment Testing**: Run `scripts/validation/test-registry-auth.sh` to validate authentication
+> 
+> **Common Authentication Issues:**
+> - `DENIED: denied` errors indicate insufficient registry permissions
+> - Container name mismatches can cause deployment target confusion
+> - GitHub token expiration or insufficient scopes prevent image pulling
 ```
 
 #### Azure Container Environment
@@ -235,6 +253,68 @@ spec:
 > - **Easy Management**: Azure portal integration
 
 ## API Endpoints
+
+### Troubleshooting Container Deployment
+
+#### Common Issues and Solutions
+
+**1. Registry Authentication Failures (`DENIED: denied`)**
+
+**Problem**: Azure Container Apps cannot pull image from GitHub Container Registry
+```
+ERROR: Failed to provision revision for container app 'github-copilot-bot'. 
+Field 'template.containers.github-copilot-bot.image' is invalid: 
+'DENIED: denied' when accessing ghcr.io
+```
+
+**Solutions**:
+- Verify `GITHUB_TOKEN` has `packages:read` permission
+- Ensure the image exists: `ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest`
+- Test authentication locally: `scripts/validation/test-registry-auth.sh`
+- Check container app registry credentials are properly configured
+
+**2. Container Name Mismatches**
+
+**Problem**: Deployment targets wrong container or fails to find existing resources
+
+**Solutions**:
+- Use consistent naming: `github-copilot-bot` across all configurations
+- Update ARM templates, YAML configs, and deployment scripts
+- Verify workflow environment variables match container names
+
+**3. Image Pull Timeouts**
+
+**Problem**: Container Apps timeout when pulling large images
+
+**Solutions**:
+- Use multi-stage Docker builds to reduce image size
+- Pre-validate image accessibility before deployment
+- Consider using Azure Container Registry for faster pulls
+
+**4. Authentication Token Expiration**
+
+**Problem**: GitHub tokens expire or lose permissions
+
+**Solutions**:
+- Use GitHub App tokens with longer expiration
+- Rotate secrets regularly in GitHub Actions
+- Monitor token expiration dates
+
+#### Validation Commands
+
+```bash
+# Test registry authentication
+./scripts/validation/test-registry-auth.sh
+
+# Check Azure Container App status
+az containerapp show --name github-copilot-bot --resource-group copilot-powerplatform-deploy-rg
+
+# View container app logs
+az containerapp logs show --name github-copilot-bot --resource-group copilot-powerplatform-deploy-rg
+
+# Test image pull manually
+docker pull ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest
+```
 
 ### Webhook Endpoint
 
