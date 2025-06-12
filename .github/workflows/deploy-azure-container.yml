@@ -40,11 +40,11 @@ jobs:
           dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj
           dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish          
 
-      - name: Build and Push to GitHub Container Registry
+      - name: Build and Push to Azure Container Registry
         id: build_push
         env:
-          REGISTRY: ghcr.io
-          IMAGE_NAME: ${{ github.repository }}/copilot-agent
+          ACR_NAME: copilotpowerplatformacr
+          IMAGE_NAME: copilot-agent
         run: |
           # Create a simple Dockerfile that uses pre-built output
           cat > Dockerfile.prebuilt << 'EOF'
@@ -74,21 +74,25 @@ jobs:
           ENTRYPOINT ["dotnet", "CopilotAgent.dll"]
           EOF
           
-          # Build the Docker image using pre-built output
-          docker build -f Dockerfile.prebuilt -t $REGISTRY/$IMAGE_NAME:latest .
-          docker tag $REGISTRY/$IMAGE_NAME:latest $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          # Create ACR if it doesn't exist
+          if ! az acr show --name $ACR_NAME >/dev/null 2>&1; then
+            echo "Creating Azure Container Registry..."
+            az acr create \
+              --name $ACR_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --sku Basic \
+              --location ${{ env.AZURE_LOCATION }}
+          fi
           
-          # Login to GitHub Container Registry using native token
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+          # Build and push to ACR
+          az acr build \
+            --registry $ACR_NAME \
+            --image $IMAGE_NAME:latest \
+            --image $IMAGE_NAME:${{ github.sha }} \
+            --file Dockerfile.prebuilt \
+            .
           
-          # Push to GitHub Container Registry
-          docker push $REGISTRY/$IMAGE_NAME:latest
-          docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
-          
-          # Set up registry credentials for Azure Container Apps
-          echo "Setting up registry credentials for Azure Container Apps..."
-          
-          echo "image_url=$REGISTRY/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT
+          echo "image_url=$ACR_NAME.azurecr.io/$IMAGE_NAME:latest" >> $GITHUB_OUTPUT
 
   deploy:
     runs-on: ubuntu-latest
@@ -96,7 +100,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      packages: read
     
     steps:
       - name: Checkout code
@@ -119,6 +122,8 @@ jobs:
 
       - name: Deploy to Azure Container Apps
         id: deploy
+        env:
+          ACR_NAME: copilotpowerplatformacr
         run: |
           # Check if Container Apps environment exists
           if ! az containerapp env show --name ${{ env.CONTAINER_APP_ENV }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
@@ -129,27 +134,33 @@ jobs:
               --location ${{ env.AZURE_LOCATION }}
           fi
           
+          # Enable admin access for ACR (required for Container Apps)
+          az acr update --name $ACR_NAME --admin-enabled true
+          
+          # Get ACR admin credentials
+          ACR_USERNAME=$(az acr credential show --name $ACR_NAME --query "username" -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv)
+          
           # Check if Container App exists
           if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} >/dev/null 2>&1; then
             echo "Updating existing Container App..."
             
-            # Update secrets first (including registry credentials)
+            # Update secrets first
             az containerapp secret set \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --secrets \
                 "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-                "ghcr-username=${{ github.actor }}" \
-                "ghcr-password=${{ secrets.GITHUB_TOKEN }}"
+                "acr-password=$ACR_PASSWORD"
             
-            # Update container app with registry authentication
+            # Update container app with ACR image
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --image ${{ needs.build.outputs.image_url }} \
-              --registry-server ghcr.io \
-              --registry-username ${{ github.actor }} \
-              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --registry-server $ACR_NAME.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
@@ -166,9 +177,9 @@ jobs:
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --environment ${{ env.CONTAINER_APP_ENV }} \
               --image ${{ needs.build.outputs.image_url }} \
-              --registry-server ghcr.io \
-              --registry-username ${{ github.actor }} \
-              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --registry-server $ACR_NAME.azurecr.io \
+              --registry-username $ACR_USERNAME \
+              --registry-password $ACR_PASSWORD \
               --target-port 8080 \
               --ingress external \
               --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
