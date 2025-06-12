@@ -142,13 +142,28 @@ jobs:
             NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
             ASPNETCORE_ENVIRONMENT=Production
             ASPNETCORE_URLS=http://+:8080
-            NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key
-          secrets: |
-            ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}
-          cpu: 1.0
-          memory: 2.0Gi
-          minReplicas: 1
-          maxReplicas: 3
+
+      - name: Configure Container App Resources and Secrets
+        run: |
+          echo "🔧 Configuring container app resources and secrets..."
+          
+          # Set secrets
+          az containerapp secret set \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --secrets "ngl-devops-private-key=${{ secrets.NGL_DEVOPS_BOT_PEM }}"
+          
+          # Update container app with resource constraints and secret reference
+          az containerapp update \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+            --cpu 1.0 \
+            --memory 2.0Gi \
+            --min-replicas 1 \
+            --max-replicas 3
+          
+          echo "✅ Container app configuration completed"
 
       - name: Validate Image URL and Get FQDN
         id: validate_deploy
