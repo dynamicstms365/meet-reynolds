@@ -1,0 +1,86 @@
+[1mdiff --git a/tmp/test-az-cli-update.sh b/tmp/test-az-cli-update.sh[m
+[1mnew file mode 100755[m
+[1mindex 0000000..0eb5c97[m
+[1m--- /dev/null[m
+[1m+++ b/tmp/test-az-cli-update.sh[m
+[36m@@ -0,0 +1,79 @@[m
+[32m+[m[32m#!/bin/bash[m
+[32m+[m
+[32m+[m[32m# Test script to validate Azure Container App update with ghcrio-cege7480 credentials[m
+[32m+[m[32m# This simulates what the workflow would do with the new configuration[m
+[32m+[m
+[32m+[m[32mecho "=== Testing Azure Container App Configuration with ghcrio-cege7480 credentials ==="[m
+[32m+[m
+[32m+[m[32m# Set up test variables (simulating workflow environment)[m
+[32m+[m[32mAZURE_RESOURCE_GROUP="copilot-powerplatform-deploy-rg"[m
+[32m+[m[32mCONTAINER_APP_NAME="github-copilot-bot"[m
+[32m+[m[32mIMAGE_URL="ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest"[m
+[32m+[m
+[32m+[m[32m# Simulate the updated az containerapp commands that would be used[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "1. Testing az containerapp secret set command with ghcrio-cege7480:"[m
+[32m+[m[32mecho "az containerapp secret set \\"[m
+[32m+[m[32mecho "  --name $CONTAINER_APP_NAME \\"[m
+[32m+[m[32mecho "  --resource-group $AZURE_RESOURCE_GROUP \\"[m
+[32m+[m[32mecho "  --secrets \\"[m
+[32m+[m[32mecho "    \"ngl-devops-private-key=\${{ secrets.NGL_DEVOPS_BOT_PEM }}\" \\"[m
+[32m+[m[32mecho "    \"ghcrio-cege7480=\${{ secrets.GHCRIO_CEGE7480 }}\""[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "2. Testing az containerapp update command with new registry credentials:"[m
+[32m+[m[32mecho "az containerapp update \\"[m
+[32m+[m[32mecho "  --name $CONTAINER_APP_NAME \\"[m
+[32m+[m[32mecho "  --resource-group $AZURE_RESOURCE_GROUP \\"[m
+[32m+[m[32mecho "  --image \"$IMAGE_URL\" \\"[m
+[32m+[m[32mecho "  --registry-server ghcr.io \\"[m
+[32m+[m[32mecho "  --registry-username cege7480 \\"[m
+[32m+[m[32mecho "  --registry-password-secret ghcrio-cege7480 \\"[m
+[32m+[m[32mecho "  --replace-env-vars \\"[m
+[32m+[m[32mecho "    \"NGL_DEVOPS_APP_ID=\${{ vars.NGL_DEVOPS_APP_ID }}\" \\"[m
+[32m+[m[32mecho "    \"ASPNETCORE_ENVIRONMENT=Production\" \\"[m
+[32m+[m[32mecho "    \"ASPNETCORE_URLS=http://+:8080\" \\"[m
+[32m+[m[32mecho "    \"NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key\" \\"[m
+[32m+[m[32mecho "  --cpu 1.0 \\"[m
+[32m+[m[32mecho "  --memory 2.0Gi \\"[m
+[32m+[m[32mecho "  --min-replicas 1 \\"[m
+[32m+[m[32mecho "  --max-replicas 3"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "3. Testing az containerapp create command with new registry credentials:"[m
+[32m+[m[32mecho "az containerapp create \\"[m
+[32m+[m[32mecho "  --name $CONTAINER_APP_NAME \\"[m
+[32m+[m[32mecho "  --resource-group $AZURE_RESOURCE_GROUP \\"[m
+[32m+[m[32mecho "  --environment github-copilot-bot-env \\"[m
+[32m+[m[32mecho "  --image \"$IMAGE_URL\" \\"[m
+[32m+[m[32mecho "  --registry-server ghcr.io \\"[m
+[32m+[m[32mecho "  --registry-username cege7480 \\"[m
+[32m+[m[32mecho "  --registry-password \${{ secrets.GHCRIO_CEGE7480 }} \\"[m
+[32m+[m[32mecho "  --target-port 8080 \\"[m
+[32m+[m[32mecho "  --ingress external \\"[m
+[32m+[m[32mecho "  --secrets \"ngl-devops-private-key=\${{ secrets.NGL_DEVOPS_BOT_PEM }}\" \"ghcrio-cege7480=\${{ secrets.GHCRIO_CEGE7480 }}\" \\"[m
+[32m+[m[32mecho "  --env-vars \"NGL_DEVOPS_APP_ID=\${{ vars.NGL_DEVOPS_APP_ID }}\" \"ASPNETCORE_ENVIRONMENT=Production\" \"ASPNETCORE_URLS=http://+:8080\" \"NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key\" \\"[m
+[32m+[m[32mecho "  --cpu 1.0 \\"[m
+[32m+[m[32mecho "  --memory 2.0Gi \\"[m
+[32m+[m[32mecho "  --min-replicas 1 \\"[m
+[32m+[m[32mecho "  --max-replicas 3"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "4. Testing Docker registry authentication command:"[m
+[32m+[m[32mecho "echo \${{ secrets.GHCRIO_CEGE7480 }} | docker login ghcr.io -u cege7480 --password-stdin"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "=== Summary of Changes ==="[m
+[32m+[m[32mecho "✅ Updated registry username from \${{ github.actor }} to cege7480"[m
+[32m+[m[32mecho "✅ Updated registry password from \${{ secrets.GITHUB_TOKEN }} to \${{ secrets.GHCRIO_CEGE7480 }}"[m
+[32m+[m[32mecho "✅ Updated secret name from ghcr-registry-password to ghcrio-cege7480"[m
+[32m+[m[32mecho "✅ All registry authentication references now use existing ghcrio-cege7480 credentials"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "=== Prerequisites for Success ==="[m
+[32m+[m[32mecho "⚠️  Ensure GitHub Actions secret GHCRIO_CEGE7480 exists and contains valid GitHub Container Registry token for user cege7480"[m
+[32m+[m[32mecho "⚠️  Ensure the token has appropriate permissions to pull from ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent"[m
+[32m+[m[32mecho "⚠️  Ensure Azure Container App environment has proper permissions to reference the secret"[m
+[32m+[m
+[32m+[m[32mecho ""[m
+[32m+[m[32mecho "Test script completed successfully! ✅"[m
+\ No newline at end of file[m

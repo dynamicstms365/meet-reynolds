@@ -1,9 +1,9 @@
 apiVersion: 2021-10-01
 location: eastus
-name: github-app-service
+name: github-copilot-bot
 properties:
   containers:
-  - name: github-app-service
+  - name: github-copilot-bot
     properties:
       image: ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest
       ports:
