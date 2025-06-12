@@ -249,8 +249,32 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
-          echo "📝 GitHub App webhook should be updated to: https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
-          echo "💡 This step would typically update the GitHub App configuration, but requires app-level permissions"
+          WEBHOOK_URL="https://${{ steps.deploy.outputs.fqdn }}/api/github/webhook"
+          echo "📝 Updating GitHub App webhook URL to: $WEBHOOK_URL"
+          
+          # Get current GitHub App configuration
+          CURRENT_CONFIG=$(gh api /app/hook/config)
+          echo "Current webhook config: $CURRENT_CONFIG"
+          
+          # Update the webhook URL using GitHub CLI with app-level token
+          gh api \
+            --method PATCH \
+            /app/hook/config \
+            -f url="$WEBHOOK_URL" \
+            -f content_type="json" \
+            -f insecure_ssl="0"
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Successfully updated GitHub App webhook URL"
+            echo "🔗 New webhook URL: $WEBHOOK_URL"
+          else
+            echo "❌ Failed to update GitHub App webhook URL"
+            echo "💡 Please manually update in GitHub App settings"
+          fi
+          
+          # Verify the update
+          UPDATED_CONFIG=$(gh api /app/hook/config)
+          echo "Updated webhook config: $UPDATED_CONFIG"
                     
       - name: Summary
         run: |
