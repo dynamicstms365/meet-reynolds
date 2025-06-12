@@ -13,6 +13,7 @@ public class GitHubCopilotMcpServer : ControllerBase
     private readonly IGitHubSemanticSearchService _semanticSearchService;
     private readonly IGitHubDiscussionsService _discussionsService;
     private readonly IGitHubIssuesService _issuesService;
+    private readonly IGitHubAppAuthService _authService;
     private readonly ILogger<GitHubCopilotMcpServer> _logger;
 
     public GitHubCopilotMcpServer(
@@ -20,12 +21,14 @@ public class GitHubCopilotMcpServer : ControllerBase
         IGitHubSemanticSearchService semanticSearchService,
         IGitHubDiscussionsService discussionsService,
         IGitHubIssuesService issuesService,
+        IGitHubAppAuthService authService,
         ILogger<GitHubCopilotMcpServer> logger)
     {
         _workflowOrchestrator = workflowOrchestrator;
         _semanticSearchService = semanticSearchService;
         _discussionsService = discussionsService;
         _issuesService = issuesService;
+        _authService = authService;
         _logger = logger;
     }
 
@@ -47,6 +50,12 @@ public class GitHubCopilotMcpServer : ControllerBase
     [HttpPost("tools/{toolName}")]
     public async Task<IActionResult> ExecuteTool(string toolName, [FromBody] JsonElement arguments)
     {
+        // Validate authentication before executing tools
+        if (!await ValidateAuthenticationAsync())
+        {
+            return Unauthorized(new { success = false, error = "Authentication required" });
+        }
+
         try
         {
             _logger.LogInformation("Executing MCP tool: {ToolName}", toolName);
@@ -80,6 +89,12 @@ public class GitHubCopilotMcpServer : ControllerBase
     [HttpGet("resources/{resourceUri}")]
     public async Task<IActionResult> GetResource(string resourceUri)
     {
+        // Validate authentication before accessing resources
+        if (!await ValidateAuthenticationAsync())
+        {
+            return Unauthorized(new { success = false, error = "Authentication required" });
+        }
+
         try
         {
             var decodedUri = Uri.UnescapeDataString(resourceUri);
@@ -113,35 +128,166 @@ public class GitHubCopilotMcpServer : ControllerBase
     [HttpGet("sse")]
     public async Task ServerSentEvents()
     {
+        // Validate authentication before establishing SSE connection
+        if (!await ValidateAuthenticationAsync())
+        {
+            Response.StatusCode = 401;
+            await Response.WriteAsync("Unauthorized: Invalid or missing authentication");
+            return;
+        }
+
         Response.Headers["Content-Type"] = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
         Response.Headers["Connection"] = "keep-alive";
         Response.Headers["Access-Control-Allow-Origin"] = "*";
+        Response.Headers["Access-Control-Allow-Headers"] = "Authorization";
 
         var writer = new StreamWriter(Response.Body);
 
-        // Send initial connection event
-        await writer.WriteLineAsync("event: connected");
-        await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"message\": \"Connected to GitHub Copilot Bot MCP Server\"}}");
-        await writer.WriteLineAsync();
-        await writer.FlushAsync();
-
-        // Keep connection alive and send periodic heartbeats
-        while (!HttpContext.RequestAborted.IsCancellationRequested)
+        try
         {
+            // Send initial connection event
+            await writer.WriteLineAsync("event: connected");
+            await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"message\": \"Connected to GitHub Copilot Bot MCP Server\", \"authenticated\": true}}");
+            await writer.WriteLineAsync();
+            await writer.FlushAsync();
+
+            _logger.LogInformation("SSE connection established with authentication");
+
+            // Keep connection alive and send periodic heartbeats
+            while (!HttpContext.RequestAborted.IsCancellationRequested)
+            {
+                try
+                {
+                    await writer.WriteLineAsync("event: heartbeat");
+                    await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"status\": \"alive\"}}");
+                    await writer.WriteLineAsync();
+                    await writer.FlushAsync();
+
+                    await Task.Delay(30000, HttpContext.RequestAborted); // 30 second heartbeat
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error sending SSE heartbeat");
+                    break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in SSE connection");
             try
             {
-                await writer.WriteLineAsync("event: heartbeat");
-                await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\"}}");
+                await writer.WriteLineAsync("event: error");
+                await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"error\": \"Connection error\"}}");
                 await writer.WriteLineAsync();
                 await writer.FlushAsync();
-
-                await Task.Delay(30000, HttpContext.RequestAborted); // 30 second heartbeat
             }
-            catch (OperationCanceledException)
+            catch
             {
-                break;
+                // Ignore errors when trying to send error message
             }
+        }
+        finally
+        {
+            _logger.LogInformation("SSE connection closed");
+        }
+    }
+
+    private async Task<bool> ValidateAuthenticationAsync()
+    {
+        try
+        {
+            // Check for Authorization header (Bearer token)
+            if (Request.Headers.TryGetValue("Authorization", out var authHeader))
+            {
+                var headerValue = authHeader.FirstOrDefault();
+                if (!string.IsNullOrEmpty(headerValue) && headerValue.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var token = headerValue.Substring("Bearer ".Length).Trim();
+                    return await ValidateTokenAsync(token);
+                }
+            }
+
+            // Check for API key in query parameters
+            if (Request.Query.TryGetValue("api_key", out var apiKey))
+            {
+                return await ValidateApiKeyAsync(apiKey.FirstOrDefault());
+            }
+
+            // Check for GitHub App installation token validation
+            if (Request.Query.TryGetValue("github_token", out var githubToken))
+            {
+                return await ValidateGitHubTokenAsync(githubToken.FirstOrDefault());
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating authentication for SSE connection");
+            return false;
+        }
+    }
+
+    private async Task<bool> ValidateTokenAsync(string token)
+    {
+        try
+        {
+            // Validate against GitHub App installation token
+            var auth = await _authService.GetInstallationTokenAsync();
+            return !string.IsNullOrEmpty(auth.Token) && auth.Token == token;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to validate bearer token");
+            return false;
+        }
+    }
+
+    private async Task<bool> ValidateApiKeyAsync(string? apiKey)
+    {
+        if (string.IsNullOrEmpty(apiKey))
+            return false;
+
+        try
+        {
+            // For now, accept any valid GitHub App installation token as API key
+            // In production, you might want a separate API key management system
+            var auth = await _authService.GetInstallationTokenAsync();
+            return !string.IsNullOrEmpty(auth.Token) && auth.Token == apiKey;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to validate API key");
+            return false;
+        }
+    }
+
+    private async Task<bool> ValidateGitHubTokenAsync(string? githubToken)
+    {
+        if (string.IsNullOrEmpty(githubToken))
+            return false;
+
+        try
+        {
+            // Test the provided GitHub token by making a simple API call
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", githubToken);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CopilotAgent/1.0");
+
+            var response = await httpClient.GetAsync("https://api.github.com/user");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to validate GitHub token");
+            return false;
         }
     }
 
