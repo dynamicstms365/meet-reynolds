@@ -320,7 +320,9 @@ public class GitHubCopilotMcpServer : ControllerBase
         }
 
         return new EmptyResult();
-/// <summary>
+    }
+
+    /// <summary>
     /// Handle MCP initialize method - Standard MCP Protocol
     /// </summary>
     private async Task<IActionResult> HandleInitializeAsync(JsonElement mcpRequest)
