@@ -372,7 +372,7 @@ public class GitHubCopilotMcpServer : ControllerBase
             }
         };
 
-        return Task.FromResult(Ok(initializeResponse));
+        return Task.FromResult<IActionResult>(Ok(initializeResponse));
     }
 
     /// <summary>
