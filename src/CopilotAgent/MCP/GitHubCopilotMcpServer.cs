@@ -439,6 +439,16 @@ public class GitHubCopilotMcpServer : ControllerBase
                 }
             }
 
+            // Check for X-GitHub-Token header (secure alternative to query params)
+            if (Request.Headers.TryGetValue("X-GitHub-Token", out var githubHeader))
+            {
+                var headerValue = githubHeader.FirstOrDefault();
+                if (!string.IsNullOrEmpty(headerValue))
+                {
+                    return await ValidateGitHubTokenAsync(headerValue);
+                }
+            }
+
             // Check for API key in query parameters
             if (Request.Query.TryGetValue("api_key", out var apiKey))
             {
