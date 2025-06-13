@@ -225,9 +225,16 @@ public class GitHubCopilotMcpServer : ControllerBase
 
                 return method switch
                 {
+                    // Standard MCP Protocol Methods
+                    "initialize" => await HandleInitializeAsync(mcpRequest),
+                    "initialized" => HandleInitializedAsync(),
+                    "shutdown" => HandleShutdownAsync(),
+                    
+                    // Custom Tool and Resource Methods
                     "tools/call" => await HandleToolCallAsync(mcpRequest),
                     "resources/read" => await HandleResourceReadAsync(mcpRequest),
                     "ping" => Ok(new { success = true, message = "Reynolds MCP Server operational", timestamp = DateTime.UtcNow }),
+                    
                     _ => BadRequest(new { success = false, error = $"Unknown MCP method: {method}" })
                 };
             }
@@ -313,6 +320,76 @@ public class GitHubCopilotMcpServer : ControllerBase
         }
 
         return new EmptyResult();
+/// <summary>
+    /// Handle MCP initialize method - Standard MCP Protocol
+    /// </summary>
+    private async Task<IActionResult> HandleInitializeAsync(JsonElement mcpRequest)
+    {
+        _logger.LogInformation("🎯 Reynolds MCP: Processing initialize request");
+
+        // Extract initialization parameters if present
+        var clientInfo = "Unknown Client";
+        if (mcpRequest.TryGetProperty("params", out var paramsElement))
+        {
+            if (paramsElement.TryGetProperty("clientInfo", out var clientInfoElement))
+            {
+                if (clientInfoElement.TryGetProperty("name", out var nameElement))
+                {
+                    clientInfo = nameElement.GetString() ?? "Unknown Client";
+                }
+            }
+        }
+
+        _logger.LogInformation("🤝 Reynolds MCP: Client '{ClientInfo}' successfully authenticated and initializing", clientInfo);
+
+        // Return server capabilities in MCP format
+        var initializeResponse = new
+        {
+            protocolVersion = "2024-11-05",
+            capabilities = new
+            {
+                tools = new { },
+                resources = new { },
+                prompts = new { },
+                logging = new { }
+            },
+            serverInfo = new
+            {
+                name = "github-copilot-bot",
+                version = "1.0.0",
+                description = "Reynolds Enterprise GitHub Copilot Bot MCP Server - Streamable HTTP Transport",
+                transport = "streamable-http",
+                authentication = "enterprise-ready",
+                features = new
+                {
+                    streaming = true,
+                    authentication = new[] { "Bearer", "API-Key", "GitHub-Token" },
+                    enterprise_gateway_ready = true,
+                    reynolds_orchestrated = true
+                }
+            }
+        };
+
+        return Ok(initializeResponse);
+    }
+
+    /// <summary>
+    /// Handle MCP initialized method - Standard MCP Protocol
+    /// </summary>
+    private IActionResult HandleInitializedAsync()
+    {
+        _logger.LogInformation("🚀 Reynolds MCP: Client initialization completed successfully");
+        return Ok(new { success = true, message = "Reynolds MCP Server initialized and ready for enterprise coordination" });
+    }
+
+    /// <summary>
+    /// Handle MCP shutdown method - Standard MCP Protocol
+    /// </summary>
+    private IActionResult HandleShutdownAsync()
+    {
+        _logger.LogInformation("👋 Reynolds MCP: Client requested graceful shutdown");
+        return Ok(new { success = true, message = "Reynolds MCP Server shutting down gracefully. Maximum Effort™ completed." });
+    }
     }
 
     /// <summary>
