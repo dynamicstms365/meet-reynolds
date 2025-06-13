@@ -26,10 +26,19 @@ public static class ReynoldsTeamsConfiguration
         services.AddScoped<IReynoldsTeamsChatService, ReynoldsTeamsChatService>();
         services.AddScoped<IReynoldsM365CliService, ReynoldsM365CliService>();
 
+        // Reynolds meme and status services
+        services.AddScoped<IReynoldsMemeService, ReynoldsMemeService>();
+        services.AddScoped<IReynoldsWorkStatusService, ReynoldsWorkStatusService>();
+
         // Register bot as a hosted service for proactive messaging
         services.AddSingleton<ReynoldsProactiveMessagingService>();
         services.AddHostedService<ReynoldsProactiveMessagingService>(provider =>
             provider.GetRequiredService<ReynoldsProactiveMessagingService>());
+
+        // Register random meme service as hosted service
+        services.AddSingleton<ReynoldsRandomMemeService>();
+        services.AddHostedService<ReynoldsRandomMemeService>(provider =>
+            provider.GetRequiredService<ReynoldsRandomMemeService>());
 
         return services;
     }

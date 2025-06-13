@@ -17,18 +17,24 @@ public class ReynoldsTeamsBot : TeamsActivityHandler
     private readonly IConfiguration _configuration;
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly IIntentRecognitionService _intentRecognitionService;
+    private readonly IReynoldsMemeService _memeService;
+    private readonly IReynoldsWorkStatusService _workStatusService;
     private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
 
     public ReynoldsTeamsBot(
         ILogger<ReynoldsTeamsBot> logger,
         IConfiguration configuration,
         IGitHubWorkflowOrchestrator workflowOrchestrator,
-        IIntentRecognitionService intentRecognitionService)
+        IIntentRecognitionService intentRecognitionService,
+        IReynoldsMemeService memeService,
+        IReynoldsWorkStatusService workStatusService)
     {
         _logger = logger;
         _configuration = configuration;
         _workflowOrchestrator = workflowOrchestrator;
         _intentRecognitionService = intentRecognitionService;
+        _memeService = memeService;
+        _workStatusService = workStatusService;
         _conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
     }
 
@@ -128,6 +134,11 @@ Here's what I can do for you across the dynamicstms365 organization:
 • `sync issues` - Bi-directional issue/PR linking
 • `milestone status` - Project timeline alignment
 
+**🎭 Reynolds Entertainment & Status:**
+• `reynolds meme` - Get a quality meme with Reynolds flair
+• `reynolds status` - See what I'm currently working on
+• `what are you working on` - Alternative status check
+
 **💬 Reynolds Specials:**
 • Ask about any repo and I'll provide organizational context
 • Mention scope creep and I'll channel my inner deflection skills
@@ -141,6 +152,20 @@ What can I orchestrate for you today? 🎬";
         if (message.ToLowerInvariant().Contains("reynolds") && message.ToLowerInvariant().Contains("name"))
         {
             return "You know, that's a fantastic question about my name. It really is. The kind of question that deserves a proper answer... but I just noticed there's some cross-repo coordination that needs my immediate attention. Team dependencies wait for no one! Back in 10! 🏃‍♂️💨\n\n*(Reynolds has mysteriously vanished to handle urgent organizational matters)*";
+        }
+
+        // Handle meme requests
+        if (message.ToLowerInvariant().Contains("meme"))
+        {
+            return await HandleMemeRequest(message);
+        }
+
+        // Handle status requests  
+        if (message.ToLowerInvariant().Contains("status") || 
+            message.ToLowerInvariant().Contains("working on") ||
+            message.ToLowerInvariant().Contains("what are you doing"))
+        {
+            return await HandleStatusRequest();
         }
 
         return "Hey there! I'm here and ready to work some organizational magic. What kind of project orchestration can I help you with today? Think GitHub coordination meets diplomatic excellence, with just enough humor to keep stakeholders actually engaged. 🎭✨";
@@ -256,6 +281,72 @@ Need specific intervention strategies? Just ask! 🎭✨";
 Want me to orchestrate specific coordination between teams? I'll handle the diplomatic heavy lifting! 🎪";
     }
 
+    private async Task<string> HandleMemeRequest(string message)
+    {
+        try
+        {
+            // Extract category if specified
+            string? category = null;
+            var lowerMessage = message.ToLowerInvariant();
+            
+            if (lowerMessage.Contains("project") || lowerMessage.Contains("management"))
+                category = "project-management";
+            else if (lowerMessage.Contains("dev") || lowerMessage.Contains("coding"))
+                category = "development";
+            else if (lowerMessage.Contains("team") || lowerMessage.Contains("coordination"))
+                category = "teamwork";
+            else if (lowerMessage.Contains("motivation") || lowerMessage.Contains("inspiring"))
+                category = "motivation";
+
+            var meme = await _memeService.GetRandomMemeAsync(category);
+            
+            if (meme == null)
+            {
+                return "🎭 **Reynolds Meme Service Temporarily Unavailable**\n\nEven my meme collection is having a mysterious moment. Like my name situation, some things are just unexplainable.\n\n*Give me a moment to sort out this meme crisis with maximum effort.*";
+            }
+
+            return $@"🎭 **Reynolds' Premium Meme Service**
+
+**{meme.Name}**
+
+{meme.Description}
+
+{meme.Url}
+
+*Category: {meme.Category}*
+*Delivered with maximum effort and supernatural timing.*
+
+*Want another? Just ask 'Reynolds meme' again!*";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling meme request: {Message}", message);
+            return "🎭 **Meme Service Malfunction**\n\nWell, this is awkward. My meme delivery system is experiencing technical difficulties that are about as mysterious as my name origin. Give me a moment to fix this with maximum effort! 🔧";
+        }
+    }
+
+    private async Task<string> HandleStatusRequest()
+    {
+        try
+        {
+            var currentStatus = await _workStatusService.GetCurrentStatusAsync();
+            var statusSummary = _workStatusService.GetStatusSummary();
+            
+            return $@"📊 **Reynolds Work Status Report**
+
+{statusSummary}
+
+*Last updated: {DateTime.UtcNow:HH:mm} UTC*
+
+Want to know about my recent activity? Just ask 'Reynolds recent work' and I'll share what I've been orchestrating! 🎬";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error handling status request");
+            return "📊 **Status System Temporarily Unavailable**\n\nEven my status tracking is having a mysterious moment. I'm probably coordinating something so complex that it's temporarily broken my self-reporting capabilities.\n\n*Maximum effort to restore status visibility. Just Reynolds.*";
+        }
+    }
+
     // Proactive messaging capability
     public async Task SendProactiveMessageAsync(string userId, string message)
     {
@@ -337,17 +428,27 @@ public interface IReynoldsTeamsService
     Task SendOrganizationalUpdateAsync(string userId, string update);
     Task NotifyAboutScopeCreepAsync(string userId, string prNumber, string repository);
     Task CreateChatForCoordinationAsync(string userPrincipalName, string coordinationContext);
+    Task SendRandomMemeAsync(string userId, string? category = null);
+    Task SendWorkStatusUpdateAsync(string userId);
 }
 
 public class ReynoldsTeamsService : IReynoldsTeamsService
 {
     private readonly ReynoldsTeamsBot _bot;
     private readonly ILogger<ReynoldsTeamsService> _logger;
+    private readonly IReynoldsMemeService _memeService;
+    private readonly IReynoldsWorkStatusService _workStatusService;
 
-    public ReynoldsTeamsService(ReynoldsTeamsBot bot, ILogger<ReynoldsTeamsService> logger)
+    public ReynoldsTeamsService(
+        ReynoldsTeamsBot bot, 
+        ILogger<ReynoldsTeamsService> logger,
+        IReynoldsMemeService memeService,
+        IReynoldsWorkStatusService workStatusService)
     {
         _bot = bot;
         _logger = logger;
+        _memeService = memeService;
+        _workStatusService = workStatusService;
     }
 
     public async Task SendOrganizationalUpdateAsync(string userId, string update)
@@ -368,5 +469,73 @@ public class ReynoldsTeamsService : IReynoldsTeamsService
         
         var result = await _bot.CreateNewChatAsync(userPrincipalName, initialMessage);
         _logger.LogInformation("Coordination chat creation result: {Result}", result);
+    }
+
+    public async Task SendRandomMemeAsync(string userId, string? category = null)
+    {
+        try
+        {
+            var meme = await _memeService.GetRandomMemeAsync(category);
+            if (meme == null)
+            {
+                var fallbackMessage = "🎭 **Reynolds Meme Service**\n\nI wanted to send you a quality meme, but even my meme selection is having a mysterious moment. Like my name situation, some things are just unexplainable.\n\n*Maximum effort on the next meme. Just Reynolds.*";
+                await _bot.SendProactiveMessageAsync(userId, fallbackMessage);
+                return;
+            }
+
+            var memeMessage = FormatMemeForTeams(meme);
+            await _bot.SendProactiveMessageAsync(userId, memeMessage);
+            _logger.LogInformation("Reynolds sent meme {MemeId} to user {UserId}", meme.Id, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending meme to user {UserId}", userId);
+        }
+    }
+
+    public async Task SendWorkStatusUpdateAsync(string userId)
+    {
+        try
+        {
+            var statusSummary = _workStatusService.GetStatusSummary();
+            var message = $"📊 **Reynolds Work Status Update**\n\n{statusSummary}\n\n*Transparency with maximum effort and minimum drama. Just Reynolds.*";
+            
+            await _bot.SendProactiveMessageAsync(userId, message);
+            _logger.LogInformation("Reynolds sent work status update to user {UserId}", userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending work status update to user {UserId}", userId);
+        }
+    }
+
+    private string FormatMemeForTeams(MemeItem meme)
+    {
+        return $@"🎭 **Reynolds' Meme Delivery Service**
+
+**{meme.Name}**
+
+{meme.Description}
+
+{meme.Url}
+
+*Category: {meme.Category}*
+
+*{GetReynoldsMemeDeliveryFlavor()}*";
+    }
+
+    private string GetReynoldsMemeDeliveryFlavor()
+    {
+        var flavors = new[]
+        {
+            "Delivered with maximum effort and supernatural timing.",
+            "This meme has passed the Reynolds quality control process.",
+            "Like my organizational skills, this meme is mysteriously effective.",
+            "Bringing you premium content with the same precision I bring to stakeholder management.",
+            "A meme so good, it might distract you from asking about my name."
+        };
+        
+        var random = new Random();
+        return flavors[random.Next(flavors.Length)];
     }
 }

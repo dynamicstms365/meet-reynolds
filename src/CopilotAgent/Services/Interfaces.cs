@@ -86,3 +86,22 @@ public class CliOptions
     public string WorkingDirectory { get; set; } = string.Empty;
     public Dictionary<string, string> Environment { get; set; } = new();
 }
+
+// Reynolds Meme Service Interfaces
+public interface IReynoldsMemeService
+{
+    Task<MemeItem?> GetRandomMemeAsync(string? category = null);
+    Task<MemeItem[]> GetMemesByCategoryAsync(string category);
+    Task<MemeItem[]> GetAllMemesAsync();
+    Task<bool> AddMemeAsync(MemeItem meme);
+    Task<bool> SendMemeToChannelAsync(string channelId, MemeItem meme);
+}
+
+public interface IReynoldsWorkStatusService
+{
+    Task<ReynoldsWorkStatus> GetCurrentStatusAsync();
+    Task<ReynoldsWorkStatus[]> GetRecentActivityAsync(int count = 5);
+    Task<bool> UpdateCurrentTaskAsync(string task, string description, string repository = "");
+    Task<bool> CompleteCurrentTaskAsync();
+    string GetStatusSummary();
+}

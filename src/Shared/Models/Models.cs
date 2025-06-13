@@ -208,3 +208,37 @@ public class CliMonitoringOptions
     public TimeSpan MonitoringWindow { get; set; } = TimeSpan.FromMinutes(5);
     public bool EnableAlerting { get; set; } = true;
 }
+
+// Reynolds Meme and Status Models
+public class MemeItem
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Category { get; set; } = "general";
+    public string[] Tags { get; set; } = Array.Empty<string>();
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class ReynoldsWorkStatus
+{
+    public string Id { get; set; } = string.Empty;
+    public string CurrentTask { get; set; } = string.Empty;
+    public string TaskDescription { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public string Status { get; set; } = "active"; // active, completed, paused
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? CompletedAt { get; set; }
+    public int ProgressPercentage { get; set; } = 0;
+    public string[]? RelatedPullRequests { get; set; }
+}
+
+public class MemeScheduleSettings
+{
+    public bool EnableRandomMemes { get; set; } = false;
+    public TimeSpan MinInterval { get; set; } = TimeSpan.FromHours(2);
+    public TimeSpan MaxInterval { get; set; } = TimeSpan.FromHours(6);
+    public string[] TargetChannels { get; set; } = Array.Empty<string>();
+    public string[] Categories { get; set; } = Array.Empty<string>();
+}
