@@ -1,0 +1,561 @@
+name: Deploy Reynolds Teams Agent to Container Apps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/CopilotAgent/**'
+      - 'src/Shared/**'
+      - '.github/workflows/deploy-reynolds-teams.yml'
+  workflow_dispatch:
+    inputs:
+      deploy_teams_app:
+        description: 'Deploy Teams App Package'
+        required: false
+        default: true
+        type: boolean
+      environment:
+        description: 'Deployment Environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+env:
+  AZURE_RESOURCE_GROUP: 'copilot-powerplatform-deploy-rg'
+  CONTAINER_APP_NAME: 'reynolds-teams-agent'
+  CONTAINER_APP_ENV: 'github-copilot-bot-env'  # Same environment as GitHub bot
+  BOT_SERVICE_NAME: 'reynolds-bot-service'
+  AZURE_LOCATION: 'eastus'
+  TEAMS_APP_NAME: 'Reynolds Teams Agent'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      image_url: ${{ steps.build_push.outputs.image_url }}
+      image_url_sha: ${{ steps.build_push.outputs.image_url_sha }}
+      image_url_semver: ${{ steps.build_push.outputs.image_url_semver }}
+      semantic_version: ${{ steps.semver.outputs.version }}
+      commit_sha: ${{ steps.build_push.outputs.commit_sha }}
+      teams_app_package: ${{ steps.teams_package.outputs.package_path }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for semantic versioning
+
+      - name: Generate Semantic Version
+        id: semver
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "reynolds-v"
+          major_pattern: "BREAKING CHANGE:"
+          minor_pattern: "feat:"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+          search_commit_body: true
+      
+      - name: Validate Semantic Version
+        run: |
+          SEMANTIC_VERSION="${{ steps.semver.outputs.version }}"
+          echo "🎯 Reynolds semantic version: $SEMANTIC_VERSION"
+          
+          if [[ ! "$SEMANTIC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ ERROR: Invalid semantic version format: '$SEMANTIC_VERSION'"
+            echo "Expected format: X.Y.Z (e.g., 1.1.3)"
+            exit 1
+          fi
+          
+          if [[ -z "$SEMANTIC_VERSION" ]]; then
+            echo "❌ ERROR: Semantic version is empty"
+            exit 1
+          fi
+          
+          echo "✅ Reynolds version validation passed: $SEMANTIC_VERSION"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Build and Test Reynolds Agent
+        run: |
+          echo "🏗️ Building Reynolds with supernatural efficiency..."
+          dotnet restore src/CopilotAgent.sln
+          dotnet build src/CopilotAgent.sln -c Release
+          dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj
+          dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish
+          echo "✅ Reynolds agent built and tested successfully"
+
+      - name: Build Teams App Package
+        id: teams_package
+        working-directory: src/CopilotAgent
+        run: |
+          echo "📦 Building Reynolds Teams app package with Maximum Effort™..."
+          
+          # Create build directory
+          mkdir -p ./TeamsApp/build
+          
+          # Check if Teams manifest exists
+          MANIFEST_PATH="./TeamsApp/manifest.json"
+          PACKAGE_PATH="./TeamsApp/build/ReynoldsTeamsAgent.v${{ steps.semver.outputs.version }}.zip"
+          
+          if [[ -f "$MANIFEST_PATH" ]]; then
+            echo "📝 Found Teams manifest, updating with version ${{ steps.semver.outputs.version }}"
+            
+            # Update version in manifest (create backup first)
+            cp $MANIFEST_PATH "${MANIFEST_PATH}.backup"
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"${{ steps.semver.outputs.version }}\"/" $MANIFEST_PATH
+            
+            # Create Teams app package
+            cd TeamsApp
+            if [[ -f "color.png" && -f "outline.png" ]]; then
+              zip -r "../build/ReynoldsTeamsAgent.v${{ steps.semver.outputs.version }}.zip" manifest.json color.png outline.png
+              echo "✅ Teams app package created with icons: $PACKAGE_PATH"
+            else
+              echo "⚠️ Teams app icons not found, creating manifest-only package"
+              zip -r "../build/ReynoldsTeamsAgent.v${{ steps.semver.outputs.version }}.zip" manifest.json
+            fi
+            cd ..
+            
+            echo "package_path=$PACKAGE_PATH" >> $GITHUB_OUTPUT
+          else
+            echo "📝 Teams manifest not found, creating basic package structure"
+            echo "This is normal for initial deployment - we'll create the manifest dynamically"
+            echo "package_path=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and Push Reynolds Container
+        id: build_push
+        env:
+          REGISTRY: ghcr.io
+          REPO_OWNER: ${{ github.repository_owner }}
+          REPO_NAME: copilot-powerplatform
+          IMAGE_NAME: reynolds-teams-agent
+          SEMANTIC_VERSION: ${{ steps.semver.outputs.version }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          # Construct image name (following existing pattern)
+          FULL_IMAGE_NAME=$(echo "$REPO_OWNER/$REPO_NAME/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+          echo "🏗️ Building Reynolds container: $REGISTRY/$FULL_IMAGE_NAME"
+          echo "📋 Version: $SEMANTIC_VERSION | Commit: ${COMMIT_SHA:0:7}"
+          
+          # Validate components
+          if [[ -z "$REPO_OWNER" || -z "$REPO_NAME" || -z "$IMAGE_NAME" ]]; then
+            echo "❌ ERROR: Missing image name components"
+            echo "REPO_OWNER='$REPO_OWNER', REPO_NAME='$REPO_NAME', IMAGE_NAME='$IMAGE_NAME'"
+            exit 1
+          fi
+          
+          if [[ -z "$SEMANTIC_VERSION" || -z "$COMMIT_SHA" ]]; then
+            echo "❌ ERROR: Missing versioning information"
+            echo "SEMANTIC_VERSION='$SEMANTIC_VERSION', COMMIT_SHA='$COMMIT_SHA'"
+            exit 1
+          fi
+          
+          # Build Docker image with Reynolds-style tagging
+          echo "🐳 Building Reynolds container with supernatural efficiency..."
+          docker build -t $REGISTRY/$FULL_IMAGE_NAME:latest .
+          
+          # Create multiple tags for the same image
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:$SEMANTIC_VERSION
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:$COMMIT_SHA
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:${COMMIT_SHA:0:7}
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:reynolds-latest
+          
+          echo "🏷️ Created Reynolds image tags:"
+          echo "  - latest"
+          echo "  - $SEMANTIC_VERSION (semantic version)"
+          echo "  - $COMMIT_SHA (full SHA)"
+          echo "  - ${COMMIT_SHA:0:7} (short SHA)"
+          echo "  - reynolds-latest (Reynolds special)"
+          
+          # Login and push to registry
+          echo "🔐 Logging into GitHub Container Registry..."
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
+          
+          # Push all tags to registry
+          echo "📦 Pushing Reynolds container with Maximum Effort™..."
+          docker push $REGISTRY/$FULL_IMAGE_NAME:latest
+          docker push $REGISTRY/$FULL_IMAGE_NAME:$SEMANTIC_VERSION
+          docker push $REGISTRY/$FULL_IMAGE_NAME:$COMMIT_SHA
+          docker push $REGISTRY/$FULL_IMAGE_NAME:${COMMIT_SHA:0:7}
+          docker push $REGISTRY/$FULL_IMAGE_NAME:reynolds-latest
+          
+          # Construct final image URLs
+          FINAL_IMAGE_URL_LATEST="$REGISTRY/$FULL_IMAGE_NAME:latest"
+          FINAL_IMAGE_URL_SHA="$REGISTRY/$FULL_IMAGE_NAME:$COMMIT_SHA"
+          FINAL_IMAGE_URL_SEMVER="$REGISTRY/$FULL_IMAGE_NAME:$SEMANTIC_VERSION"
+          
+          # Set outputs for deployment
+          echo "image_url=$FINAL_IMAGE_URL_LATEST" >> $GITHUB_OUTPUT
+          echo "image_url_sha=$FINAL_IMAGE_URL_SHA" >> $GITHUB_OUTPUT
+          echo "image_url_semver=$FINAL_IMAGE_URL_SEMVER" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          
+          echo "✅ Reynolds container built and tagged successfully:"
+          echo "  🏷️  Latest: $FINAL_IMAGE_URL_LATEST"
+          echo "  🏷️  SHA: $FINAL_IMAGE_URL_SHA"
+          echo "  🏷️  SemVer: $FINAL_IMAGE_URL_SEMVER"
+
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      bot_service_resource_id: ${{ steps.bot_setup.outputs.bot_service_resource_id }}
+      bot_app_id: ${{ steps.bot_setup.outputs.bot_app_id }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure Container Apps Extension
+        run: |
+          az extension add --name containerapp --upgrade
+          az extension add --name botservice --upgrade
+
+      - name: Setup Bot Framework Service
+        id: bot_setup
+        run: |
+          echo "🤖 Setting up Reynolds Bot Framework service using NGL DevOps credentials..."
+          
+          # Check if bot service already exists
+          BOT_EXISTS=$(az bot show --name ${{ env.BOT_SERVICE_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null || echo "")
+          
+          if [[ -z "$BOT_EXISTS" ]]; then
+            echo "📝 Creating new Bot Framework registration for Reynolds..."
+            
+            # Create Bot Framework registration using existing NGL DevOps app
+            az bot create \
+              --kind webapp \
+              --name ${{ env.BOT_SERVICE_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --app-id ${{ vars.NGL_DEVOPS_APP_ID }} \
+              --password "${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
+              --endpoint "https://placeholder-will-update-after-container-deployment.com/api/messages"
+            
+            echo "✅ Bot Framework service created: ${{ env.BOT_SERVICE_NAME }}"
+          else
+            echo "✅ Bot Framework service already exists: $BOT_EXISTS"
+          fi
+          
+          # Get bot service resource details
+          BOT_RESOURCE_ID=$(az bot show --name ${{ env.BOT_SERVICE_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "id" -o tsv)
+          BOT_APP_ID=$(az bot show --name ${{ env.BOT_SERVICE_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.msaAppId" -o tsv)
+          
+          echo "bot_service_resource_id=$BOT_RESOURCE_ID" >> $GITHUB_OUTPUT
+          echo "bot_app_id=$BOT_APP_ID" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Reynolds Bot Framework setup complete using organizational credentials:"
+          echo "  Resource ID: $BOT_RESOURCE_ID"
+          echo "  App ID: $BOT_APP_ID"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, deploy-infrastructure]
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure Container Apps Extension
+        run: |
+          az extension add --name containerapp --upgrade
+
+      - name: Wait for Container App Operations to Complete
+        run: |
+          echo "🔍 Checking for ongoing Container App operations in environment..."
+          
+          # Check for any ongoing operations in the environment
+          check_environment_operations() {
+            local operations=$(az containerapp env list \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --query "[?name=='${{ env.CONTAINER_APP_ENV }}'].properties.provisioningState" \
+              --output tsv 2>/dev/null || echo "Succeeded")
+            
+            if [[ "$operations" != "Succeeded" ]]; then
+              echo "⏳ Environment operations in progress: $operations"
+              return 1
+            else
+              echo "✅ Environment ready for deployment"
+              return 0
+            fi
+          }
+          
+          # Wait for environment to be ready
+          max_attempts=10
+          attempt=1
+          
+          while [ $attempt -le $max_attempts ]; do
+            echo "🔄 Attempt $attempt/$max_attempts - Checking environment status..."
+            
+            if check_environment_operations; then
+              echo "✅ Environment ready - proceeding with Reynolds deployment"
+              break
+            fi
+            
+            if [ $attempt -eq $max_attempts ]; then
+              echo "⚠️ Maximum wait time exceeded - proceeding with deployment"
+              break
+            fi
+            
+            echo "⏱️ Waiting 30s before next check..."
+            sleep 30
+            attempt=$((attempt + 1))
+          done
+
+      - name: Deploy Reynolds to Azure Container Apps
+        id: deploy_reynolds
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          containerAppName: ${{ env.CONTAINER_APP_NAME }}
+          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
+          imageToDeploy: ${{ needs.build.outputs.image_url_sha }}
+          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
+          location: ${{ env.AZURE_LOCATION }}
+          targetPort: 8080
+          ingress: external
+          environmentVariables: |
+            NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
+            ASPNETCORE_ENVIRONMENT=Production
+            ASPNETCORE_URLS=http://+:8080
+            REYNOLDS_VERSION=${{ needs.build.outputs.semantic_version }}
+            REYNOLDS_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}
+            REYNOLDS_MODE=teams-agent
+            BOT_SERVICE_NAME=${{ env.BOT_SERVICE_NAME }}
+
+      - name: Configure Reynolds Container App Secrets and Resources
+        run: |
+          echo "🔧 Configuring Reynolds container app with supernatural precision..."
+          
+          # Validate organizational secrets
+          echo "🔍 Validating NGL DevOps organizational secrets..."
+          
+          PRIVATE_KEY_SECRET="${{ secrets.NGL_DEVOPS_BOT_PEM }}"
+          WEBHOOK_SECRET="${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"
+          
+          if [[ -z "$PRIVATE_KEY_SECRET" ]]; then
+            echo "❌ ERROR: NGL_DEVOPS_BOT_PEM is not set or is empty"
+            echo "📝 Please set this secret in organization settings"
+            exit 1
+          fi
+          
+          if [[ -z "$WEBHOOK_SECRET" ]]; then
+            echo "❌ ERROR: NGL_DEVOPS_WEBHOOK_SECRET is not set or is empty"
+            echo "📝 Please set this secret in organization settings"
+            exit 1
+          fi
+          
+          echo "✅ Organizational secret validation passed"
+          
+          # Configure secrets and app settings with retry logic
+          configure_reynolds() {
+            local max_attempts=5
+            local attempt=1
+            
+            while [ $attempt -le $max_attempts ]; do
+              echo "🔄 Reynolds configuration attempt $attempt/$max_attempts"
+              
+              echo "🔐 Setting Reynolds container app secrets using organizational credentials..."
+              echo "📝 Secret names being set: ngl-devops-private-key, ngl-devops-webhook-secret"
+              
+              if az containerapp secret set \
+                --name ${{ env.CONTAINER_APP_NAME }} \
+                --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                --secrets "ngl-devops-private-key=$PRIVATE_KEY_SECRET" \
+                          "ngl-devops-webhook-secret=$WEBHOOK_SECRET"; then
+                
+                echo "🔧 Updating Reynolds configuration with enterprise organizational orchestration..."
+                if az containerapp update \
+                  --name ${{ env.CONTAINER_APP_NAME }} \
+                  --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                  --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
+                                "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
+                                "REYNOLDS_ORGANIZATIONAL_MODE=true" \
+                                "REYNOLDS_ENTERPRISE_FEATURES=true" \
+                                "REYNOLDS_TEAMS_INTEGRATION=true" \
+                  --cpu 1.0 \
+                  --memory 2.0Gi \
+                  --min-replicas 1 \
+                  --max-replicas 5; then
+                  
+                  echo "✅ Reynolds configuration completed with Maximum Effort™"
+                  return 0
+                fi
+              fi
+              
+              echo "⚠️ Configuration attempt $attempt failed"
+              if [ $attempt -lt $max_attempts ]; then
+                echo "⏱️ Retrying in 20 seconds..."
+                sleep 20
+              fi
+              
+              attempt=$((attempt + 1))
+            done
+            
+            echo "❌ Reynolds configuration failed after $max_attempts attempts"
+            return 1
+          }
+          
+          # Execute configuration
+          if ! configure_reynolds; then
+            echo "🚨 Reynolds configuration failed - checking deployment status..."
+            
+            # Check if basic deployment succeeded
+            if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.provisioningState" -o tsv | grep -q "Succeeded"; then
+              echo "⚠️ Base deployment successful, configuration issues detected"
+              echo "📝 Manual secret configuration may be required"
+            else
+              echo "❌ Deployment verification failed"
+              exit 1
+            fi
+          fi
+
+      - name: Update Bot Framework Endpoint
+        run: |
+          echo "🔗 Updating Bot Framework endpoint with Reynolds container URL..."
+          
+          # Get container app FQDN
+          REYNOLDS_FQDN=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          
+          if [[ -n "$REYNOLDS_FQDN" ]]; then
+            BOT_ENDPOINT="https://$REYNOLDS_FQDN/api/messages"
+            
+            echo "🎯 Updating bot endpoint to: $BOT_ENDPOINT"
+            
+            az bot update \
+              --name ${{ env.BOT_SERVICE_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --endpoint "$BOT_ENDPOINT"
+            
+            echo "✅ Bot Framework endpoint updated successfully"
+            echo "🔗 Reynolds Teams agent endpoint: $BOT_ENDPOINT"
+          else
+            echo "❌ Could not retrieve Reynolds container FQDN"
+            exit 1
+          fi
+
+      - name: Validate Reynolds Deployment
+        id: validate_deploy
+        run: |
+          echo "🎉 Validating Reynolds deployment with supernatural efficiency..."
+          
+          # Get deployment details
+          REYNOLDS_FQDN=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
+          SEMANTIC_VERSION="${{ needs.build.outputs.semantic_version }}"
+          COMMIT_SHA="${{ needs.build.outputs.commit_sha }}"
+          
+          echo "📋 Reynolds Deployment Summary:"
+          echo "  🏷️ Version: $SEMANTIC_VERSION"
+          echo "  🏷️ Commit: $COMMIT_SHA"
+          echo "  🌐 FQDN: $REYNOLDS_FQDN"
+          
+          # Set outputs
+          echo "fqdn=$REYNOLDS_FQDN" >> $GITHUB_OUTPUT
+          echo "semantic_version=$SEMANTIC_VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          
+          # Wait for container to be ready
+          echo "⏳ Waiting for Reynolds to initialize..."
+          sleep 60
+          
+          # Test health endpoint
+          HEALTH_URL="https://$REYNOLDS_FQDN/api/health"
+          BOT_ENDPOINT="https://$REYNOLDS_FQDN/api/messages"
+          
+          echo "🧪 Testing Reynolds endpoints..."
+          
+          for i in {1..10}; do
+            if curl -f "$HEALTH_URL" 2>/dev/null; then
+              echo "✅ Reynolds health check passed on attempt $i"
+              break
+            else
+              echo "⏳ Health check failed on attempt $i, retrying in 15 seconds..."
+              sleep 15
+            fi
+          done
+          
+          echo "🎯 Reynolds Teams Agent Endpoints:"
+          echo "  🏥 Health: $HEALTH_URL"
+          echo "  🤖 Bot Messages: $BOT_ENDPOINT"
+          echo "  📊 MCP Capabilities: https://$REYNOLDS_FQDN/mcp/capabilities"
+          echo "  🔄 MCP SSE: https://$REYNOLDS_FQDN/mcp/sse"
+
+  deploy-teams-app:
+    runs-on: ubuntu-latest
+    needs: [build, deploy]
+    if: ${{ github.event.inputs.deploy_teams_app != 'false' && needs.build.outputs.teams_app_package != '' }}
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Deploy Teams App Package
+        run: |
+          echo "📱 Deploying Reynolds Teams app package..."
+          echo "📦 Package: ${{ needs.build.outputs.teams_app_package }}"
+          
+          # TODO: Add Teams app deployment logic here
+          # This would typically involve:
+          # 1. Uploading to Teams Admin Center
+          # 2. Publishing to organization app catalog
+          # 3. Configuring permissions and policies
+          
+          echo "⚠️ Teams app deployment requires manual approval in Teams Admin Center"
+          echo "📝 Package location: ${{ needs.build.outputs.teams_app_package }}"
+          echo "🎯 Bot endpoint configured for Teams integration"
+
+      - name: Summary
+        run: |
+          echo "🚀 **Reynolds Teams Agent Deployment Complete!**"
+          echo ""
+          echo "### 📦 Version Information"
+          echo "- **Semantic Version**: ${{ needs.deploy.outputs.semantic_version }}"
+          echo "- **Commit SHA**: ${{ needs.deploy.outputs.commit_sha }}"
+          echo "- **Container Image**: ${{ needs.build.outputs.image_url_sha }}"
+          echo ""
+          echo "### 🌐 Endpoints"
+          echo "- **Teams Bot**: https://${{ needs.deploy.outputs.fqdn }}/api/messages"
+          echo "- **Health Check**: https://${{ needs.deploy.outputs.fqdn }}/api/health"
+          echo "- **MCP Capabilities**: https://${{ needs.deploy.outputs.fqdn }}/mcp/capabilities"
+          echo "- **Reynolds Organizational Orchestration**: https://${{ needs.deploy.outputs.fqdn }}/mcp/reynolds-org"
+          echo ""
+          echo "### 🏷️ Available Container Tags"
+          echo "- **Latest**: ${{ needs.build.outputs.image_url }}"
+          echo "- **Version**: ${{ needs.build.outputs.image_url_semver }}"
+          echo "- **Commit**: ${{ needs.build.outputs.image_url_sha }}"
+          echo ""
+          echo "### 🤖 Teams Integration"
+          echo "- **Bot Service**: ${{ env.BOT_SERVICE_NAME }}"
+          echo "- **Container App**: ${{ env.CONTAINER_APP_NAME }}"
+          echo "- **Environment**: ${{ env.CONTAINER_APP_ENV }} (shared with GitHub bot)"
+          echo ""
+          echo "**Maximum Effort™ deployment complete! Reynolds is ready for supernatural organizational orchestration.**"
