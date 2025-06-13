@@ -190,7 +190,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ github.token }}
 
       - name: Create Resource Group
         run: |
@@ -285,7 +285,7 @@ jobs:
               --image ${{ needs.build.outputs.image_url_sha }} \
               --registry-server ghcr.io \
               --registry-username ${{ github.actor }} \
-              --registry-password ${{ secrets.GITHUB_TOKEN }} \
+              --registry-password ${{ github.token }} \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
