@@ -1,0 +1,111 @@
+# Reynolds Teams Agent Deployment Configuration
+# Adapted from Microsoft 365 Agents Toolkit patterns for enterprise-grade C# deployment
+version: v1.8
+
+environmentFolderPath: ./env
+
+# Triggered when deploying Reynolds to Azure
+provision:
+  # Creates Reynolds Teams app registration
+  - uses: teamsApp/create
+    with:
+      name: Reynolds Teams Agent${{APP_NAME_SUFFIX}}
+    writeToEnvironmentFile:
+      teamsAppId: TEAMS_APP_ID
+
+  # Deploy Azure infrastructure using Bicep templates
+  - uses: arm/deploy
+    with:
+      subscriptionId: ${{AZURE_SUBSCRIPTION_ID}}
+      resourceGroupName: ${{AZURE_RESOURCE_GROUP_NAME}}
+      templates:
+        - path: ./Infrastructure/azure.bicep
+          parameters: ./Infrastructure/azure.parameters.json
+          deploymentName: Deploy-Reynolds-Infrastructure
+      bicepCliVersion: v0.9.1
+
+  # Validate Reynolds Teams manifest
+  - uses: teamsApp/validateManifest
+    with:
+      manifestPath: ./TeamsApp/manifest.json
+
+  # Build Reynolds Teams app package
+  - uses: teamsApp/zipAppPackage
+    with:
+      manifestPath: ./TeamsApp/manifest.json
+      outputZipPath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+      outputFolder: ./TeamsApp/build
+
+  # Validate Reynolds app package
+  - uses: teamsApp/validateAppPackage
+    with:
+      appPackagePath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+
+  # Update Reynolds Teams app registration
+  - uses: teamsApp/update
+    with:
+      appPackagePath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+
+  # Extend Reynolds to M365 ecosystem
+  - uses: teamsApp/extendToM365
+    with:
+      appPackagePath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+    writeToEnvironmentFile:
+      titleId: M365_TITLE_ID
+      appId: M365_APP_ID
+
+# Triggered when deploying Reynolds code
+deploy:
+  # Build Reynolds C# application
+  - uses: cli/runCommand
+    name: build reynolds application
+    with:
+      command: dotnet build --configuration Release --no-restore
+      workingDirectory: .
+
+  # Publish Reynolds for deployment
+  - uses: cli/runCommand
+    name: publish reynolds application
+    with:
+      command: dotnet publish --configuration Release --output ./publish --no-build
+      workingDirectory: .
+
+  # Deploy Reynolds to Azure App Service
+  - uses: azureAppService/zipDeploy
+    with:
+      artifactFolder: ./publish
+      ignoreFile: .webappignore
+      resourceId: ${{BOT_AZURE_APP_SERVICE_RESOURCE_ID}}
+
+# Triggered when publishing Reynolds to organization
+publish:
+  # Validate Reynolds Teams manifest
+  - uses: teamsApp/validateManifest
+    with:
+      manifestPath: ./TeamsApp/manifest.json
+
+  # Build final Reynolds app package
+  - uses: teamsApp/zipAppPackage
+    with:
+      manifestPath: ./TeamsApp/manifest.json
+      outputZipPath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+      outputFolder: ./TeamsApp/build
+
+  # Validate final Reynolds package
+  - uses: teamsApp/validateAppPackage
+    with:
+      appPackagePath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+
+  # Update Reynolds Teams app
+  - uses: teamsApp/update
+    with:
+      appPackagePath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+
+  # Publish Reynolds to Teams Admin Center
+  - uses: teamsApp/publishAppPackage
+    with:
+      appPackagePath: ./TeamsApp/build/ReynoldsTeamsAgent.${{TEAMSFX_ENV}}.zip
+    writeToEnvironmentFile:
+      publishedAppId: TEAMS_APP_PUBLISHED_APP_ID
+
+projectId: reynolds-supernatural-orchestration-agent
