@@ -125,22 +125,137 @@ public class GitHubCopilotMcpServer : ControllerBase
         }
     }
 
-    [HttpGet("sse")]
-    public async Task ServerSentEvents()
+    /// <summary>
+    /// Modern Streamable HTTP Transport endpoint - Enterprise MCP Standard
+    /// Single unified endpoint for all MCP communication with optional SSE streaming
+    /// Replaces legacy dual-endpoint SSE transport that caused 401 authentication issues
+    /// </summary>
+    [HttpPost("")]
+    [HttpGet("")]
+    public async Task<IActionResult> StreamableHttpTransport()
     {
-        // Validate authentication before establishing SSE connection
+        // 🎭 Reynolds Enterprise Authentication Detective
         if (!await ValidateAuthenticationAsync())
         {
-            Response.StatusCode = 401;
-            await Response.WriteAsync("Unauthorized: Invalid or missing authentication");
-            return;
+            _logger.LogWarning("🔒 Reynolds Auth Detective: Unauthorized MCP request blocked - missing or invalid credentials");
+            return Unauthorized(new {
+                success = false,
+                error = "Authentication required",
+                transport = "streamable-http",
+                message = "Reynolds Enterprise MCP requires proper authentication headers"
+            });
         }
 
+        _logger.LogInformation("🚀 Reynolds MCP: Streamable HTTP transport request authenticated successfully");
+
+        // Handle MCP protocol based on request type
+        if (Request.Method == "GET")
+        {
+            return await HandleStreamableHttpGetAsync();
+        }
+        else if (Request.Method == "POST")
+        {
+            return await HandleStreamableHttpPostAsync();
+        }
+
+        return BadRequest(new {
+            success = false,
+            error = "Unsupported HTTP method for MCP transport",
+            supportedMethods = new[] { "GET", "POST" }
+        });
+    }
+
+    /// <summary>
+    /// Handle GET requests for Streamable HTTP transport (typically for SSE streaming)
+    /// </summary>
+    private async Task<IActionResult> HandleStreamableHttpGetAsync()
+    {
+        // Check if client wants SSE streaming
+        var acceptHeader = Request.Headers["Accept"].FirstOrDefault();
+        if (acceptHeader?.Contains("text/event-stream") == true)
+        {
+            return await HandleServerSentEventsAsync();
+        }
+
+        // Otherwise return server capabilities
+        _logger.LogInformation("🔍 Reynolds MCP: Returning server capabilities via Streamable HTTP");
+        var capabilities = new
+        {
+            name = "github-copilot-bot",
+            version = "1.0.0",
+            description = "Reynolds Enterprise GitHub Copilot Bot MCP Server - Streamable HTTP Transport",
+            transport = "streamable-http",
+            authentication = "enterprise-ready",
+            tools = GetAvailableTools(),
+            resources = GetAvailableResources(),
+            features = new
+            {
+                streaming = true,
+                authentication = new[] { "Bearer", "API-Key", "GitHub-Token" },
+                enterprise_gateway_ready = true,
+                reynolds_orchestrated = true
+            }
+        };
+
+        return Ok(capabilities);
+    }
+
+    /// <summary>
+    /// Handle POST requests for Streamable HTTP transport (tool execution, resource access)
+    /// </summary>
+    private async Task<IActionResult> HandleStreamableHttpPostAsync()
+    {
+        try
+        {
+            using var reader = new StreamReader(Request.Body);
+            var requestBody = await reader.ReadToEndAsync();
+            
+            if (string.IsNullOrEmpty(requestBody))
+            {
+                return BadRequest(new { success = false, error = "Request body is required for MCP operations" });
+            }
+
+            var mcpRequest = JsonSerializer.Deserialize<JsonElement>(requestBody);
+            
+            // Determine MCP operation type
+            if (mcpRequest.TryGetProperty("method", out var methodElement))
+            {
+                var method = methodElement.GetString();
+                _logger.LogInformation("🎯 Reynolds MCP: Processing method '{Method}' via Streamable HTTP", method);
+
+                return method switch
+                {
+                    "tools/call" => await HandleToolCallAsync(mcpRequest),
+                    "resources/read" => await HandleResourceReadAsync(mcpRequest),
+                    "ping" => Ok(new { success = true, message = "Reynolds MCP Server operational", timestamp = DateTime.UtcNow }),
+                    _ => BadRequest(new { success = false, error = $"Unknown MCP method: {method}" })
+                };
+            }
+
+            return BadRequest(new { success = false, error = "MCP request must include 'method' property" });
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "🚨 Reynolds MCP: Invalid JSON in request body");
+            return BadRequest(new { success = false, error = "Invalid JSON format" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🚨 Reynolds MCP: Error processing Streamable HTTP request");
+            return StatusCode(500, new { success = false, error = "Internal server error" });
+        }
+    }
+
+    /// <summary>
+    /// Handle Server-Sent Events for real-time streaming
+    /// </summary>
+    private async Task<IActionResult> HandleServerSentEventsAsync()
+    {
         Response.Headers["Content-Type"] = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
         Response.Headers["Connection"] = "keep-alive";
         Response.Headers["Access-Control-Allow-Origin"] = "*";
-        Response.Headers["Access-Control-Allow-Headers"] = "Authorization";
+        Response.Headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type";
 
         var writer = new StreamWriter(Response.Body);
 
@@ -148,19 +263,19 @@ public class GitHubCopilotMcpServer : ControllerBase
         {
             // Send initial connection event
             await writer.WriteLineAsync("event: connected");
-            await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"message\": \"Connected to GitHub Copilot Bot MCP Server\", \"authenticated\": true}}");
+            await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"message\": \"Reynolds Enterprise MCP Server - Streamable HTTP with SSE\", \"authenticated\": true, \"transport\": \"streamable-http\"}}");
             await writer.WriteLineAsync();
             await writer.FlushAsync();
 
-            _logger.LogInformation("SSE connection established with authentication");
+            _logger.LogInformation("🔗 Reynolds MCP: SSE connection established via Streamable HTTP transport");
 
-            // Keep connection alive and send periodic heartbeats
+            // Keep connection alive with enterprise-grade heartbeats
             while (!HttpContext.RequestAborted.IsCancellationRequested)
             {
                 try
                 {
                     await writer.WriteLineAsync("event: heartbeat");
-                    await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"status\": \"alive\"}}");
+                    await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"status\": \"alive\", \"reynolds_active\": true}}");
                     await writer.WriteLineAsync();
                     await writer.FlushAsync();
 
@@ -172,18 +287,18 @@ public class GitHubCopilotMcpServer : ControllerBase
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error sending SSE heartbeat");
+                    _logger.LogError(ex, "🚨 Reynolds MCP: Error sending SSE heartbeat");
                     break;
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in SSE connection");
+            _logger.LogError(ex, "🚨 Reynolds MCP: Error in SSE connection");
             try
             {
                 await writer.WriteLineAsync("event: error");
-                await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"error\": \"Connection error\"}}");
+                await writer.WriteLineAsync($"data: {{\"timestamp\": \"{DateTime.UtcNow:O}\", \"error\": \"Connection error\", \"transport\": \"streamable-http\"}}");
                 await writer.WriteLineAsync();
                 await writer.FlushAsync();
             }
@@ -194,8 +309,119 @@ public class GitHubCopilotMcpServer : ControllerBase
         }
         finally
         {
-            _logger.LogInformation("SSE connection closed");
+            _logger.LogInformation("🔗 Reynolds MCP: SSE connection closed");
         }
+
+        return new EmptyResult();
+    }
+
+    /// <summary>
+    /// Handle MCP tool calls via Streamable HTTP transport
+    /// </summary>
+    private async Task<IActionResult> HandleToolCallAsync(JsonElement mcpRequest)
+    {
+        try
+        {
+            if (!mcpRequest.TryGetProperty("params", out var paramsElement) ||
+                !paramsElement.TryGetProperty("name", out var nameElement) ||
+                !paramsElement.TryGetProperty("arguments", out var argumentsElement))
+            {
+                return BadRequest(new { success = false, error = "Tool call requires 'name' and 'arguments' in params" });
+            }
+
+            var toolName = nameElement.GetString();
+            _logger.LogInformation("🔧 Reynolds MCP: Executing tool '{ToolName}' via Streamable HTTP", toolName);
+
+            var result = toolName?.ToLowerInvariant() switch
+            {
+                "semantic_search" => await ExecuteSemanticSearchAsync(argumentsElement),
+                "create_discussion" => await ExecuteCreateDiscussionAsync(argumentsElement),
+                "create_issue" => await ExecuteCreateIssueAsync(argumentsElement),
+                "add_comment" => await ExecuteAddCommentAsync(argumentsElement),
+                "update_content" => await ExecuteUpdateContentAsync(argumentsElement),
+                "get_discussion" => await ExecuteGetDiscussionAsync(argumentsElement),
+                "get_issue" => await ExecuteGetIssueAsync(argumentsElement),
+                "search_discussions" => await ExecuteSearchDiscussionsAsync(argumentsElement),
+                "search_issues" => await ExecuteSearchIssuesAsync(argumentsElement),
+                "organization_discussions" => await ExecuteGetOrganizationDiscussionsAsync(argumentsElement),
+                "organization_issues" => await ExecuteGetOrganizationIssuesAsync(argumentsElement),
+                "prompt_action" => await ExecutePromptBasedActionAsync(argumentsElement),
+                _ => new { success = false, error = $"Unknown tool: {toolName}" }
+            };
+
+            return Ok(new { success = true, result });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🚨 Reynolds MCP: Error executing tool via Streamable HTTP");
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Handle MCP resource reads via Streamable HTTP transport
+    /// </summary>
+    private async Task<IActionResult> HandleResourceReadAsync(JsonElement mcpRequest)
+    {
+        try
+        {
+            if (!mcpRequest.TryGetProperty("params", out var paramsElement) ||
+                !paramsElement.TryGetProperty("uri", out var uriElement))
+            {
+                return BadRequest(new { success = false, error = "Resource read requires 'uri' in params" });
+            }
+
+            var resourceUri = uriElement.GetString();
+            var decodedUri = Uri.UnescapeDataString(resourceUri ?? "");
+            _logger.LogInformation("📚 Reynolds MCP: Accessing resource '{ResourceUri}' via Streamable HTTP", decodedUri);
+
+            var parts = decodedUri.Split('/');
+            if (parts.Length < 2)
+            {
+                return BadRequest(new { success = false, error = "Invalid resource URI format" });
+            }
+
+            var resourceType = parts[0];
+            var result = resourceType.ToLowerInvariant() switch
+            {
+                "discussions" => await GetDiscussionsResourceAsync(parts),
+                "issues" => await GetIssuesResourceAsync(parts),
+                "search" => await GetSearchResourceAsync(parts),
+                "organization" => await GetOrganizationResourceAsync(parts),
+                _ => new { success = false, error = $"Unknown resource type: {resourceType}" }
+            };
+
+            return Ok(new { success = true, result });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "🚨 Reynolds MCP: Error accessing resource via Streamable HTTP");
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Legacy SSE endpoint - maintained for backward compatibility
+    /// Redirects to modern Streamable HTTP transport
+    /// </summary>
+    [HttpGet("sse")]
+    public async Task<IActionResult> LegacySseEndpoint()
+    {
+        _logger.LogWarning("⚠️ Reynolds MCP: Legacy SSE endpoint accessed - redirecting to Streamable HTTP transport");
+        
+        // Validate authentication
+        if (!await ValidateAuthenticationAsync())
+        {
+            return Unauthorized(new {
+                success = false,
+                error = "Authentication required",
+                message = "Legacy SSE endpoint requires authentication - consider upgrading to Streamable HTTP transport",
+                recommendedEndpoint = "/mcp"
+            });
+        }
+
+        // Redirect to modern transport with SSE support
+        return await HandleServerSentEventsAsync();
     }
 
     private async Task<bool> ValidateAuthenticationAsync()
