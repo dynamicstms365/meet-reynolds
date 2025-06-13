@@ -17,15 +17,18 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
 {
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly ISecurityAuditService _auditService;
+    private readonly IScopeCreepMonitoringService _scopeCreepMonitoringService;
     private readonly ILogger<OctokitWebhookEventProcessor> _logger;
 
     public OctokitWebhookEventProcessor(
         IGitHubWorkflowOrchestrator workflowOrchestrator,
         ISecurityAuditService auditService,
+        IScopeCreepMonitoringService scopeCreepMonitoringService,
         ILogger<OctokitWebhookEventProcessor> logger)
     {
         _workflowOrchestrator = workflowOrchestrator;
         _auditService = auditService;
+        _scopeCreepMonitoringService = scopeCreepMonitoringService;
         _logger = logger;
     }
 
@@ -112,6 +115,19 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
             
             await _auditService.LogWebhookEventAsync(payload, result.Success ? "SUCCESS" : "FAILED");
             
+            // Record scope event for monitoring
+            await RecordScopeEventAsync(pullRequestEvent.Repository?.FullName ?? "", action.ToString(), new Dictionary<string, object>
+            {
+                { "pr_number", pullRequestEvent.PullRequest.Number },
+                { "title", pullRequestEvent.PullRequest.Title },
+                { "action", action.ToString() },
+                { "author", pullRequestEvent.PullRequest.User?.Login ?? "" },
+                { "created_at", pullRequestEvent.PullRequest.CreatedAt },
+                { "updated_at", pullRequestEvent.PullRequest.UpdatedAt },
+                { "draft", pullRequestEvent.PullRequest.Draft },
+                { "state", pullRequestEvent.PullRequest.State.ToString() }
+            });
+            
             _logger.LogInformation("Pull request webhook processed: {Success}, Actions: {ActionsCount}", 
                 result.Success, result.Actions.Count);
         }
@@ -151,6 +167,17 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
             var result = await _workflowOrchestrator.ProcessWebhookEventAsync(payload);
             
             await _auditService.LogWebhookEventAsync(payload, result.Success ? "SUCCESS" : "FAILED");
+            
+            // Record scope event for monitoring
+            await RecordScopeEventAsync(issuesEvent.Repository?.FullName ?? "", action.ToString(), new Dictionary<string, object>
+            {
+                { "issue_number", issuesEvent.Issue.Number },
+                { "title", issuesEvent.Issue.Title },
+                { "action", action.ToString() },
+                { "author", issuesEvent.Issue.User?.Login ?? "" },
+                { "created_at", issuesEvent.Issue.CreatedAt },
+                { "updated_at", issuesEvent.Issue.UpdatedAt }
+            });
             
             _logger.LogInformation("Issues webhook processed: {Success}, Actions: {ActionsCount}", 
                 result.Success, result.Actions.Count);
@@ -444,5 +471,27 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
             Login = sender.Login,
             Type = sender.Type.ToString()
         };
+    }
+
+    /// <summary>
+    /// Record scope events for monitoring scope creep
+    /// </summary>
+    private async Task RecordScopeEventAsync(string repository, string eventType, Dictionary<string, object> eventData)
+    {
+        try
+        {
+            // Only record events for scope-relevant actions
+            var scopeRelevantActions = new[] { "opened", "created", "closed", "reopened", "edited" };
+            if (scopeRelevantActions.Contains(eventType))
+            {
+                await _scopeCreepMonitoringService.RecordScopeEventAsync(repository, eventType, eventData);
+                _logger.LogDebug("Recorded scope event: {Repository} - {EventType}", repository, eventType);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error recording scope event for {Repository}: {EventType}", repository, eventType);
+            // Don't throw to avoid breaking webhook processing
+        }
     }
 }

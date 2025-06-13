@@ -46,6 +46,9 @@ builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearc
 // Register GitHub workflow orchestrator
 builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
 
+// Register scope creep monitoring service
+builder.Services.AddScoped<IScopeCreepMonitoringService, ScopeCreepMonitoringService>();
+
 // Register Octokit webhook processor (replaces custom webhook controller)
 builder.Services.AddSingleton<WebhookEventProcessor, OctokitWebhookEventProcessor>();
 

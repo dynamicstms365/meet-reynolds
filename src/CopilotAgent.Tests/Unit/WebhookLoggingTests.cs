@@ -11,6 +11,7 @@ public class WebhookLoggingTests
     private Mock<ILogger<OctokitWebhookEventProcessor>> _mockLogger;
     private Mock<IGitHubWorkflowOrchestrator> _mockOrchestrator;
     private Mock<ISecurityAuditService> _mockAuditService;
+    private Mock<IScopeCreepMonitoringService> _mockScopeMonitoringService;
 
     [SetUp]
     public void Setup()
@@ -18,6 +19,7 @@ public class WebhookLoggingTests
         _mockLogger = new Mock<ILogger<OctokitWebhookEventProcessor>>();
         _mockOrchestrator = new Mock<IGitHubWorkflowOrchestrator>();
         _mockAuditService = new Mock<ISecurityAuditService>();
+        _mockScopeMonitoringService = new Mock<IScopeCreepMonitoringService>();
     }
 
     [Test]
@@ -27,6 +29,7 @@ public class WebhookLoggingTests
         var processor = new OctokitWebhookEventProcessor(
             _mockOrchestrator.Object,
             _mockAuditService.Object,
+            _mockScopeMonitoringService.Object,
             _mockLogger.Object);
 
         // Assert
@@ -40,6 +43,7 @@ public class WebhookLoggingTests
         var processor = new OctokitWebhookEventProcessor(
             _mockOrchestrator.Object,
             _mockAuditService.Object,
+            _mockScopeMonitoringService.Object,
             _mockLogger.Object);
 
         // Act & Assert - This validates that the processor is properly constructed

@@ -47,6 +47,16 @@ public interface IM365CliService
     Task<CliResult> ExecuteAsync(string command);
 }
 
+public interface IScopeCreepMonitoringService
+{
+    Task<ScopeDeviationMetrics> AnalyzeProjectScopeAsync(string repository, ProjectScopeParameters scopeParameters);
+    Task<ScopeCreepAlert?> CheckForScopeCreepAsync(string repository, ProjectScopeParameters scopeParameters);
+    Task RecordScopeEventAsync(string repository, string eventType, Dictionary<string, object> eventData);
+    Task<List<ScopeCreepAlert>> GetRecentAlertsAsync(string repository, TimeSpan window);
+    Task<bool> IsProjectWithinScopeAsync(string repository, ProjectScopeParameters scopeParameters);
+    Task SendScopeCreepAlertAsync(ScopeCreepAlert alert);
+}
+
 // Supporting classes
 public class Environment
 {

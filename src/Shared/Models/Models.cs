@@ -208,3 +208,76 @@ public class CliMonitoringOptions
     public TimeSpan MonitoringWindow { get; set; } = TimeSpan.FromMinutes(5);
     public bool EnableAlerting { get; set; } = true;
 }
+
+// Scope Creep Monitoring Models
+public class ProjectScopeParameters
+{
+    public string ProjectId { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public int ExpectedIssueCount { get; set; }
+    public int ExpectedPullRequestCount { get; set; }
+    public int ExpectedTaskCount { get; set; }
+    public DateTime ProjectStartDate { get; set; }
+    public DateTime? ProjectEndDate { get; set; }
+    public double ScopeDeviationThreshold { get; set; } = 0.25; // 25% deviation threshold
+    public List<string> ScopeKeywords { get; set; } = new();
+    public Dictionary<string, object> CustomParameters { get; set; } = new();
+}
+
+public class ScopeDeviationMetrics
+{
+    public string ProjectId { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    
+    // Current vs Expected Counts
+    public int CurrentIssueCount { get; set; }
+    public int CurrentPullRequestCount { get; set; }
+    public int CurrentTaskCount { get; set; }
+    public int ExpectedIssueCount { get; set; }
+    public int ExpectedPullRequestCount { get; set; }
+    public int ExpectedTaskCount { get; set; }
+    
+    // Deviation Calculations
+    public double IssueDeviation { get; set; }
+    public double PullRequestDeviation { get; set; }
+    public double TaskDeviation { get; set; }
+    public double OverallDeviation { get; set; }
+    
+    // Scope Creep Indicators
+    public bool HasScopeCreep { get; set; }
+    public List<string> CreepIndicators { get; set; } = new();
+    public List<string> RecentAdditions { get; set; } = new();
+}
+
+public class ScopeCreepAlert
+{
+    public string ProjectId { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public ScopeCreepSeverity Severity { get; set; }
+    public string Summary { get; set; } = string.Empty;
+    public string ReynoldsMessage { get; set; } = string.Empty; // Reynolds-style witty message
+    public List<string> Changes { get; set; } = new();
+    public List<string> Recommendations { get; set; } = new();
+    public ScopeDeviationMetrics Metrics { get; set; } = new();
+    public Dictionary<string, object> AdditionalData { get; set; } = new();
+}
+
+public enum ScopeCreepSeverity
+{
+    Low,
+    Medium,
+    High,
+    Critical
+}
+
+public class ScopeMonitoringOptions
+{
+    public bool EnableScopeMonitoring { get; set; } = true;
+    public double ScopeDeviationThreshold { get; set; } = 0.25; // 25% deviation threshold
+    public TimeSpan MonitoringWindow { get; set; } = TimeSpan.FromHours(1);
+    public bool EnableReynoldsMessages { get; set; } = true;
+    public bool EnableRecommendations { get; set; } = true;
+    public int MaxRecentAdditionsToTrack { get; set; } = 10;
+}
