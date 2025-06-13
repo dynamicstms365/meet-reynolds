@@ -1,6 +1,7 @@
 using CopilotAgent.Agents;
 using CopilotAgent.Services;
 using CopilotAgent.Skills;
+using CopilotAgent.Middleware;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 
@@ -64,6 +65,13 @@ if (!app.Environment.IsProduction())
 }
 
 app.UseAuthorization();
+
+// Add webhook logging middleware before webhook processing
+app.UseWebhookLogging();
+
+// Add signature validation failure logging middleware
+app.UseSignatureValidationLogging();
+
 app.MapControllers();
 
 // Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore
