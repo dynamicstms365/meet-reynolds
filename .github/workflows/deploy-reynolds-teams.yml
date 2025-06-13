@@ -216,6 +216,8 @@ jobs:
     outputs:
       bot_service_resource_id: ${{ steps.bot_setup.outputs.bot_service_resource_id }}
       bot_app_id: ${{ steps.bot_setup.outputs.bot_app_id }}
+      reynolds_app_id: ${{ steps.bot_setup.outputs.reynolds_app_id }}
+      reynolds_app_secret: ${{ steps.bot_setup.outputs.reynolds_app_secret }}
       
     steps:
       - name: Checkout code
@@ -230,29 +232,82 @@ jobs:
         run: |
           az extension add --name containerapp --upgrade
 
-      - name: Setup Bot Framework Service
+      - name: Install Microsoft 365 Agents Toolkit CLI
+        run: |
+          echo "📦 Installing ATK CLI for proper Azure app registration..."
+          npm install -g @microsoft/m365-agents-toolkit-cli
+          echo "✅ ATK CLI installed successfully"
+
+      - name: Setup Azure App Registration & Bot Framework Service
         id: bot_setup
         run: |
-          echo "🤖 Setting up Reynolds Bot Framework service using NGL DevOps credentials..."
+          echo "🤖 Setting up Reynolds Azure app registration and Bot Framework service..."
           
           # Check if bot service already exists
           BOT_EXISTS=$(az bot show --name ${{ env.BOT_SERVICE_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "name" -o tsv 2>/dev/null || echo "")
           
           if [[ -z "$BOT_EXISTS" ]]; then
-            echo "📝 Creating new Bot Framework registration for Reynolds..."
+            echo "📝 Creating Azure app registration for Reynolds Teams Agent..."
             
-            # Create Bot Framework registration using existing NGL DevOps app
+            # Create Azure app registration using proper ATK CLI approach
+            APP_REGISTRATION_RESULT=$(az ad app create \
+              --display-name "Reynolds Teams Agent" \
+              --app-roles '[{
+                "allowedMemberTypes": ["Application"],
+                "description": "Reynolds Teams Agent Bot",
+                "displayName": "Reynolds Bot",
+                "id": "'$(uuidgen)'",
+                "isEnabled": true,
+                "value": "Bot"
+              }]' \
+              --required-resource-accesses '[{
+                "resourceAppId": "00000003-0000-0000-c000-000000000000",
+                "resourceAccess": [{
+                  "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+                  "type": "Scope"
+                }]
+              }]')
+            
+            REYNOLDS_APP_ID=$(echo "$APP_REGISTRATION_RESULT" | jq -r '.appId')
+            REYNOLDS_APP_OBJECT_ID=$(echo "$APP_REGISTRATION_RESULT" | jq -r '.id')
+            
+            echo "📝 Created Azure app registration: $REYNOLDS_APP_ID"
+            
+            # Create app password/secret
+            APP_SECRET_RESULT=$(az ad app credential reset \
+              --id $REYNOLDS_APP_ID \
+              --display-name "Reynolds Teams Agent Secret" \
+              --years 2)
+            
+            REYNOLDS_APP_SECRET=$(echo "$APP_SECRET_RESULT" | jq -r '.password')
+            
+            echo "🔐 Created app secret for Reynolds"
+            
+            # Create Bot Framework registration using proper Azure app
             az bot create \
-              --kind webapp \
+              --kind registration \
               --name ${{ env.BOT_SERVICE_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --app-id ${{ vars.NGL_DEVOPS_APP_ID }} \
-              --password "${{ secrets.NGL_DEVOPS_BOT_PEM }}" \
-              --endpoint "https://placeholder-will-update-after-container-deployment.com/api/messages"
+              --appid $REYNOLDS_APP_ID \
+              --password "$REYNOLDS_APP_SECRET" \
+              --endpoint "https://placeholder-will-update-after-container-deployment.com/api/messages" \
+              --app-type UserAssignedMSI
             
             echo "✅ Bot Framework service created: ${{ env.BOT_SERVICE_NAME }}"
+            echo "🔑 App ID: $REYNOLDS_APP_ID"
+            
+            # Store the app secret as a container app secret for runtime use
+            echo "🔐 Storing Reynolds app credentials for container deployment..."
+            echo "reynolds_app_id=$REYNOLDS_APP_ID" >> $GITHUB_OUTPUT
+            echo "reynolds_app_secret=$REYNOLDS_APP_SECRET" >> $GITHUB_OUTPUT
+            
           else
             echo "✅ Bot Framework service already exists: $BOT_EXISTS"
+            
+            # Get existing app details
+            EXISTING_APP_ID=$(az bot show --name ${{ env.BOT_SERVICE_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.msaAppId" -o tsv)
+            echo "reynolds_app_id=$EXISTING_APP_ID" >> $GITHUB_OUTPUT
+            echo "reynolds_app_secret=" >> $GITHUB_OUTPUT  # Will use existing secret in container
           fi
           
           # Get bot service resource details
@@ -262,7 +317,7 @@ jobs:
           echo "bot_service_resource_id=$BOT_RESOURCE_ID" >> $GITHUB_OUTPUT
           echo "bot_app_id=$BOT_APP_ID" >> $GITHUB_OUTPUT
           
-          echo "🎯 Reynolds Bot Framework setup complete using organizational credentials:"
+          echo "🎯 Reynolds Bot Framework setup complete with proper Azure app registration:"
           echo "  Resource ID: $BOT_RESOURCE_ID"
           echo "  App ID: $BOT_APP_ID"
 
@@ -353,25 +408,29 @@ jobs:
         run: |
           echo "🔧 Configuring Reynolds container app with supernatural precision..."
           
-          # Validate organizational secrets
-          echo "🔍 Validating NGL DevOps organizational secrets..."
+          # Get Reynolds app credentials from previous step
+          REYNOLDS_APP_ID="${{ needs.deploy-infrastructure.outputs.reynolds_app_id }}"
+          REYNOLDS_APP_SECRET="${{ needs.deploy-infrastructure.outputs.reynolds_app_secret }}"
           
-          PRIVATE_KEY_SECRET="${{ secrets.NGL_DEVOPS_BOT_PEM }}"
-          WEBHOOK_SECRET="${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"
+          # Validate Reynolds-specific secrets (separate from GitHub/NGL DevOps)
+          echo "🔍 Validating Reynolds Teams app credentials..."
           
-          if [[ -z "$PRIVATE_KEY_SECRET" ]]; then
-            echo "❌ ERROR: NGL_DEVOPS_BOT_PEM is not set or is empty"
-            echo "📝 Please set this secret in organization settings"
+          if [[ -z "$REYNOLDS_APP_ID" ]]; then
+            echo "❌ ERROR: Reynolds app ID is not available"
+            echo "📝 Check Azure app registration step"
             exit 1
           fi
           
-          if [[ -z "$WEBHOOK_SECRET" ]]; then
-            echo "❌ ERROR: NGL_DEVOPS_WEBHOOK_SECRET is not set or is empty"
-            echo "📝 Please set this secret in organization settings"
-            exit 1
+          # Only validate secret if it was created (new apps)
+          if [[ -n "$REYNOLDS_APP_SECRET" ]]; then
+            echo "✅ New Reynolds app secret available for configuration"
+            SECRET_CONFIG="reynolds-app-secret=$REYNOLDS_APP_SECRET"
+          else
+            echo "📝 Using existing Reynolds app - secret already configured"
+            SECRET_CONFIG=""
           fi
           
-          echo "✅ Organizational secret validation passed"
+          echo "✅ Reynolds app credential validation passed"
           
           # Configure secrets and app settings with retry logic
           configure_reynolds() {
@@ -381,32 +440,49 @@ jobs:
             while [ $attempt -le $max_attempts ]; do
               echo "🔄 Reynolds configuration attempt $attempt/$max_attempts"
               
-              echo "🔐 Setting Reynolds container app secrets using organizational credentials..."
-              echo "📝 Secret names being set: ngl-devops-private-key, ngl-devops-webhook-secret"
-              
-              if az containerapp secret set \
-                --name ${{ env.CONTAINER_APP_NAME }} \
-                --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-                --secrets "ngl-devops-private-key=$PRIVATE_KEY_SECRET" \
-                          "ngl-devops-webhook-secret=$WEBHOOK_SECRET"; then
-                
-                echo "🔧 Updating Reynolds configuration with enterprise organizational orchestration..."
-                if az containerapp update \
+              if [[ -n "$SECRET_CONFIG" ]]; then
+                echo "🔐 Setting Reynolds container app secret for new app..."
+                if ! az containerapp secret set \
                   --name ${{ env.CONTAINER_APP_NAME }} \
                   --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-                  --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
-                                "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
-                                "REYNOLDS_ORGANIZATIONAL_MODE=true" \
-                                "REYNOLDS_ENTERPRISE_FEATURES=true" \
-                                "REYNOLDS_TEAMS_INTEGRATION=true" \
-                  --cpu 1.0 \
-                  --memory 2.0Gi \
-                  --min-replicas 1 \
-                  --max-replicas 5; then
-                  
-                  echo "✅ Reynolds configuration completed with Maximum Effort™"
-                  return 0
+                  --secrets "$SECRET_CONFIG"; then
+                  echo "⚠️ Failed to set app secret on attempt $attempt"
+                  if [ $attempt -lt $max_attempts ]; then
+                    echo "⏱️ Retrying in 20 seconds..."
+                    sleep 20
+                    attempt=$((attempt + 1))
+                    continue
+                  else
+                    echo "❌ Failed to configure app secret after $max_attempts attempts"
+                    return 1
+                  fi
                 fi
+              fi
+              
+              echo "🔧 Updating Reynolds configuration for Teams integration..."
+              
+              # Build environment variables based on whether we have new secret or not
+              if [[ -n "$SECRET_CONFIG" ]]; then
+                ENV_VARS="REYNOLDS_APP_ID=$REYNOLDS_APP_ID REYNOLDS_APP_SECRET=secretref:reynolds-app-secret"
+              else
+                ENV_VARS="REYNOLDS_APP_ID=$REYNOLDS_APP_ID"
+              fi
+              
+              if az containerapp update \
+                --name ${{ env.CONTAINER_APP_NAME }} \
+                --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+                --set-env-vars "$ENV_VARS" \
+                              "REYNOLDS_ORGANIZATIONAL_MODE=true" \
+                              "REYNOLDS_ENTERPRISE_FEATURES=true" \
+                              "REYNOLDS_TEAMS_INTEGRATION=true" \
+                              "BOT_SERVICE_NAME=${{ env.BOT_SERVICE_NAME }}" \
+                --cpu 1.0 \
+                --memory 2.0Gi \
+                --min-replicas 1 \
+                --max-replicas 5; then
+                
+                echo "✅ Reynolds configuration completed with Maximum Effort™"
+                return 0
               fi
               
               echo "⚠️ Configuration attempt $attempt failed"
