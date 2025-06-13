@@ -46,6 +46,16 @@ public class IntentRecognitionService : IIntentRecognitionService
             new IntentPattern { Pattern = @"\b(documentation|docs|guide)\b", Weight = 0.9 },
             new IntentPattern { Pattern = @"\b(help|assist|support)\b", Weight = 0.7 },
             new IntentPattern { Pattern = @"\?\s*$", Weight = 0.8 }
+        },
+        [IntentType.CodespaceManagement] = new()
+        {
+            new IntentPattern { Pattern = @"\b(create|setup|start).*(codespace|workspace)", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\b(onboard|welcome|getting\s+started)", Weight = 1.0 },
+            new IntentPattern { Pattern = @"\bcodespace\b", Weight = 0.9 },
+            new IntentPattern { Pattern = @"\b(list|show).*(codespace|workspace)", Weight = 0.9 },
+            new IntentPattern { Pattern = @"\b(help\s+me\s+get\s+started)", Weight = 0.8 },
+            new IntentPattern { Pattern = @"\b(development\s+environment)", Weight = 0.7 },
+            new IntentPattern { Pattern = @"\bworkspace\b", Weight = 0.6 }
         }
     };
 

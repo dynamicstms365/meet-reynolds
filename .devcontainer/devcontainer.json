@@ -1,0 +1,66 @@
+{
+  "name": "Power Platform Copilot Agent",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "18"
+    },
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.blazorwasm-companion",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-vscode.powershell",
+        "ms-vscode.azure-account",
+        "ms-azure-devops.azure-pipelines"
+      ],
+      "settings": {
+        "powerPlatform.enableCodeGeneration": true,
+        "powerPlatform.validateCliCommands": true,
+        "powerPlatform.defaultEnvironment": "${workspaceFolder}/.env",
+        "dotnet.completion.showCompletionItemsFromUnimportedNamespaces": true,
+        "dotnet.inlayHints.enableInlayHintsForParameters": true,
+        "dotnet.inlayHints.enableInlayHintsForLiteralParameters": true,
+        "files.associations": {
+          "*.pac": "powershell",
+          "*.m365": "typescript"
+        },
+        "copilot.enable": {
+          "*": true,
+          "plaintext": false,
+          "markdown": true,
+          "csharp": true,
+          "blazor": true
+        },
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": ".devcontainer/post-create.sh",
+  "postStartCommand": ".devcontainer/post-start.sh",
+  "forwardPorts": [8080, 5000, 5001],
+  "portsAttributes": {
+    "8080": {
+      "label": "Copilot Agent API",
+      "onAutoForward": "notify"
+    },
+    "5000": {
+      "label": "Development Server (HTTP)",
+      "onAutoForward": "silent"
+    },
+    "5001": {
+      "label": "Development Server (HTTPS)",
+      "onAutoForward": "silent"
+    }
+  },
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "DOTNET_CLI_TELEMETRY_OPTOUT": "1"
+  }
+}

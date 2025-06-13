@@ -86,3 +86,21 @@ public class CliOptions
     public string WorkingDirectory { get; set; } = string.Empty;
     public Dictionary<string, string> Environment { get; set; } = new();
 }
+
+// Codespace Management Service Interfaces
+public interface ICodespaceManagementService
+{
+    Task<CodespaceResult> CreateCodespaceAsync(CodespaceSpec spec);
+    Task<CodespaceResult> GetCodespaceStatusAsync(string codespaceId);
+    Task<bool> DeleteCodespaceAsync(string codespaceId);
+    Task<CodespaceResult[]> ListCodespacesAsync(string repository);
+}
+
+public interface IOnboardingService
+{
+    Task<OnboardingStep[]> GetOnboardingStepsAsync();
+    Task<OnboardingProgress> StartOnboardingAsync(string userId, string codespaceId);
+    Task<OnboardingProgress> UpdateProgressAsync(string userId, string stepId, Dictionary<string, object> stepData);
+    Task<bool> CompleteOnboardingAsync(string userId);
+    Task<string> GenerateWelcomeMessageAsync(string userId, string repositoryName);
+}

@@ -30,6 +30,7 @@ public enum IntentType
     CliExecution,
     CodeGeneration,
     KnowledgeQuery,
+    CodespaceManagement,
     General
 }
 
@@ -207,4 +208,48 @@ public class CliMonitoringOptions
     public double SuccessRateThreshold { get; set; } = 0.98;
     public TimeSpan MonitoringWindow { get; set; } = TimeSpan.FromMinutes(5);
     public bool EnableAlerting { get; set; } = true;
+}
+
+// Codespace Management Models
+public class CodespaceSpec
+{
+    public string RepositoryName { get; set; } = string.Empty;
+    public string Branch { get; set; } = "main";
+    public string? DevcontainerPath { get; set; }
+    public string Machine { get; set; } = "standardLinux32gb";
+    public int IdleTimeoutMinutes { get; set; } = 30;
+    public bool AutomaticOnboarding { get; set; } = true;
+    public Dictionary<string, object> CustomSettings { get; set; } = new();
+}
+
+public class CodespaceResult
+{
+    public bool Success { get; set; }
+    public string? CodespaceId { get; set; }
+    public string? WebUrl { get; set; }
+    public string? Error { get; set; }
+    public string State { get; set; } = string.Empty;
+    public Dictionary<string, object> Properties { get; set; } = new();
+}
+
+public class OnboardingStep
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string[] Commands { get; set; } = Array.Empty<string>();
+    public string[] Links { get; set; } = Array.Empty<string>();
+    public bool Interactive { get; set; } = false;
+    public int Order { get; set; }
+}
+
+public class OnboardingProgress
+{
+    public string UserId { get; set; } = string.Empty;
+    public string CodespaceId { get; set; } = string.Empty;
+    public string[] CompletedSteps { get; set; } = Array.Empty<string>();
+    public string CurrentStep { get; set; } = string.Empty;
+    public DateTime StartedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? CompletedAt { get; set; }
+    public Dictionary<string, object> StepData { get; set; } = new();
 }

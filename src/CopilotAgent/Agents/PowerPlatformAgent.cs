@@ -20,6 +20,8 @@ public class PowerPlatformAgent : IPowerPlatformAgent
     private readonly IRetryService _retryService;
     private readonly ITelemetryService _telemetryService;
     private readonly IConfigurationService _configurationService;
+    private readonly ICodespaceManagementService _codespaceManagementService;
+    private readonly IOnboardingService _onboardingService;
 
     public PowerPlatformAgent(
         IEnvironmentManager environmentManager,
@@ -30,7 +32,9 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         IIntentRecognitionService intentRecognitionService,
         IRetryService retryService,
         ITelemetryService telemetryService,
-        IConfigurationService configurationService)
+        IConfigurationService configurationService,
+        ICodespaceManagementService codespaceManagementService,
+        IOnboardingService onboardingService)
     {
         _environmentManager = environmentManager;
         _cliExecutor = cliExecutor;
@@ -41,6 +45,8 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         _retryService = retryService;
         _telemetryService = telemetryService;
         _configurationService = configurationService;
+        _codespaceManagementService = codespaceManagementService;
+        _onboardingService = onboardingService;
     }
 
     public async Task<AgentResponse> ProcessRequestAsync(AgentRequest request)
@@ -70,6 +76,7 @@ public class PowerPlatformAgent : IPowerPlatformAgent
                 IntentType.CliExecution => HandleCliRequest(request),
                 IntentType.CodeGeneration => HandleCodeRequest(request),
                 IntentType.KnowledgeQuery => HandleKnowledgeRequest(request),
+                IntentType.CodespaceManagement => HandleCodespaceRequest(request),
                 _ => HandleGeneralRequest(request)
             };
 
@@ -134,6 +141,141 @@ public class PowerPlatformAgent : IPowerPlatformAgent
     }
 
 
+    private async Task<AgentResponse> HandleCodespaceRequest(AgentRequest request)
+    {
+        try
+        {
+            var message = request.Message.ToLowerInvariant();
+            
+            if (message.Contains("create") || message.Contains("setup"))
+            {
+                var spec = ExtractCodespaceSpec(request.Message, request.Context);
+                
+                // Use retry mechanism for Codespace creation
+                var result = await _retryService.ExecuteWithRetryAsync(async () =>
+                    await _codespaceManagementService.CreateCodespaceAsync(spec));
+                
+                // Start onboarding if automatic onboarding is enabled
+                if (result.Success && spec.AutomaticOnboarding)
+                {
+                    var userId = request.UserId ?? "unknown";
+                    var onboardingProgress = await _onboardingService.StartOnboardingAsync(userId, result.CodespaceId!);
+                    
+                    var welcomeMessage = await _onboardingService.GenerateWelcomeMessageAsync(userId, spec.RepositoryName);
+                    
+                    return new AgentResponse
+                    {
+                        Success = true,
+                        Message = $"🎉 Codespace created successfully!\n\n{welcomeMessage}",
+                        Data = new Dictionary<string, object> 
+                        { 
+                            ["codespaceResult"] = result,
+                            ["onboardingProgress"] = onboardingProgress,
+                            ["webUrl"] = result.WebUrl!
+                        },
+                        IntentType = IntentType.CodespaceManagement
+                    };
+                }
+                
+                return new AgentResponse
+                {
+                    Success = result.Success,
+                    Message = result.Success 
+                        ? $"Codespace created successfully! Access it at: {result.WebUrl}"
+                        : $"Failed to create Codespace: {result.Error}",
+                    Data = new Dictionary<string, object> { ["codespaceResult"] = result },
+                    IntentType = IntentType.CodespaceManagement
+                };
+            }
+            
+            if (message.Contains("onboard") || message.Contains("welcome"))
+            {
+                var userId = request.UserId ?? "unknown";
+                var codespaceId = ExtractCodespaceId(request.Context);
+                
+                if (string.IsNullOrEmpty(codespaceId))
+                {
+                    // Generate welcome message without specific Codespace
+                    var welcomeMessage = await _onboardingService.GenerateWelcomeMessageAsync(userId, "Power Platform");
+                    return new AgentResponse
+                    {
+                        Success = true,
+                        Message = welcomeMessage,
+                        IntentType = IntentType.CodespaceManagement
+                    };
+                }
+                
+                var onboardingProgress = await _onboardingService.StartOnboardingAsync(userId, codespaceId);
+                var steps = await _onboardingService.GetOnboardingStepsAsync();
+                
+                return new AgentResponse
+                {
+                    Success = true,
+                    Message = "🚀 Starting your interactive onboarding experience!\n\nI'll guide you through setting up your development environment step by step.",
+                    Data = new Dictionary<string, object>
+                    {
+                        ["onboardingProgress"] = onboardingProgress,
+                        ["onboardingSteps"] = steps,
+                        ["currentStep"] = (object?)(steps.FirstOrDefault(s => s.Id == onboardingProgress.CurrentStep) ?? steps.FirstOrDefault()) ?? "none"
+                    },
+                    IntentType = IntentType.CodespaceManagement
+                };
+            }
+            
+            if (message.Contains("status") || message.Contains("list"))
+            {
+                var repository = ExtractRepositoryName(request.Message, request.Context);
+                var codespaces = await _codespaceManagementService.ListCodespacesAsync(repository);
+                
+                return new AgentResponse
+                {
+                    Success = true,
+                    Message = $"Found {codespaces.Length} Codespace(s) for repository '{repository}'",
+                    Data = new Dictionary<string, object> { ["codespaces"] = codespaces },
+                    IntentType = IntentType.CodespaceManagement
+                };
+            }
+            
+            if (message.Contains("help"))
+            {
+                return new AgentResponse
+                {
+                    Success = true,
+                    Message = "🎭 **Reynolds Copilot Codespace Management**\n\n" +
+                             "I can help you with:\n" +
+                             "• **Create Codespace**: \"Create a new Codespace for this repository\"\n" +
+                             "• **Start Onboarding**: \"Help me get started\" or \"onboard me\"\n" +
+                             "• **List Codespaces**: \"Show my Codespaces\" or \"list codespaces\"\n" +
+                             "• **Interactive Guidance**: Step-by-step development environment setup\n\n" +
+                             "✨ **Pro Tips:**\n" +
+                             "- New Codespaces include automatic onboarding\n" +
+                             "- Interactive cards guide you through setup\n" +
+                             "- All Power Platform tools are pre-configured\n\n" +
+                             "What would you like to do?",
+                    IntentType = IntentType.CodespaceManagement
+                };
+            }
+            
+            return new AgentResponse
+            {
+                Success = false,
+                Message = "I didn't understand the Codespace operation you want to perform. Try asking me to 'create a Codespace', 'help me get started', or 'list codespaces'.",
+                IntentType = IntentType.CodespaceManagement
+            };
+        }
+        catch (Exception ex)
+        {
+            _telemetryService.RecordError("HandleCodespaceRequest", ex);
+            _logger.LogError(ex, "Error handling Codespace request");
+            return new AgentResponse
+            {
+                Success = false,
+                Message = "Error processing Codespace request. Please try again.",
+                Error = ex.Message,
+                IntentType = IntentType.CodespaceManagement
+            };
+        }
+    }
 
     private async Task<AgentResponse> HandleEnvironmentRequest(AgentRequest request)
     {
@@ -313,7 +455,12 @@ public class PowerPlatformAgent : IPowerPlatformAgent
                      "• Environment management (create, list, configure)\n" +
                      "• CLI command execution (pac, m365)\n" +
                      "• Code generation (C#, Blazor components)\n" +
-                     "• Knowledge retrieval (documentation, best practices)\n\n" +
+                     "• Knowledge retrieval (documentation, best practices)\n" +
+                     "• **Codespace management (create, onboard, setup)**\n\n" +
+                     "🚀 **New!** Try saying:\n" +
+                     "- \"Create a Codespace for me\"\n" +
+                     "- \"Help me get started\"\n" +
+                     "- \"Start onboarding\"\n\n" +
                      "How can I assist you with Power Platform development?",
             IntentType = IntentType.General
         };
@@ -390,6 +537,73 @@ public class PowerPlatformAgent : IPowerPlatformAgent
         }
         
         return "GeneratedComponent";
+    }
+
+    private CodespaceSpec ExtractCodespaceSpec(string message, Dictionary<string, object> context)
+    {
+        var spec = new CodespaceSpec
+        {
+            RepositoryName = ExtractRepositoryName(message, context),
+            Branch = "main",
+            Machine = "standardLinux32gb",
+            IdleTimeoutMinutes = 30,
+            AutomaticOnboarding = true
+        };
+
+        // Extract specific machine type if mentioned
+        if (message.ToLowerInvariant().Contains("large"))
+        {
+            spec.Machine = "largePlus";
+        }
+        else if (message.ToLowerInvariant().Contains("premium"))
+        {
+            spec.Machine = "premiumLinux";
+        }
+
+        // Extract branch if specified
+        var words = message.Split(' ');
+        for (int i = 0; i < words.Length - 1; i++)
+        {
+            if (words[i].ToLowerInvariant() == "branch" && i + 1 < words.Length)
+            {
+                spec.Branch = words[i + 1].Trim('"', '\'');
+                break;
+            }
+        }
+
+        return spec;
+    }
+
+    private string ExtractRepositoryName(string message, Dictionary<string, object> context)
+    {
+        // Try to get from context first
+        if (context.TryGetValue("repository", out var repoObj) && repoObj is string repo)
+        {
+            return repo;
+        }
+
+        // Extract from message
+        var words = message.Split(' ');
+        for (int i = 0; i < words.Length - 1; i++)
+        {
+            if (words[i].ToLowerInvariant() == "repository" && i + 1 < words.Length)
+            {
+                return words[i + 1].Trim('"', '\'');
+            }
+        }
+
+        // Default fallback
+        return "copilot-powerplatform";
+    }
+
+    private string ExtractCodespaceId(Dictionary<string, object> context)
+    {
+        if (context.TryGetValue("codespaceId", out var codespaceIdObj) && codespaceIdObj is string codespaceId)
+        {
+            return codespaceId;
+        }
+
+        return string.Empty;
     }
 }
 
