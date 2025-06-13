@@ -69,6 +69,9 @@ app.UseAuthorization();
 // Add webhook logging middleware before webhook processing
 app.UseWebhookLogging();
 
+// Add signature validation failure logging middleware
+app.UseSignatureValidationLogging();
+
 app.MapControllers();
 
 // Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore

@@ -20,7 +20,29 @@ WEBHOOK_REQUEST_RECEIVED: Event={EventType}, DeliveryId={DeliveryId}, Signature=
 WEBHOOK_REQUEST_RECEIVED: Event=pull_request, DeliveryId=12345678-1234-1234-1234-123456789012, Signature=present, UserAgent=GitHub-Hookshot/abc123, ContentType=application/json, RemoteIP=192.30.252.1
 ```
 
-### 2. Webhook Event Processing Logging
+### 2. Signature Validation Failure Logging (Enhanced Middleware)
+
+**Log Format:** `WEBHOOK_SIGNATURE_VALIDATION_FAILED`
+```
+WEBHOOK_SIGNATURE_VALIDATION_FAILED: DeliveryId={DeliveryId}, EventType={EventType}, HasSignature={HasSignature}, UserAgent={UserAgent}, ContentLength={ContentLength}, RemoteIP={RemoteIP}, StatusCode={StatusCode}, Response={Response}
+```
+
+**Example:**
+```
+WEBHOOK_SIGNATURE_VALIDATION_FAILED: DeliveryId=12345678-1234-1234-1234-123456789012, EventType=pull_request, HasSignature=yes, UserAgent=GitHub-Hookshot/abc123, ContentLength=1024, RemoteIP=192.30.252.1, StatusCode=401, Response=Unauthorized
+```
+
+**Troubleshooting Log Format:** `WEBHOOK_TROUBLESHOOTING`
+```
+WEBHOOK_TROUBLESHOOTING: [Specific guidance based on failure type]
+```
+
+**Examples:**
+- `WEBHOOK_TROUBLESHOOTING: Missing X-Hub-Signature-256 header. Ensure your GitHub webhook is configured to include a secret and signature.`
+- `WEBHOOK_TROUBLESHOOTING: No webhook secret configured in NGL_DEVOPS_WEBHOOK_SECRET. This must match the secret configured in your GitHub webhook settings.`
+- `WEBHOOK_TROUBLESHOOTING: Webhook secret is configured but signature validation failed. Verify the secret exactly matches the one in GitHub webhook settings.`
+
+### 3. Webhook Event Processing Logging
 
 **Log Format:** `WEBHOOK_EVENT_RECEIVED`
 ```
@@ -32,7 +54,7 @@ WEBHOOK_EVENT_RECEIVED: Type={EventType}, Action={Action}, Repository={Repositor
 WEBHOOK_EVENT_RECEIVED: Type=pull_request, Action=opened, Repository=org/repo, Sender=username, Installation=12345, DeliveryId=12345678-1234-1234-1234-123456789012, UserAgent=GitHub-Hookshot/abc123
 ```
 
-### 3. Event-Specific Metadata Logging
+### 4. Event-Specific Metadata Logging
 
 **Pull Request Events:**
 ```
@@ -49,7 +71,7 @@ WEBHOOK_ISSUE_METADATA: Issue_Number={Number}, State={State}, User={User}, Creat
 WEBHOOK_WORKFLOW_METADATA: Workflow_Id={Id}, Name={Name}, Status={Status}, Conclusion={Conclusion}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}
 ```
 
-### 4. Unhandled Event Logging
+### 5. Unhandled Event Logging
 
 **Log Format:** `WEBHOOK_EVENT_UNHANDLED`
 ```
