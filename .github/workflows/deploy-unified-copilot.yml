@@ -240,16 +240,57 @@ jobs:
 
       - name: Deploy Unified Copilot Platform
         id: deploy
-        uses: azure/container-apps-deploy-action@v2
-        with:
-          containerAppName: ${{ env.CONTAINER_APP_NAME }}
-          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
-          imageToDeploy: ${{ needs.build.outputs.image_url_sha }}
-          containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
-          location: ${{ env.AZURE_LOCATION }}
-          targetPort: 8080
-          ingress: external
-          environmentVariables: NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }} ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://+:8080 COPILOT_VERSION=${{ needs.build.outputs.semantic_version }} COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }} DEPLOYMENT_MODE=${{ env.DEPLOY_MODE }} REYNOLDS_UNIFIED_PLATFORM=true
+        run: |
+          echo "🚀 Deploying unified platform with Reynolds precision..."
+          
+          # Check if container app exists
+          APP_EXISTS=$(az containerapp show \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "name" -o tsv 2>/dev/null || echo "")
+          
+          if [[ -z "$APP_EXISTS" ]]; then
+            echo "🏗️ Creating new unified platform container app..."
+            az containerapp create \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.CONTAINER_APP_ENV }} \
+              --image ${{ needs.build.outputs.image_url_sha }} \
+              --target-port 8080 \
+              --ingress external \
+              --env-vars \
+                "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
+                "ASPNETCORE_ENVIRONMENT=Production" \
+                "ASPNETCORE_URLS=http://+:8080" \
+                "COPILOT_VERSION=${{ needs.build.outputs.semantic_version }}" \
+                "COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}" \
+                "DEPLOYMENT_MODE=${{ env.DEPLOY_MODE }}" \
+                "REYNOLDS_UNIFIED_PLATFORM=true" \
+              --cpu 1.0 \
+              --memory 2.0Gi \
+              --min-replicas 1 \
+              --max-replicas 5
+          else
+            echo "🔄 Updating existing unified platform container app..."
+            az containerapp update \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ${{ needs.build.outputs.image_url_sha }} \
+              --replace-env-vars \
+                "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
+                "ASPNETCORE_ENVIRONMENT=Production" \
+                "ASPNETCORE_URLS=http://+:8080" \
+                "COPILOT_VERSION=${{ needs.build.outputs.semantic_version }}" \
+                "COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}" \
+                "DEPLOYMENT_MODE=${{ env.DEPLOY_MODE }}" \
+                "REYNOLDS_UNIFIED_PLATFORM=true" \
+              --cpu 1.0 \
+              --memory 2.0Gi \
+              --min-replicas 1 \
+              --max-replicas 5
+          fi
+          
+          echo "✅ Unified platform deployment completed with Maximum Effort™"
 
       - name: Configure Unified Platform Secrets and Resources
         run: |
