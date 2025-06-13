@@ -232,12 +232,6 @@ jobs:
         run: |
           az extension add --name containerapp --upgrade
 
-      - name: Install Microsoft 365 Agents Toolkit CLI
-        run: |
-          echo "📦 Installing ATK CLI for proper Azure app registration..."
-          npm install -g @microsoft/m365-agents-toolkit-cli
-          echo "✅ ATK CLI installed successfully"
-
       - name: Setup Azure App Registration & Bot Framework Service
         id: bot_setup
         run: |
