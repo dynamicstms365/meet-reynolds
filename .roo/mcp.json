@@ -2,18 +2,23 @@
   "mcpServers": {
     "copilot-github-bot": {
       "type": "streamable-http",
-      "url": "https://copilot-powerplatform-app.brave-forest-0aa8b210e.5.azurecontainerapps.io/mcp",
+      "url": "https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io/mcp",
       "headers": {
-        "Authorization": "Bearer ${env:GITHUB_TOKEN}",
         "Content-Type": "application/json",
-        "User-Agent": "ReynoldsEnterpriseAgent/1.0"
+        "User-Agent": "ReynoldsEnterpriseAgent/1.0",
+        "X-GitHub-Token": "${env:GITHUB_TOKEN}"
       },
       "alwaysAllow": [
         "semantic_search",
         "get_discussion",
         "get_issue",
-        "search_discussions", 
-        "search_issues"
+        "search_discussions",
+        "search_issues",
+        "create_discussion",
+        "create_issue",
+        "organization_discussions",
+        "organization_issues",
+        "prompt_action"
       ],
       "disabled": false
     }
