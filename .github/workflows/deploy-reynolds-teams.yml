@@ -229,7 +229,6 @@ jobs:
       - name: Install Azure Container Apps Extension
         run: |
           az extension add --name containerapp --upgrade
-          az extension add --name botservice --upgrade
 
       - name: Setup Bot Framework Service
         id: bot_setup
