@@ -1,0 +1,208 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.16",
+  "version": "1.0.0",
+  "id": "reynolds-organizational-orchestrator",
+  "packageName": "com.dynamicstms365.reynolds-orchestrator",
+  "developer": {
+    "name": "dynamicstms365",
+    "websiteUrl": "https://github.com/dynamicstms365",
+    "privacyUrl": "https://github.com/dynamicstms365/copilot-powerplatform/blob/main/PRIVACY.md",
+    "termsOfUseUrl": "https://github.com/dynamicstms365/copilot-powerplatform/blob/main/TERMS.md"
+  },
+  "icons": {
+    "color": "reynolds-icon-color.png",
+    "outline": "reynolds-icon-outline.png"
+  },
+  "name": {
+    "short": "Reynolds",
+    "full": "Reynolds - Organizational Orchestrator"
+  },
+  "description": {
+    "short": "Mysteriously effective project management with supernatural GitHub coordination",
+    "full": "Reynolds brings organizational orchestration to Microsoft Teams with his signature blend of Ryan Reynolds charm and supernatural project management efficiency. Coordinate cross-repo work, detect scope creep, and manage stakeholders across the dynamicstms365 organization with Maximum Effort™ and minimal drama."
+  },
+  "accentColor": "#FF6B6B",
+  "bots": [
+    {
+      "botId": "reynolds-organizational-orchestrator",
+      "scopes": [
+        "personal",
+        "team",
+        "groupchat"
+      ],
+      "supportsFiles": false,
+      "isNotificationOnly": false,
+      "supportsCalling": false,
+      "supportsVideo": false,
+      "commandLists": [
+        {
+          "scopes": [
+            "personal",
+            "team",
+            "groupchat"
+          ],
+          "commands": [
+            {
+              "title": "Help",
+              "description": "Get help with Reynolds organizational orchestration commands"
+            },
+            {
+              "title": "Org Status",
+              "description": "Quick organizational temperature check across dynamicstms365"
+            },
+            {
+              "title": "Project Health",
+              "description": "Comprehensive health assessment across all repositories"
+            },
+            {
+              "title": "Coordinate",
+              "description": "Cross-repo orchestration and stakeholder coordination"
+            },
+            {
+              "title": "Dependencies",
+              "description": "Analyze cross-repository dependencies and risks"
+            },
+            {
+              "title": "Scope Check",
+              "description": "Detect scope creep with Reynolds diplomatic precision"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "composeExtensions": [
+    {
+      "botId": "reynolds-organizational-orchestrator",
+      "commands": [
+        {
+          "id": "createGitHubIssue",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "description": "Create a GitHub issue with Reynolds orchestration",
+          "title": "Create Issue",
+          "type": "action",
+          "parameters": [
+            {
+              "name": "repository",
+              "title": "Repository",
+              "description": "Which repository to create the issue in",
+              "inputType": "text"
+            },
+            {
+              "name": "title",
+              "title": "Issue Title",
+              "description": "Title for the GitHub issue",
+              "inputType": "text"
+            },
+            {
+              "name": "description",
+              "title": "Description",
+              "description": "Issue description and requirements",
+              "inputType": "textarea"
+            }
+          ]
+        },
+        {
+          "id": "checkProjectHealth",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "description": "Get organizational project health assessment",
+          "title": "Project Health",
+          "type": "action",
+          "parameters": [
+            {
+              "name": "scope",
+              "title": "Scope",
+              "description": "Organizational scope for health check",
+              "inputType": "choiceSet",
+              "choices": [
+                {
+                  "title": "All Repositories",
+                  "value": "all"
+                },
+                {
+                  "title": "copilot-powerplatform",
+                  "value": "copilot-powerplatform"
+                },
+                {
+                  "title": "azure-integration",
+                  "value": "azure-integration"
+                },
+                {
+                  "title": "powerbi-connector",
+                  "value": "powerbi-connector"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "coordinateTeams",
+          "context": [
+            "compose",
+            "commandBox"
+          ],
+          "description": "Coordinate work across teams with Reynolds diplomacy",
+          "title": "Coordinate Teams",
+          "type": "action",
+          "parameters": [
+            {
+              "name": "workItem",
+              "title": "Work Item",
+              "description": "What needs coordination?",
+              "inputType": "text"
+            },
+            {
+              "name": "teams",
+              "title": "Teams/Repositories",
+              "description": "Which teams or repos need coordination?",
+              "inputType": "text"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "github-copilot-bot.livelygrass-868f2ee5.eastus.azurecontainerapps.io",
+    "*.botframework.com",
+    "*.azurewebsites.net",
+    "teams.microsoft.com"
+  ],
+  "webApplicationInfo": {
+    "id": "reynolds-organizational-orchestrator",
+    "resource": "https://github-copilot-bot.livelygrass-868f2ee5.eastus.azurecontainerapps.io"
+  },
+  "authorization": {
+    "permissions": {
+      "resourceSpecific": [
+        {
+          "name": "ChatMessage.Read.Chat",
+          "type": "Application"
+        },
+        {
+          "name": "ChatMessage.Send.Chat",
+          "type": "Application"
+        },
+        {
+          "name": "TeamsActivity.Send.Chat",
+          "type": "Application"
+        },
+        {
+          "name": "Chat.Create",
+          "type": "Application"
+        }
+      ]
+    }
+  }
+}

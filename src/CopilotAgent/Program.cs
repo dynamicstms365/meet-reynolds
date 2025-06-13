@@ -2,6 +2,7 @@ using CopilotAgent.Agents;
 using CopilotAgent.Services;
 using CopilotAgent.Skills;
 using CopilotAgent.Middleware;
+using CopilotAgent.Startup;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 
@@ -28,6 +29,8 @@ builder.Services.AddScoped<IRetryService, RetryService>();
 builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
 builder.Services.AddScoped<IHealthMonitoringService, HealthMonitoringService>();
 
+// Register CLI monitoring service
+builder.Services.AddScoped<ICliMonitoringService, CliMonitoringService>();
 // Register CLI services
 builder.Services.AddScoped<IPacCliService, PacCliService>();
 builder.Services.AddScoped<IM365CliService, M365CliService>();
@@ -45,9 +48,15 @@ builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearc
 
 // Register GitHub workflow orchestrator
 builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
+// Register Octokit webhook processor as scoped to fix lifetime mismatch with IGitHubWorkflowOrchestrator
+builder.Services.AddScoped<WebhookEventProcessor, OctokitWebhookEventProcessor>();
 
-// Register Octokit webhook processor (replaces custom webhook controller)
-builder.Services.AddSingleton<WebhookEventProcessor, OctokitWebhookEventProcessor>();
+
+// Register Reynolds Teams integration services
+if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
+{
+    builder.Services.AddReynoldsTeamsServices(builder.Configuration);
+}
 
 var app = builder.Build();
 
@@ -73,6 +82,12 @@ app.UseWebhookLogging();
 app.UseSignatureValidationLogging();
 
 app.MapControllers();
+
+// Configure Reynolds Teams integration
+if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
+{
+    app.UseReynoldsTeamsIntegration();
+}
 
 // Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore
 // This replaces the custom webhook controller endpoint
