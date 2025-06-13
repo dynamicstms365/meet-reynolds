@@ -3,8 +3,11 @@ using CopilotAgent.Services;
 using CopilotAgent.Skills;
 using CopilotAgent.Middleware;
 using CopilotAgent.Startup;
+using CopilotAgent.MCP;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
+using ModelContextProtocol.AspNetCore;
+using ModelContextProtocol;
 
 // Reynolds: Trigger streamlined deployment for MCP protocol testing
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +55,17 @@ builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrat
 // Register Octokit webhook processor as scoped to fix lifetime mismatch with IGitHubWorkflowOrchestrator
 builder.Services.AddScoped<WebhookEventProcessor, OctokitWebhookEventProcessor>();
 
+// Add MCP SDK services - Reynolds Enterprise Integration (Preview 0.2.0-preview.3)
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly();
+
+// Register Reynolds support services
+builder.Services.AddScoped<EnterpriseAuthService>();
+builder.Services.AddScoped<ReynoldsPersonaService>();
+
+// Add HTTP context accessor for enterprise authentication
+builder.Services.AddHttpContextAccessor();
 
 // Register Reynolds Teams integration services
 if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
@@ -76,12 +90,15 @@ if (!app.Environment.IsProduction())
 
 app.UseAuthorization();
 
+// MCP Server is automatically configured via AddMcpServer() - no middleware needed for new SDK
+
 // Add webhook logging middleware before webhook processing
 app.UseWebhookLogging();
 
 // Add signature validation failure logging middleware
 app.UseSignatureValidationLogging();
 
+// Map non-MCP controllers only (MCP endpoints handled by SDK)
 app.MapControllers();
 
 // Configure Reynolds Teams integration

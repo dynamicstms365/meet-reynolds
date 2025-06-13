@@ -34,6 +34,11 @@
     <!-- Azure Bot Framework Enterprise Authentication -->
     <PackageReference Include="Microsoft.Bot.Builder.Azure" Version="4.21.2" />
     <PackageReference Include="Microsoft.Bot.Configuration" Version="4.21.2" />
+    
+    <!-- MCP SDK packages for official protocol implementation -->
+    <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.3" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.2.0-preview.3" />
+    <PackageReference Include="ModelContextProtocol.Core" Version="0.2.0-preview.3" />
   </ItemGroup>
 
   <ItemGroup>
