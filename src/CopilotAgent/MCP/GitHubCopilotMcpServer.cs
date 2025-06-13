@@ -325,7 +325,7 @@ public class GitHubCopilotMcpServer : ControllerBase
     /// <summary>
     /// Handle MCP initialize method - Standard MCP Protocol
     /// </summary>
-    private async Task<IActionResult> HandleInitializeAsync(JsonElement mcpRequest)
+    private Task<IActionResult> HandleInitializeAsync(JsonElement mcpRequest)
     {
         _logger.LogInformation("🎯 Reynolds MCP: Processing initialize request");
 
@@ -372,7 +372,7 @@ public class GitHubCopilotMcpServer : ControllerBase
             }
         };
 
-        return Ok(initializeResponse);
+        return Task.FromResult(Ok(initializeResponse));
     }
 
     /// <summary>
