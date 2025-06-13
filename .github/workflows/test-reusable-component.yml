@@ -18,7 +18,7 @@ on:
 
 jobs:
   test-reusable-component:
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: ${{ github.event.inputs.test_version }}
       expected_result: ${{ github.event.inputs.expected_result }}
