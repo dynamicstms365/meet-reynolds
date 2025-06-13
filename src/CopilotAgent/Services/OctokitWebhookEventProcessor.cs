@@ -5,6 +5,7 @@ using Octokit.Webhooks.Events.Issues;
 using Octokit.Webhooks.Events.WorkflowRun;
 using CopilotAgent.Services;
 using Shared.Models;
+using Microsoft.Extensions.Primitives;
 
 namespace CopilotAgent.Services;
 
@@ -28,11 +29,76 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         _logger = logger;
     }
 
+    /// <summary>
+    /// Log detailed webhook event information for debugging
+    /// </summary>
+    private void LogWebhookEventDetails(string eventType, string action, WebhookHeaders headers, object webhookEvent)
+    {
+        var repository = GetRepositoryFromEvent(webhookEvent);
+        var sender = GetSenderFromEvent(webhookEvent);
+        var installation = GetInstallationFromEvent(webhookEvent);
+
+        // Extract delivery ID and user agent from headers
+        var deliveryId = ExtractHeaderValue(headers, "X-GitHub-Delivery");
+        var userAgent = ExtractHeaderValue(headers, "User-Agent");
+
+        _logger.LogInformation("WEBHOOK_EVENT_RECEIVED: Type={EventType}, Action={Action}, Repository={Repository}, Sender={Sender}, Installation={InstallationId}, DeliveryId={DeliveryId}, UserAgent={UserAgent}", 
+            eventType, 
+            action, 
+            repository?.FullName ?? "unknown",
+            sender?.Login ?? "unknown",
+            installation?.Id ?? 0,
+            deliveryId,
+            userAgent);
+
+        // Log additional event-specific metadata
+        LogEventSpecificMetadata(eventType, webhookEvent);
+    }
+
+    /// <summary>
+    /// Log event-specific metadata for enhanced debugging
+    /// </summary>
+    private void LogEventSpecificMetadata(string eventType, object webhookEvent)
+    {
+        switch (eventType)
+        {
+            case "pull_request" when webhookEvent is PullRequestEvent prEvent:
+                _logger.LogInformation("WEBHOOK_PR_METADATA: PR_Number={Number}, State={State}, Draft={Draft}, User={User}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}",
+                    prEvent.PullRequest.Number,
+                    prEvent.PullRequest.State,
+                    prEvent.PullRequest.Draft,
+                    prEvent.PullRequest.User.Login,
+                    prEvent.PullRequest.CreatedAt,
+                    prEvent.PullRequest.UpdatedAt);
+                break;
+            case "issues" when webhookEvent is IssuesEvent issueEvent:
+                _logger.LogInformation("WEBHOOK_ISSUE_METADATA: Issue_Number={Number}, State={State}, User={User}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}",
+                    issueEvent.Issue.Number,
+                    issueEvent.Issue.State,
+                    issueEvent.Issue.User?.Login ?? "unknown",
+                    issueEvent.Issue.CreatedAt,
+                    issueEvent.Issue.UpdatedAt);
+                break;
+            case "workflow_run" when webhookEvent is WorkflowRunEvent wrEvent:
+                _logger.LogInformation("WEBHOOK_WORKFLOW_METADATA: Workflow_Id={Id}, Name={Name}, Status={Status}, Conclusion={Conclusion}, CreatedAt={CreatedAt}, UpdatedAt={UpdatedAt}",
+                    wrEvent.WorkflowRun.Id,
+                    wrEvent.WorkflowRun.Name,
+                    wrEvent.WorkflowRun.Status,
+                    wrEvent.WorkflowRun.Conclusion,
+                    wrEvent.WorkflowRun.CreatedAt,
+                    wrEvent.WorkflowRun.UpdatedAt);
+                break;
+        }
+    }
+
     protected override async Task ProcessPullRequestWebhookAsync(
         WebhookHeaders headers, 
         PullRequestEvent pullRequestEvent, 
         PullRequestAction action)
     {
+        // Log detailed webhook event information
+        LogWebhookEventDetails("pull_request", action.ToString(), headers, pullRequestEvent);
+
         _logger.LogInformation("Processing pull request webhook: {Action} for PR #{Number} in {Repository}", 
             action, pullRequestEvent.PullRequest.Number, pullRequestEvent.Repository?.FullName ?? "unknown");
 
@@ -51,11 +117,20 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing pull request webhook");
+            _logger.LogError(ex, "Error processing pull request webhook for PR #{Number} in {Repository}: {Error}", 
+                pullRequestEvent.PullRequest.Number, 
+                pullRequestEvent.Repository?.FullName ?? "unknown",
+                ex.Message);
             await _auditService.LogEventAsync("GitHub_Webhook_Processing", 
                 action: "PULL_REQUEST_ERROR", 
                 result: "FAILED",
-                details: new { Error = ex.Message, Action = action.ToString() });
+                details: new { 
+                    Error = ex.Message, 
+                    Action = action.ToString(),
+                    PRNumber = pullRequestEvent.PullRequest.Number,
+                    Repository = pullRequestEvent.Repository?.FullName,
+                    DeliveryId = ExtractHeaderValue(headers, "X-GitHub-Delivery")
+                });
         }
     }
 
@@ -64,6 +139,9 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         IssuesEvent issuesEvent,
         IssuesAction action)
     {
+        // Log detailed webhook event information
+        LogWebhookEventDetails("issues", action.ToString(), headers, issuesEvent);
+
         _logger.LogInformation("Processing issues webhook: {Action} for issue #{Number} in {Repository}", 
             action, issuesEvent.Issue.Number, issuesEvent.Repository?.FullName ?? "unknown");
 
@@ -79,11 +157,20 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing issues webhook");
+            _logger.LogError(ex, "Error processing issues webhook for issue #{Number} in {Repository}: {Error}", 
+                issuesEvent.Issue.Number, 
+                issuesEvent.Repository?.FullName ?? "unknown",
+                ex.Message);
             await _auditService.LogEventAsync("GitHub_Webhook_Processing", 
                 action: "ISSUES_ERROR", 
                 result: "FAILED",
-                details: new { Error = ex.Message, Action = action.ToString() });
+                details: new { 
+                    Error = ex.Message, 
+                    Action = action.ToString(),
+                    IssueNumber = issuesEvent.Issue.Number,
+                    Repository = issuesEvent.Repository?.FullName,
+                    DeliveryId = ExtractHeaderValue(headers, "X-GitHub-Delivery")
+                });
         }
     }
 
@@ -92,6 +179,9 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         WorkflowRunEvent workflowRunEvent,
         WorkflowRunAction action)
     {
+        // Log detailed webhook event information
+        LogWebhookEventDetails("workflow_run", action.ToString(), headers, workflowRunEvent);
+
         _logger.LogInformation("Processing workflow run webhook: {Action} for workflow '{Name}' in {Repository}", 
             action, workflowRunEvent.WorkflowRun.Name, workflowRunEvent.Repository?.FullName ?? "unknown");
 
@@ -107,12 +197,133 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing workflow run webhook");
+            _logger.LogError(ex, "Error processing workflow run webhook for '{Name}' in {Repository}: {Error}", 
+                workflowRunEvent.WorkflowRun.Name, 
+                workflowRunEvent.Repository?.FullName ?? "unknown",
+                ex.Message);
             await _auditService.LogEventAsync("GitHub_Webhook_Processing", 
                 action: "WORKFLOW_RUN_ERROR", 
                 result: "FAILED",
-                details: new { Error = ex.Message, Action = action.ToString() });
+                details: new { 
+                    Error = ex.Message, 
+                    Action = action.ToString(),
+                    WorkflowName = workflowRunEvent.WorkflowRun.Name,
+                    WorkflowId = workflowRunEvent.WorkflowRun.Id,
+                    Repository = workflowRunEvent.Repository?.FullName,
+                    DeliveryId = ExtractHeaderValue(headers, "X-GitHub-Delivery")
+                });
         }
+    }
+
+    /// <summary>
+    /// Override to handle unknown/unprocessed webhook events with detailed logging
+    /// This helps identify events that are being received but not handled
+    /// </summary>
+    public override async Task ProcessWebhookAsync(WebhookHeaders headers, WebhookEvent payload)
+    {
+        var eventType = payload.GetType().Name.Replace("Event", "").ToLowerInvariant();
+        
+        _logger.LogWarning("WEBHOOK_EVENT_UNHANDLED: Type={EventType}, DeliveryId={DeliveryId}, UserAgent={UserAgent}. This event type is not explicitly handled but was received.",
+            eventType,
+            ExtractHeaderValue(headers, "X-GitHub-Delivery"),
+            ExtractHeaderValue(headers, "User-Agent"));
+
+        // Log basic event information
+        var repositoryInfo = "unknown";
+        var senderInfo = "unknown";
+        var installationInfo = "unknown";
+
+        try
+        {
+            // Try to extract basic information using reflection if available common properties exist
+            var repositoryProperty = payload.GetType().GetProperty("Repository");
+            if (repositoryProperty?.GetValue(payload) is object repo)
+            {
+                var fullNameProperty = repo.GetType().GetProperty("FullName");
+                repositoryInfo = fullNameProperty?.GetValue(repo)?.ToString() ?? "unknown";
+            }
+
+            var senderProperty = payload.GetType().GetProperty("Sender");
+            if (senderProperty?.GetValue(payload) is object sender)
+            {
+                var loginProperty = sender.GetType().GetProperty("Login");
+                senderInfo = loginProperty?.GetValue(sender)?.ToString() ?? "unknown";
+            }
+
+            var installationProperty = payload.GetType().GetProperty("Installation");
+            if (installationProperty?.GetValue(payload) is object installation)
+            {
+                var idProperty = installation.GetType().GetProperty("Id");
+                installationInfo = idProperty?.GetValue(installation)?.ToString() ?? "unknown";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Could not extract basic webhook event information via reflection: {Error}", ex.Message);
+        }
+
+        _logger.LogInformation("WEBHOOK_UNHANDLED_METADATA: Repository={Repository}, Sender={Sender}, Installation={Installation}",
+            repositoryInfo,
+            senderInfo,
+            installationInfo);
+
+        await _auditService.LogEventAsync("GitHub_Webhook_Unhandled", 
+            action: eventType.ToUpperInvariant(), 
+            result: "UNHANDLED",
+            details: new { 
+                EventType = eventType,
+                Repository = repositoryInfo,
+                Sender = senderInfo,
+                Installation = installationInfo,
+                DeliveryId = ExtractHeaderValue(headers, "X-GitHub-Delivery"),
+                UserAgent = ExtractHeaderValue(headers, "User-Agent")
+            });
+
+        // Call base implementation to ensure proper webhook acknowledgment
+        await base.ProcessWebhookAsync(headers, payload);
+    }
+
+    /// <summary>
+    /// Helper method to extract header values from WebhookHeaders
+    /// </summary>
+    private string ExtractHeaderValue(WebhookHeaders headers, string headerName)
+    {
+        try
+        {
+            // WebhookHeaders likely has an indexer or GetValueOrDefault method
+            // Use reflection as a fallback to access the headers
+            var headersProperty = headers.GetType().GetProperty("Headers") ?? 
+                                 headers.GetType().GetProperty("Values") ??
+                                 headers.GetType().GetProperty("Items");
+            
+            if (headersProperty != null)
+            {
+                var headerDictionary = headersProperty.GetValue(headers);
+                if (headerDictionary is IDictionary<string, Microsoft.Extensions.Primitives.StringValues> dict)
+                {
+                    if (dict.TryGetValue(headerName, out var values))
+                    {
+                        return values.FirstOrDefault() ?? "unknown";
+                    }
+                }
+            }
+            
+            // Try direct indexer access
+            var indexer = headers.GetType().GetMethod("get_Item", new[] { typeof(string) });
+            if (indexer != null)
+            {
+                var result = indexer.Invoke(headers, new object[] { headerName });
+                if (result is Microsoft.Extensions.Primitives.StringValues stringValues)
+                {
+                    return stringValues.FirstOrDefault() ?? "unknown";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug("Could not extract header value for {HeaderName}: {Error}", headerName, ex.Message);
+        }
+        return "unknown";
     }
 
     /// <summary>
