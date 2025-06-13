@@ -1,0 +1,35 @@
+name: Test Reusable Component
+on:
+  workflow_dispatch:
+    inputs:
+      test_version:
+        description: 'Version to test'
+        required: true
+        default: '1.2.3'
+        type: string
+      expected_result:
+        description: 'Expected result'
+        required: true
+        default: 'pass'
+        type: choice
+        options:
+          - pass
+          - fail
+
+jobs:
+  test-reusable-component:
+    uses: ./.github/workflows/components/semver-validation-test.yml
+    with:
+      test_version: ${{ github.event.inputs.test_version }}
+      expected_result: ${{ github.event.inputs.expected_result }}
+      test_name: "Reusable Component Test"
+      
+  display-results:
+    needs: test-reusable-component
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Test Results
+        run: |
+          echo "🧪 Reusable Component Test Results"
+          echo "Test Result: ${{ needs.test-reusable-component.outputs.test_result }}"
+          echo "Component validation: ${{ needs.test-reusable-component.result }}"
