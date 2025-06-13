@@ -278,11 +278,14 @@ jobs:
               --min-replicas 1 \
               --max-replicas 5
           else
-            echo "🔄 Updating existing unified platform container app..."
+            echo "🔄 Updating existing unified platform container app with GHCR authentication..."
             az containerapp update \
               --name ${{ env.CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --image ${{ needs.build.outputs.image_url_sha }} \
+              --registry-server ghcr.io \
+              --registry-username ${{ github.actor }} \
+              --registry-password ${{ secrets.GITHUB_TOKEN }} \
               --replace-env-vars \
                 "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}" \
                 "ASPNETCORE_ENVIRONMENT=Production" \
