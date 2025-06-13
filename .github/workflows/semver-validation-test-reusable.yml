@@ -36,8 +36,8 @@ jobs:
           # Set validation result to false initially
           VALIDATION_PASSED=false
           
-          # Validate semantic version format
-          if [[ ! "$SEMANTIC_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # Validate semantic version format (reject leading zeros, allow single 0)
+          if [[ ! "$SEMANTIC_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
             echo "❌ VALIDATION: Invalid semantic version format: '$SEMANTIC_VERSION'"
             echo "Expected format: X.Y.Z (e.g., 1.1.3)"
           else
