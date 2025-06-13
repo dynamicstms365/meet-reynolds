@@ -136,7 +136,7 @@ jobs:
 
   test-edge-leading-zeros:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "01.02.03"
       expected_result: "fail"
