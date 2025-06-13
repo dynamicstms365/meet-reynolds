@@ -270,12 +270,7 @@ jobs:
           location: ${{ env.AZURE_LOCATION }}
           targetPort: 8080
           ingress: external
-          environmentVariables: |
-            NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
-            ASPNETCORE_ENVIRONMENT=Production
-            ASPNETCORE_URLS=http://+:8080
-            COPILOT_VERSION=${{ needs.build.outputs.semantic_version }}
-            COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}
+          environmentVariables: "NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }} ASPNETCORE_ENVIRONMENT=Production ASPNETCORE_URLS=http://+:8080 COPILOT_VERSION=${{ needs.build.outputs.semantic_version }} COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}"
 
       - name: Configure Container App Resources and Secrets
         run: |
