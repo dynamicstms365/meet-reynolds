@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceBaseName": {
+      "value": "reynolds${{RESOURCE_SUFFIX}}"
+    },
+    "botDisplayName": {
+      "value": "Reynolds Teams Agent - Supernatural Organizational Orchestration"
+    },
+    "microsoftAppId": {
+      "value": "${{BOT_ID}}"
+    },
+    "microsoftAppPassword": {
+      "value": "${{SECRET_BOT_PASSWORD}}"
+    },
+    "tenantId": {
+      "value": "${{TENANT_ID}}"
+    },
+    "webAppSKU": {
+      "value": "B1"
+    }
+  }
+}
