@@ -21,7 +21,7 @@ on:
 jobs:
   # Valid Version Tests
   test-valid-basic-version:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3"
@@ -29,7 +29,7 @@ jobs:
       test_name: "Valid Basic Version"
 
   test-valid-single-digits:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "0.0.1"
@@ -37,7 +37,7 @@ jobs:
       test_name: "Valid Single Digits"
 
   test-valid-large-numbers:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "99.999.9999"
@@ -45,7 +45,7 @@ jobs:
       test_name: "Valid Large Numbers"
 
   test-valid-zeros:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "0.0.0"
@@ -53,7 +53,7 @@ jobs:
       test_name: "Valid All Zeros"
 
   test-valid-mixed-lengths:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "10.5.123"
@@ -62,7 +62,7 @@ jobs:
 
   # Invalid Version Tests
   test-invalid-empty-version:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: ""
@@ -70,7 +70,7 @@ jobs:
       test_name: "Invalid Empty Version"
 
   test-invalid-two-parts:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2"
@@ -78,7 +78,7 @@ jobs:
       test_name: "Invalid Two Parts Only"
 
   test-invalid-four-parts:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3.4"
@@ -86,7 +86,7 @@ jobs:
       test_name: "Invalid Four Parts"
 
   test-invalid-with-letters:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3a"
@@ -94,7 +94,7 @@ jobs:
       test_name: "Invalid With Letters"
 
   test-invalid-with-prerelease:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3-alpha"
@@ -102,7 +102,7 @@ jobs:
       test_name: "Invalid With Prerelease"
 
   test-invalid-with-build-meta:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3+build.1"
@@ -110,7 +110,7 @@ jobs:
       test_name: "Invalid With Build Metadata"
 
   test-invalid-negative-numbers:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "-1.2.3"
@@ -118,7 +118,7 @@ jobs:
       test_name: "Invalid Negative Numbers"
 
   test-invalid-decimal-numbers:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3.0"
@@ -127,7 +127,7 @@ jobs:
 
   # Edge Cases
   test-edge-whitespace:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: " 1.2.3 "
@@ -135,7 +135,7 @@ jobs:
       test_name: "Edge Case With Whitespace"
 
   test-edge-leading-zeros:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "01.02.03"
@@ -143,7 +143,7 @@ jobs:
       test_name: "Edge Case Leading Zeros"
 
   test-edge-v-prefix:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "v1.2.3"
@@ -151,7 +151,7 @@ jobs:
       test_name: "Edge Case V Prefix"
 
   test-edge-special-chars:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "1.2.3@"
@@ -159,7 +159,7 @@ jobs:
       test_name: "Edge Case Special Characters"
 
   test-edge-only-dots:
-    if: ${{ github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' || github.event.inputs.test_scope == '' }}
+    if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
     uses: ./.github/workflows/components/semver-validation-test.yml
     with:
       test_version: "..."
