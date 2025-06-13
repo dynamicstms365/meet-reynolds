@@ -15,14 +15,14 @@ on:
   push:
     paths:
       - '.github/workflows/deploy-azure-container.yml'
-      - '.github/workflows/components/semver-validation-test.yml'
+      - '.github/workflows/semver-validation-test-reusable.yml'
       - '.github/workflows/test-semver-validation-suite.yml'
 
 jobs:
   # Valid Version Tests
   test-valid-basic-version:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3"
       expected_result: "pass"
@@ -30,7 +30,7 @@ jobs:
 
   test-valid-single-digits:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "0.0.1"
       expected_result: "pass"
@@ -38,7 +38,7 @@ jobs:
 
   test-valid-large-numbers:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "99.999.9999"
       expected_result: "pass"
@@ -46,7 +46,7 @@ jobs:
 
   test-valid-zeros:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "0.0.0"
       expected_result: "pass"
@@ -54,7 +54,7 @@ jobs:
 
   test-valid-mixed-lengths:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'valid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "10.5.123"
       expected_result: "pass"
@@ -63,7 +63,7 @@ jobs:
   # Invalid Version Tests
   test-invalid-empty-version:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: ""
       expected_result: "fail"
@@ -71,7 +71,7 @@ jobs:
 
   test-invalid-two-parts:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2"
       expected_result: "fail"
@@ -79,7 +79,7 @@ jobs:
 
   test-invalid-four-parts:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3.4"
       expected_result: "fail"
@@ -87,7 +87,7 @@ jobs:
 
   test-invalid-with-letters:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3a"
       expected_result: "fail"
@@ -95,7 +95,7 @@ jobs:
 
   test-invalid-with-prerelease:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3-alpha"
       expected_result: "fail"
@@ -103,7 +103,7 @@ jobs:
 
   test-invalid-with-build-meta:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3+build.1"
       expected_result: "fail"
@@ -111,7 +111,7 @@ jobs:
 
   test-invalid-negative-numbers:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "-1.2.3"
       expected_result: "fail"
@@ -119,7 +119,7 @@ jobs:
 
   test-invalid-decimal-numbers:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'invalid-versions' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3.0"
       expected_result: "fail"
@@ -128,7 +128,7 @@ jobs:
   # Edge Cases
   test-edge-whitespace:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: " 1.2.3 "
       expected_result: "fail"
@@ -144,7 +144,7 @@ jobs:
 
   test-edge-v-prefix:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "v1.2.3"
       expected_result: "fail"
@@ -152,7 +152,7 @@ jobs:
 
   test-edge-special-chars:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "1.2.3@"
       expected_result: "fail"
@@ -160,7 +160,7 @@ jobs:
 
   test-edge-only-dots:
     if: ${{ !github.event.inputs.test_scope || github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'edge-cases' }}
-    uses: ./.github/workflows/components/semver-validation-test.yml
+    uses: ./.github/workflows/semver-validation-test-reusable.yml
     with:
       test_version: "..."
       expected_result: "fail"
