@@ -19,6 +19,7 @@ public class GitHubWorkflowOrchestrator : IGitHubWorkflowOrchestrator
     private readonly IGitHubDiscussionsService _discussionsService;
     private readonly IGitHubIssuesService _issuesService;
     private readonly IGitHubSemanticSearchService _semanticSearchService;
+    private readonly IGitHubIssuePRSynchronizationService _synchronizationService;
     private readonly ISecurityAuditService _auditService;
     private readonly ILogger<GitHubWorkflowOrchestrator> _logger;
     private readonly IConfiguration _configuration;
@@ -27,6 +28,7 @@ public class GitHubWorkflowOrchestrator : IGitHubWorkflowOrchestrator
         IGitHubDiscussionsService discussionsService,
         IGitHubIssuesService issuesService,
         IGitHubSemanticSearchService semanticSearchService,
+        IGitHubIssuePRSynchronizationService synchronizationService,
         ISecurityAuditService auditService,
         ILogger<GitHubWorkflowOrchestrator> logger,
         IConfiguration configuration)
@@ -34,6 +36,7 @@ public class GitHubWorkflowOrchestrator : IGitHubWorkflowOrchestrator
         _discussionsService = discussionsService;
         _issuesService = issuesService;
         _semanticSearchService = semanticSearchService;
+        _synchronizationService = synchronizationService;
         _auditService = auditService;
         _logger = logger;
         _configuration = configuration;
@@ -676,7 +679,7 @@ public class GitHubWorkflowOrchestrator : IGitHubWorkflowOrchestrator
         });
     }
 
-    private Task<WorkflowResult> HandlePullRequestEventAsync(GitHubWebhookPayload payload)
+    private async Task<WorkflowResult> HandlePullRequestEventAsync(GitHubWebhookPayload payload)
     {
         var actions = new List<WorkflowAction>
         {
@@ -689,12 +692,80 @@ public class GitHubWorkflowOrchestrator : IGitHubWorkflowOrchestrator
             }
         };
 
-        return Task.FromResult(new WorkflowResult
+        // Perform real-time synchronization for PR state changes
+        if (payload.PullRequest != null && payload.Repository != null)
+        {
+            try
+            {
+                var shouldSync = payload.Action?.ToLowerInvariant() switch
+                {
+                    "closed" => true,  // PR was closed (merged or not merged)
+                    "opened" => true,  // PR was opened (new work started)
+                    "reopened" => true, // PR was reopened
+                    _ => false
+                };
+
+                if (shouldSync)
+                {
+                    _logger.LogInformation("Performing real-time issue synchronization for PR #{Number} in {Repository}", 
+                        payload.PullRequest.Number, payload.Repository.FullName);
+
+                    // Find issues linked to this PR
+                    var linkedIssues = await _synchronizationService.FindIssuesLinkedToPullRequestAsync(
+                        payload.Repository.FullName, payload.PullRequest.Number);
+
+                    var syncActions = new List<WorkflowAction>();
+                    foreach (var issue in linkedIssues)
+                    {
+                        var success = await _synchronizationService.SynchronizeIssueWithPRsAsync(
+                            payload.Repository.FullName, issue.Number);
+
+                        syncActions.Add(new WorkflowAction
+                        {
+                            Type = success ? "issue_synchronized" : "issue_sync_failed",
+                            Description = success 
+                                ? $"Synchronized issue #{issue.Number} with PR #{payload.PullRequest.Number}"
+                                : $"Failed to synchronize issue #{issue.Number} with PR #{payload.PullRequest.Number}",
+                            Data = new { IssueNumber = issue.Number, PRNumber = payload.PullRequest.Number, Success = success },
+                            Timestamp = DateTime.UtcNow
+                        });
+                    }
+
+                    actions.AddRange(syncActions);
+
+                    if (linkedIssues.Any())
+                    {
+                        _logger.LogInformation("Synchronized {Count} issues with PR #{PRNumber} in {Repository}", 
+                            linkedIssues.Count(), payload.PullRequest.Number, payload.Repository.FullName);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("No linked issues found for PR #{PRNumber} in {Repository}", 
+                            payload.PullRequest.Number, payload.Repository.FullName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during real-time synchronization for PR #{PRNumber} in {Repository}", 
+                    payload.PullRequest?.Number, payload.Repository?.FullName);
+
+                actions.Add(new WorkflowAction
+                {
+                    Type = "sync_error",
+                    Description = $"Failed to synchronize issues for PR #{payload.PullRequest?.Number}: {ex.Message}",
+                    Data = new { Error = ex.Message, PRNumber = payload.PullRequest?.Number },
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+        }
+
+        return new WorkflowResult
         {
             Success = true,
             WorkflowType = "pull_request_webhook",
             Actions = actions
-        });
+        };
     }
 
     private Task<WorkflowResult> HandleRepositoryDispatchEventAsync(GitHubWebhookPayload payload)
