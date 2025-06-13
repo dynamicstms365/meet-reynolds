@@ -17,15 +17,18 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
 {
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly ISecurityAuditService _auditService;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<OctokitWebhookEventProcessor> _logger;
 
     public OctokitWebhookEventProcessor(
         IGitHubWorkflowOrchestrator workflowOrchestrator,
         ISecurityAuditService auditService,
+        INotificationService notificationService,
         ILogger<OctokitWebhookEventProcessor> logger)
     {
         _workflowOrchestrator = workflowOrchestrator;
         _auditService = auditService;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -114,6 +117,32 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
             
             _logger.LogInformation("Pull request webhook processed: {Success}, Actions: {ActionsCount}", 
                 result.Success, result.Actions.Count);
+
+            // Send stakeholder notifications for pull request updates
+            if (pullRequestEvent.Repository?.FullName != null)
+            {
+                var prData = new 
+                {
+                    Action = action.ToString(),
+                    PullRequestNumber = pullRequestEvent.PullRequest.Number,
+                    Title = pullRequestEvent.PullRequest.Title ?? string.Empty,
+                    State = pullRequestEvent.PullRequest.State?.ToString() ?? "unknown",
+                    Author = pullRequestEvent.PullRequest.User?.Login,
+                    Url = pullRequestEvent.PullRequest.HtmlUrl ?? string.Empty,
+                    Repository = pullRequestEvent.Repository.FullName,
+                    IsDraft = pullRequestEvent.PullRequest.Draft,
+                    RequestedReviewers = pullRequestEvent.PullRequest.RequestedReviewers?.Select(r => r.Login).ToArray() ?? Array.Empty<string>(),
+                    Assignees = pullRequestEvent.PullRequest.Assignees?.Select(a => a.Login).ToArray() ?? Array.Empty<string>()
+                };
+
+                await _notificationService.NotifyStakeholdersAsync(
+                    pullRequestEvent.Repository.FullName,
+                    NotificationType.PullRequestUpdate,
+                    prData);
+
+                _logger.LogInformation("Stakeholder notifications triggered for PR #{Number} in {Repository}", 
+                    pullRequestEvent.PullRequest.Number, pullRequestEvent.Repository.FullName);
+            }
         }
         catch (Exception ex)
         {
@@ -154,6 +183,31 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
             
             _logger.LogInformation("Issues webhook processed: {Success}, Actions: {ActionsCount}", 
                 result.Success, result.Actions.Count);
+
+            // Send stakeholder notifications for issue updates
+            if (issuesEvent.Repository?.FullName != null)
+            {
+                var issueData = new 
+                {
+                    Action = action.ToString(),
+                    IssueNumber = issuesEvent.Issue.Number,
+                    Title = issuesEvent.Issue.Title ?? string.Empty,
+                    State = issuesEvent.Issue.State?.ToString() ?? "unknown",
+                    Author = issuesEvent.Issue.User?.Login,
+                    Url = issuesEvent.Issue.HtmlUrl ?? string.Empty,
+                    Repository = issuesEvent.Repository.FullName,
+                    Labels = issuesEvent.Issue.Labels?.Select(l => l.Name).ToArray() ?? Array.Empty<string>(),
+                    Assignees = issuesEvent.Issue.Assignees?.Select(a => a.Login).ToArray() ?? Array.Empty<string>()
+                };
+
+                await _notificationService.NotifyStakeholdersAsync(
+                    issuesEvent.Repository.FullName,
+                    NotificationType.IssueUpdate,
+                    issueData);
+
+                _logger.LogInformation("Stakeholder notifications triggered for issue #{Number} in {Repository}", 
+                    issuesEvent.Issue.Number, issuesEvent.Repository.FullName);
+            }
         }
         catch (Exception ex)
         {

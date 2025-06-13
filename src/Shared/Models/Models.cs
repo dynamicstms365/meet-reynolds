@@ -208,3 +208,243 @@ public class CliMonitoringOptions
     public TimeSpan MonitoringWindow { get; set; } = TimeSpan.FromMinutes(5);
     public bool EnableAlerting { get; set; } = true;
 }
+
+// Stakeholder Visibility Models
+public class StakeholderConfiguration
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string[] Repositories { get; set; } = Array.Empty<string>();
+    public StakeholderUpdatePreferences UpdatePreferences { get; set; } = new();
+    public DashboardConfiguration DashboardConfig { get; set; } = new();
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class StakeholderUpdatePreferences
+{
+    public bool IssueProgressUpdates { get; set; } = true;
+    public bool PullRequestStatusUpdates { get; set; } = true;
+    public bool DiscussionUpdates { get; set; } = false;
+    public bool SecurityAlerts { get; set; } = true;
+    public bool PerformanceMetrics { get; set; } = false;
+    public NotificationFrequency Frequency { get; set; } = NotificationFrequency.Daily;
+    public string[] ImportantLabels { get; set; } = Array.Empty<string>();
+    public string[] ImportantAssignees { get; set; } = Array.Empty<string>();
+    public NotificationChannel[] Channels { get; set; } = new[] { NotificationChannel.Email };
+}
+
+public class DashboardConfiguration
+{
+    public string Title { get; set; } = "Project Dashboard";
+    public DashboardWidget[] Widgets { get; set; } = Array.Empty<DashboardWidget>();
+    public string Theme { get; set; } = "default";
+    public int RefreshIntervalMinutes { get; set; } = 30;
+    public bool ShowMetrics { get; set; } = true;
+    public bool ShowRecentActivity { get; set; } = true;
+}
+
+public class DashboardWidget
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public WidgetType Type { get; set; }
+    public Dictionary<string, object> Configuration { get; set; } = new();
+    public int Order { get; set; }
+    public bool IsVisible { get; set; } = true;
+}
+
+public class ProjectProgressSummary
+{
+    public string Repository { get; set; } = string.Empty;
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public IssuesSummary Issues { get; set; } = new();
+    public PullRequestsSummary PullRequests { get; set; } = new();
+    public DiscussionsSummary Discussions { get; set; } = new();
+    public ProjectMetrics Metrics { get; set; } = new();
+    public RecentActivity[] RecentActivities { get; set; } = Array.Empty<RecentActivity>();
+}
+
+public class IssuesSummary
+{
+    public int TotalOpen { get; set; }
+    public int TotalClosed { get; set; }
+    public int OpenCritical { get; set; }
+    public int OpenHigh { get; set; }
+    public int ClosedThisWeek { get; set; }
+    public int NewThisWeek { get; set; }
+    public double AverageClosureTimeHours { get; set; }
+    public GitHubIssue[] RecentIssues { get; set; } = Array.Empty<GitHubIssue>();
+}
+
+public class PullRequestsSummary
+{
+    public int TotalOpen { get; set; }
+    public int TotalMerged { get; set; }
+    public int AwaitingReview { get; set; }
+    public int MergedThisWeek { get; set; }
+    public int NewThisWeek { get; set; }
+    public double AverageMergeTimeHours { get; set; }
+    public GitHubPullRequest[] RecentPullRequests { get; set; } = Array.Empty<GitHubPullRequest>();
+}
+
+public class DiscussionsSummary
+{
+    public int TotalActive { get; set; }
+    public int NewThisWeek { get; set; }
+    public int AnsweredThisWeek { get; set; }
+    public GitHubDiscussion[] RecentDiscussions { get; set; } = Array.Empty<GitHubDiscussion>();
+}
+
+public class ProjectMetrics
+{
+    public double ProjectHealth { get; set; }
+    public int TeamProductivityScore { get; set; }
+    public double IssueResolutionTrend { get; set; }
+    public double CodeQualityScore { get; set; }
+    public Dictionary<string, object> CustomMetrics { get; set; } = new();
+}
+
+public class RecentActivity
+{
+    public string Type { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class GitHubPullRequest
+{
+    public string NodeId { get; set; } = string.Empty;
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime? MergedAt { get; set; }
+    public string[] Labels { get; set; } = Array.Empty<string>();
+    public string[] Assignees { get; set; } = Array.Empty<string>();
+    public string[] RequestedReviewers { get; set; } = Array.Empty<string>();
+    public bool IsDraft { get; set; }
+    public int CommentsCount { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class StakeholderNotification
+{
+    public string Id { get; set; } = string.Empty;
+    public string StakeholderId { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public NotificationType Type { get; set; }
+    public NotificationChannel Channel { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? SentAt { get; set; }
+    public NotificationStatus Status { get; set; } = NotificationStatus.Pending;
+    public string? ErrorMessage { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public enum NotificationFrequency
+{
+    Immediate,
+    Hourly,
+    Daily,
+    Weekly
+}
+
+public enum NotificationChannel
+{
+    Email,
+    Teams,
+    Dashboard,
+    Webhook
+}
+
+public enum WidgetType
+{
+    IssuesSummary,
+    PullRequestsSummary,
+    RecentActivity,
+    ProjectMetrics,
+    Chart,
+    Table,
+    Custom
+}
+
+public enum NotificationType
+{
+    IssueUpdate,
+    PullRequestUpdate,
+    DiscussionUpdate,
+    SecurityAlert,
+    ProjectSummary,
+    PerformanceAlert
+}
+
+public enum NotificationStatus
+{
+    Pending,
+    Sent,
+    Failed,
+    Cancelled
+}
+
+// GitHub Models (moved from Services to shared)
+public class GitHubIssue
+{
+    public string NodeId { get; set; } = string.Empty;
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string[] Labels { get; set; } = Array.Empty<string>();
+    public string[] Assignees { get; set; } = Array.Empty<string>();
+    public int CommentCount { get; set; }
+    public IEnumerable<GitHubComment> Comments { get; set; } = new List<GitHubComment>();
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class GitHubDiscussion
+{
+    public string NodeId { get; set; } = string.Empty;
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public string Category { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public int CommentCount { get; set; }
+    public IEnumerable<GitHubComment> Comments { get; set; } = new List<GitHubComment>();
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class GitHubComment
+{
+    public string NodeId { get; set; } = string.Empty;
+    public long Id { get; set; }
+    public string Body { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}

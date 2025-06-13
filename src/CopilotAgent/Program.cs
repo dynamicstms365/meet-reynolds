@@ -46,6 +46,11 @@ builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearc
 // Register GitHub workflow orchestrator
 builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
 
+// Register stakeholder visibility services
+builder.Services.AddScoped<IStakeholderVisibilityService, StakeholderVisibilityService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 // Register Octokit webhook processor (replaces custom webhook controller)
 builder.Services.AddSingleton<WebhookEventProcessor, OctokitWebhookEventProcessor>();
 

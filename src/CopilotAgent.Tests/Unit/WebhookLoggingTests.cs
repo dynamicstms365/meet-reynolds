@@ -24,9 +24,11 @@ public class WebhookLoggingTests
     public void OctokitWebhookEventProcessor_ShouldBeConstructable()
     {
         // Arrange & Act
+        var mockNotificationService = new Mock<INotificationService>();
         var processor = new OctokitWebhookEventProcessor(
             _mockOrchestrator.Object,
             _mockAuditService.Object,
+            mockNotificationService.Object,
             _mockLogger.Object);
 
         // Assert
@@ -37,9 +39,11 @@ public class WebhookLoggingTests
     public void EnhancedLogging_ShouldIncludeStructuredInformation()
     {
         // Arrange
+        var mockNotificationService = new Mock<INotificationService>();
         var processor = new OctokitWebhookEventProcessor(
             _mockOrchestrator.Object,
             _mockAuditService.Object,
+            mockNotificationService.Object,
             _mockLogger.Object);
 
         // Act & Assert - This validates that the processor is properly constructed
