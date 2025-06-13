@@ -6,6 +6,7 @@ using CopilotAgent.Startup;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 
+// Reynolds: Trigger streamlined deployment for MCP protocol testing
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
