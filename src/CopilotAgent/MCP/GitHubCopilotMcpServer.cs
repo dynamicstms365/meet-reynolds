@@ -390,7 +390,6 @@ public class GitHubCopilotMcpServer : ControllerBase
         _logger.LogInformation("👋 Reynolds MCP: Client requested graceful shutdown");
         return Ok(new { success = true, message = "Reynolds MCP Server shutting down gracefully. Maximum Effort™ completed." });
     }
-    }
 
     /// <summary>
     /// Handle MCP tool calls via Streamable HTTP transport
