@@ -16,6 +16,7 @@ public class GitHubController : ControllerBase
     private readonly IGitHubSemanticSearchService _semanticSearchService;
     private readonly IGitHubDiscussionsService _discussionsService;
     private readonly IGitHubIssuesService _issuesService;
+    private readonly IScopeCreepMonitoringService _scopeMonitoringService;
     private readonly ILogger<GitHubController> _logger;
     private readonly IConfiguration _configuration;
 
@@ -27,6 +28,7 @@ public class GitHubController : ControllerBase
         IGitHubSemanticSearchService semanticSearchService,
         IGitHubDiscussionsService discussionsService,
         IGitHubIssuesService issuesService,
+        IScopeCreepMonitoringService scopeMonitoringService,
         ILogger<GitHubController> logger,
         IConfiguration configuration)
     {
@@ -37,6 +39,7 @@ public class GitHubController : ControllerBase
         _semanticSearchService = semanticSearchService;
         _discussionsService = discussionsService;
         _issuesService = issuesService;
+        _scopeMonitoringService = scopeMonitoringService;
         _logger = logger;
         _configuration = configuration;
     }
@@ -326,4 +329,108 @@ public class GitHubController : ControllerBase
             return StatusCode(500, new { error = "Internal server error getting organization issues" });
         }
     }
+
+    /// <summary>
+    /// Analyze project scope and detect potential scope creep
+    /// </summary>
+    [HttpPost("scope/analyze")]
+    public async Task<ActionResult<ScopeDeviationMetrics>> AnalyzeProjectScope([FromBody] AnalyzeScopeRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Analyzing project scope for repository: {Repository}", request.Repository);
+
+            var metrics = await _scopeMonitoringService.AnalyzeProjectScopeAsync(request.Repository, request.ScopeParameters);
+            
+            return Ok(metrics);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing project scope for repository: {Repository}", request.Repository);
+            return StatusCode(500, new { error = "Internal server error analyzing project scope" });
+        }
+    }
+
+    /// <summary>
+    /// Check for scope creep and get alerts if any
+    /// </summary>
+    [HttpPost("scope/check")]
+    public async Task<ActionResult<ScopeCreepAlert?>> CheckForScopeCreep([FromBody] AnalyzeScopeRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Checking for scope creep in repository: {Repository}", request.Repository);
+
+            var alert = await _scopeMonitoringService.CheckForScopeCreepAsync(request.Repository, request.ScopeParameters);
+            
+            if (alert != null)
+            {
+                // Send the alert through the monitoring service
+                await _scopeMonitoringService.SendScopeCreepAlertAsync(alert);
+                return Ok(alert);
+            }
+            
+            return Ok(new { message = "No scope creep detected", repository = request.Repository });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking for scope creep in repository: {Repository}", request.Repository);
+            return StatusCode(500, new { error = "Internal server error checking for scope creep" });
+        }
+    }
+
+    /// <summary>
+    /// Get recent scope creep alerts for a repository
+    /// </summary>
+    [HttpGet("scope/{repository}/alerts")]
+    public async Task<ActionResult<List<ScopeCreepAlert>>> GetRecentScopeAlerts(string repository, [FromQuery] int hours = 24)
+    {
+        try
+        {
+            _logger.LogInformation("Getting recent scope alerts for repository: {Repository}", repository);
+
+            var alerts = await _scopeMonitoringService.GetRecentAlertsAsync(repository, TimeSpan.FromHours(hours));
+            
+            return Ok(alerts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting recent scope alerts for repository: {Repository}", repository);
+            return StatusCode(500, new { error = "Internal server error getting scope alerts" });
+        }
+    }
+
+    /// <summary>
+    /// Check if a project is within its defined scope
+    /// </summary>
+    [HttpPost("scope/within-scope")]
+    public async Task<ActionResult<bool>> IsProjectWithinScope([FromBody] AnalyzeScopeRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Checking if project is within scope for repository: {Repository}", request.Repository);
+
+            var withinScope = await _scopeMonitoringService.IsProjectWithinScopeAsync(request.Repository, request.ScopeParameters);
+            
+            return Ok(new { 
+                repository = request.Repository, 
+                withinScope = withinScope,
+                message = withinScope ? "Project is within defined scope" : "Project has exceeded defined scope"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if project is within scope for repository: {Repository}", request.Repository);
+            return StatusCode(500, new { error = "Internal server error checking project scope" });
+        }
+    }
+}
+
+/// <summary>
+/// Request model for scope analysis operations
+/// </summary>
+public class AnalyzeScopeRequest
+{
+    public string Repository { get; set; } = string.Empty;
+    public ProjectScopeParameters ScopeParameters { get; set; } = new();
 }
