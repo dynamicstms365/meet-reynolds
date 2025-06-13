@@ -25,6 +25,7 @@ jobs:
     outputs:
       image_url: ${{ steps.build_push.outputs.image_url }}
       image_url_sha: ${{ steps.build_push.outputs.image_url_sha }}
+      image_url_semver: ${{ steps.build_push.outputs.image_url_semver }}
       semantic_version: ${{ steps.semver.outputs.version }}
       commit_sha: ${{ steps.build_push.outputs.commit_sha }}
     
