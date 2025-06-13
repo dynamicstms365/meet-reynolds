@@ -24,10 +24,26 @@ jobs:
       id-token: write
     outputs:
       image_url: ${{ steps.build_push.outputs.image_url }}
+      image_url_sha: ${{ steps.build_push.outputs.image_url_sha }}
+      semantic_version: ${{ steps.semver.outputs.version }}
+      commit_sha: ${{ steps.build_push.outputs.commit_sha }}
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for semantic versioning
+
+      - name: Generate Semantic Version
+        id: semver
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "BREAKING CHANGE:"
+          minor_pattern: "feat:"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+          search_commit_body: true
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -48,16 +64,19 @@ jobs:
           REPO_OWNER: ${{ github.repository_owner }}
           REPO_NAME: copilot-powerplatform
           IMAGE_NAME: copilot-agent
+          SEMANTIC_VERSION: ${{ steps.semver.outputs.version }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          # Debug: Print environment variables and repository info
+          # Debug: Print environment variables and versioning info
           echo "DEBUG: REGISTRY=$REGISTRY"
           echo "DEBUG: REPO_OWNER=$REPO_OWNER"
           echo "DEBUG: REPO_NAME=$REPO_NAME"
           echo "DEBUG: IMAGE_NAME=$IMAGE_NAME"
+          echo "DEBUG: SEMANTIC_VERSION=$SEMANTIC_VERSION"
+          echo "DEBUG: COMMIT_SHA=$COMMIT_SHA"
           echo "DEBUG: github.repository=${{ github.repository }}"
           echo "DEBUG: github.repository_owner=${{ github.repository_owner }}"
           echo "DEBUG: github.actor=${{ github.actor }}"
-          echo "DEBUG: github.sha=${{ github.sha }}"
           
           # Construct the full image name using individual components and convert to lowercase
           FULL_IMAGE_NAME=$(echo "$REPO_OWNER/$REPO_NAME/$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
@@ -70,35 +89,74 @@ jobs:
             exit 1
           fi
           
+          if [[ -z "$SEMANTIC_VERSION" || -z "$COMMIT_SHA" ]]; then
+            echo "ERROR: Missing versioning information"
+            echo "SEMANTIC_VERSION='$SEMANTIC_VERSION', COMMIT_SHA='$COMMIT_SHA'"
+            exit 1
+          fi
+          
           if [[ ! "$FULL_IMAGE_NAME" =~ ^[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+$ ]]; then
             echo "ERROR: FULL_IMAGE_NAME appears to be invalid: $FULL_IMAGE_NAME"
             echo "Expected format: owner/repository/image-name (lowercase)"
             exit 1
           fi
+          
           # Build the Docker image using pre-built output and permanent Dockerfile
+          echo "🏗️ Building Docker image with multiple tags..."
           docker build -t $REGISTRY/$FULL_IMAGE_NAME:latest .
-          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:${{ github.sha }}
+          
+          # Create multiple tags for the same image
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:$SEMANTIC_VERSION
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:$COMMIT_SHA
+          docker tag $REGISTRY/$FULL_IMAGE_NAME:latest $REGISTRY/$FULL_IMAGE_NAME:${COMMIT_SHA:0:7}
+          
+          echo "📋 Created image tags:"
+          echo "  - latest"
+          echo "  - $SEMANTIC_VERSION (semantic version)"
+          echo "  - $COMMIT_SHA (full SHA)"
+          echo "  - ${COMMIT_SHA:0:7} (short SHA)"
           
           # Login to GitHub Container Registry using GitHub token
+          echo "🔐 Logging into GitHub Container Registry..."
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login $REGISTRY -u ${{ github.actor }} --password-stdin
           
-          # Push to GitHub Container Registry
+          # Push all tags to GitHub Container Registry
+          echo "📦 Pushing all image tags to registry..."
           docker push $REGISTRY/$FULL_IMAGE_NAME:latest
-          docker push $REGISTRY/$FULL_IMAGE_NAME:${{ github.sha }}
+          docker push $REGISTRY/$FULL_IMAGE_NAME:$SEMANTIC_VERSION
+          docker push $REGISTRY/$FULL_IMAGE_NAME:$COMMIT_SHA
+          docker push $REGISTRY/$FULL_IMAGE_NAME:${COMMIT_SHA:0:7}
           
-          # Construct and validate the final image URL
-          FINAL_IMAGE_URL="$REGISTRY/$FULL_IMAGE_NAME:latest"
-          echo "DEBUG: Final image URL: $FINAL_IMAGE_URL"
+          # Construct and validate the final image URLs
+          FINAL_IMAGE_URL_LATEST="$REGISTRY/$FULL_IMAGE_NAME:latest"
+          FINAL_IMAGE_URL_SHA="$REGISTRY/$FULL_IMAGE_NAME:$COMMIT_SHA"
+          FINAL_IMAGE_URL_SEMVER="$REGISTRY/$FULL_IMAGE_NAME:$SEMANTIC_VERSION"
           
-          # Validate the image URL format
-          if [[ ! "$FINAL_IMAGE_URL" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:(latest|[a-z0-9._-]+)$ ]]; then
-            echo "ERROR: Generated image URL is invalid: $FINAL_IMAGE_URL"
-            echo "Expected format: ghcr.io/owner/repository/image-name:tag (lowercase)"
-            exit 1
-          fi
+          echo "DEBUG: Final image URLs:"
+          echo "  Latest: $FINAL_IMAGE_URL_LATEST"
+          echo "  SHA: $FINAL_IMAGE_URL_SHA"
+          echo "  SemVer: $FINAL_IMAGE_URL_SEMVER"
           
-          echo "image_url=$FINAL_IMAGE_URL" >> $GITHUB_OUTPUT
-          echo "SUCCESS: Image URL validated and set: $FINAL_IMAGE_URL"
+          # Validate the image URL formats
+          for url in "$FINAL_IMAGE_URL_LATEST" "$FINAL_IMAGE_URL_SHA" "$FINAL_IMAGE_URL_SEMVER"; do
+            if [[ ! "$url" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:[a-zA-Z0-9._-]+$ ]]; then
+              echo "ERROR: Generated image URL is invalid: $url"
+              echo "Expected format: ghcr.io/owner/repository/image-name:tag"
+              exit 1
+            fi
+          done
+          
+          # Set outputs for use in deployment
+          echo "image_url=$FINAL_IMAGE_URL_LATEST" >> $GITHUB_OUTPUT
+          echo "image_url_sha=$FINAL_IMAGE_URL_SHA" >> $GITHUB_OUTPUT
+          echo "image_url_semver=$FINAL_IMAGE_URL_SEMVER" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "semantic_version=$SEMANTIC_VERSION" >> $GITHUB_OUTPUT
+          
+          echo "✅ SUCCESS: All image tags validated and pushed:"
+          echo "  🏷️  Latest: $FINAL_IMAGE_URL_LATEST"
+          echo "  🏷️  SHA: $FINAL_IMAGE_URL_SHA"
+          echo "  🏷️  SemVer: $FINAL_IMAGE_URL_SEMVER"
 
   deploy:
     runs-on: ubuntu-latest
@@ -185,7 +243,7 @@ jobs:
         with:
           containerAppName: ${{ env.CONTAINER_APP_NAME }}
           resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
-          imageToDeploy: ${{ needs.build.outputs.image_url }}
+          imageToDeploy: ${{ needs.build.outputs.image_url_sha }}
           containerAppEnvironment: ${{ env.CONTAINER_APP_ENV }}
           location: ${{ env.AZURE_LOCATION }}
           targetPort: 8080
@@ -194,6 +252,8 @@ jobs:
             NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
             ASPNETCORE_ENVIRONMENT=Production
             ASPNETCORE_URLS=http://+:8080
+            COPILOT_VERSION=${{ needs.build.outputs.semantic_version }}
+            COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}
 
       - name: Configure Container App Resources and Secrets
         run: |
@@ -319,30 +379,53 @@ jobs:
             fi
           fi
 
-      - name: Validate Image URL and Get FQDN
+      - name: Validate Deployment and Get FQDN
         id: validate_deploy
         run: |
-          # Validate the image URL from build output
-          IMAGE_URL="${{ needs.build.outputs.image_url }}"
-          echo "DEBUG: Received image URL: $IMAGE_URL"
+          # Validate the image URLs from build output
+          IMAGE_URL_LATEST="${{ needs.build.outputs.image_url }}"
+          IMAGE_URL_SHA="${{ needs.build.outputs.image_url_sha }}"
+          IMAGE_URL_SEMVER="${{ needs.build.outputs.image_url_semver }}"
+          SEMANTIC_VERSION="${{ needs.build.outputs.semantic_version }}"
+          COMMIT_SHA="${{ needs.build.outputs.commit_sha }}"
           
-          # Validate image URL format
-          if [[ -z "$IMAGE_URL" ]]; then
-            echo "ERROR: No image URL received from build job"
+          echo "🔍 Validating deployment artifacts..."
+          echo "📋 Image URLs received from build:"
+          echo "  Latest: $IMAGE_URL_LATEST"
+          echo "  SHA: $IMAGE_URL_SHA"
+          echo "  SemVer: $IMAGE_URL_SEMVER"
+          echo "  Version: $SEMANTIC_VERSION"
+          echo "  Commit: $COMMIT_SHA"
+          
+          # Validate all image URLs are present
+          if [[ -z "$IMAGE_URL_LATEST" || -z "$IMAGE_URL_SHA" || -z "$IMAGE_URL_SEMVER" ]]; then
+            echo "ERROR: Missing image URLs from build job"
+            echo "Latest: '$IMAGE_URL_LATEST', SHA: '$IMAGE_URL_SHA', SemVer: '$IMAGE_URL_SEMVER'"
             exit 1
           fi
           
-          if [[ ! "$IMAGE_URL" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:(latest|[a-z0-9._-]+)$ ]]; then
-            echo "ERROR: Invalid image URL format received: $IMAGE_URL"
-            echo "Expected format: ghcr.io/owner/repository/image-name:tag (lowercase)"
+          if [[ -z "$SEMANTIC_VERSION" || -z "$COMMIT_SHA" ]]; then
+            echo "ERROR: Missing version information from build job"
+            echo "Version: '$SEMANTIC_VERSION', Commit: '$COMMIT_SHA'"
             exit 1
           fi
           
-          echo "SUCCESS: Image URL validation passed: $IMAGE_URL"
+          # Validate image URL formats
+          for url in "$IMAGE_URL_LATEST" "$IMAGE_URL_SHA" "$IMAGE_URL_SEMVER"; do
+            if [[ ! "$url" =~ ^ghcr\.io/[a-z0-9._-]+/[a-z0-9._-]+/[a-z0-9._-]+:[a-zA-Z0-9._-]+$ ]]; then
+              echo "ERROR: Invalid image URL format: $url"
+              echo "Expected format: ghcr.io/owner/repository/image-name:tag"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All image URLs validated successfully"
           
           # Get container app FQDN
           FQDN=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.configuration.ingress.fqdn" -o tsv)
           echo "fqdn=$FQDN" >> $GITHUB_OUTPUT
+          echo "semantic_version=$SEMANTIC_VERSION" >> $GITHUB_OUTPUT
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
 
       - name: Validate Deployment
         run: |
@@ -379,17 +462,28 @@ jobs:
         run: |
           echo "🚀 **Deployment Complete!**"
           echo ""
-          echo "### 📍 Endpoints"
+          echo "### 📦 Version Information"
+          echo "- **Semantic Version**: ${{ steps.validate_deploy.outputs.semantic_version }}"
+          echo "- **Commit SHA**: ${{ steps.validate_deploy.outputs.commit_sha }}"
+          echo "- **Container Image**: ${{ needs.build.outputs.image_url_sha }}"
+          echo ""
+          echo "### � Endpoints"
           echo "- **App URL**: https://${{ steps.validate_deploy.outputs.fqdn }}"
           echo "- **Health Check**: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/health"
           echo "- **Webhook**: https://${{ steps.validate_deploy.outputs.fqdn }}/api/github/webhook"
           echo "- **MCP Capabilities**: https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/capabilities"
           echo "- **MCP SSE**: https://${{ steps.validate_deploy.outputs.fqdn }}/mcp/sse"
           echo ""
+          echo "### 🏷️ Available Container Tags"
+          echo "- **Latest**: ${{ needs.build.outputs.image_url }}"
+          echo "- **Semantic Version**: ${{ needs.build.outputs.image_url_semver }}"
+          echo "- **SHA**: ${{ needs.build.outputs.image_url_sha }}"
+          echo ""
           echo "### 🔧 Next Steps"
           echo "1. Test the health endpoint"
           echo "2. Generate API keys using the workflow"
           echo "3. Test MCP tools integration"
+          echo "4. Monitor application version: ${{ steps.validate_deploy.outputs.semantic_version }}"
       - name: Validate Endpoint Security
         run: |
           FQDN="${{ steps.validate_deploy.outputs.fqdn }}"
