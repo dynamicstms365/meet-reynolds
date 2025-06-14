@@ -2,9 +2,14 @@ using CopilotAgent.Agents;
 using CopilotAgent.Services;
 using CopilotAgent.Skills;
 using CopilotAgent.Middleware;
+using CopilotAgent.Startup;
+using CopilotAgent.MCP;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
+using ModelContextProtocol.AspNetCore;
+using ModelContextProtocol;
 
+// Reynolds: Trigger streamlined deployment for MCP protocol testing
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
@@ -28,6 +33,8 @@ builder.Services.AddScoped<IRetryService, RetryService>();
 builder.Services.AddSingleton<ITelemetryService, TelemetryService>();
 builder.Services.AddScoped<IHealthMonitoringService, HealthMonitoringService>();
 
+// Register CLI monitoring service
+builder.Services.AddScoped<ICliMonitoringService, CliMonitoringService>();
 // Register CLI services
 builder.Services.AddScoped<IPacCliService, PacCliService>();
 builder.Services.AddScoped<IM365CliService, M365CliService>();
@@ -45,6 +52,9 @@ builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearc
 
 // Register GitHub workflow orchestrator
 builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
+// Register Octokit webhook processor as scoped to fix lifetime mismatch with IGitHubWorkflowOrchestrator
+builder.Services.AddScoped<WebhookEventProcessor, OctokitWebhookEventProcessor>();
+
 
 // Register Codespace and Onboarding services
 builder.Services.AddScoped<ICodespaceManagementService, CodespaceManagementService>();
@@ -52,6 +62,24 @@ builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 
 // Register Octokit webhook processor (replaces custom webhook controller)
 builder.Services.AddSingleton<WebhookEventProcessor, OctokitWebhookEventProcessor>();
+
+// Add MCP SDK services - Reynolds Enterprise Integration (Preview 0.2.0-preview.3)
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithToolsFromAssembly();
+
+// Register Reynolds support services
+builder.Services.AddScoped<EnterpriseAuthService>();
+builder.Services.AddScoped<ReynoldsPersonaService>();
+
+// Add HTTP context accessor for enterprise authentication
+builder.Services.AddHttpContextAccessor();
+
+// Register Reynolds Teams integration services
+if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
+{
+    builder.Services.AddReynoldsTeamsServices(builder.Configuration);
+}
 
 var app = builder.Build();
 
@@ -70,13 +98,22 @@ if (!app.Environment.IsProduction())
 
 app.UseAuthorization();
 
+// MCP Server is automatically configured via AddMcpServer() - no middleware needed for new SDK
+
 // Add webhook logging middleware before webhook processing
 app.UseWebhookLogging();
 
 // Add signature validation failure logging middleware
 app.UseSignatureValidationLogging();
 
+// Map non-MCP controllers only (MCP endpoints handled by SDK)
 app.MapControllers();
+
+// Configure Reynolds Teams integration
+if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
+{
+    app.UseReynoldsTeamsIntegration();
+}
 
 // Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore
 // This replaces the custom webhook controller endpoint

@@ -1,0 +1,91 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.21/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.21",
+    "version": "1.0.0",
+    "id": "${{TEAMS_APP_ID}}",
+    "developer": {
+        "name": "dynamicstms365",
+        "websiteUrl": "https://github.com/dynamicstms365/copilot-powerplatform",
+        "privacyUrl": "https://github.com/dynamicstms365/copilot-powerplatform/blob/main/PRIVACY.md",
+        "termsOfUseUrl": "https://github.com/dynamicstms365/copilot-powerplatform/blob/main/TERMS.md"
+    },
+    "icons": {
+        "color": "color.png",
+        "outline": "outline.png"
+    },
+    "name": {
+        "short": "Reynolds Teams Agent${{APP_NAME_SUFFIX}}",
+        "full": "Reynolds - Supernatural Organizational Orchestration Agent"
+    },
+    "description": {
+        "short": "Reynolds: Your mysteriously effective project manager with supernatural GitHub coordination powers",
+        "full": "Reynolds brings enterprise-scale organizational orchestration to Microsoft Teams. With supernatural awareness across the dynamicstms365 organization, Reynolds provides cross-repo coordination, stakeholder management, scope creep detection, and strategic GitHub synchronization - all delivered with Maximum Effort™ and just enough charm to make project management actually enjoyable."
+    },
+    "accentColor": "#2B2D31",
+    "copilotAgents": {
+        "customEngineAgents": [
+            {
+                "type": "bot",
+                "id": "${{BOT_ID}}"
+            }
+        ]
+    },
+    "bots": [
+        {
+            "botId": "${{BOT_ID}}",
+            "scopes": [
+                "copilot",
+                "personal",
+                "team",
+                "groupChat"
+            ],
+            "supportsFiles": false,
+            "isNotificationOnly": false,
+            "commandLists": [
+                {
+                    "scopes": [
+                        "copilot",
+                        "personal",
+                        "team"
+                    ],
+                    "commands": [
+                        {
+                            "title": "Reynolds, help",
+                            "description": "Get help with organizational orchestration and GitHub coordination"
+                        },
+                        {
+                            "title": "org status",
+                            "description": "Quick organizational temperature check across all repos"
+                        },
+                        {
+                            "title": "project health",
+                            "description": "Comprehensive health assessment with Reynolds analysis"
+                        },
+                        {
+                            "title": "scope check",
+                            "description": "Scope creep detection with diplomatic intervention"
+                        },
+                        {
+                            "title": "coordinate teams",
+                            "description": "Cross-repo stakeholder orchestration"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "composeExtensions": [],
+    "configurableTabs": [],
+    "staticTabs": [],
+    "permissions": [
+        "identity",
+        "messageTeamMembers"
+    ],
+    "validDomains": [
+        "${{BOT_DOMAIN}}"
+    ],
+    "webApplicationInfo": {
+        "id": "${{BOT_ID}}",
+        "resource": "https://RscBasedStoreApp"
+    }
+}
