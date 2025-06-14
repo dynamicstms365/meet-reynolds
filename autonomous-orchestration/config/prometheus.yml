@@ -31,16 +31,55 @@ scrape_configs:
     params:
       format: ['prometheus']
     metric_relabel_configs:
-      # Rename Reynolds-specific metrics
+      # Keep Reynolds-specific metrics with their original names
       - source_labels: [__name__]
         regex: 'reynolds_(.+)'
         target_label: __name__
-        replacement: 'orchestrator_${1}'
+        replacement: 'reynolds_${1}'
       # Add service type label
       - target_label: service_type
         replacement: 'orchestrator'
       - target_label: system
         replacement: 'reynolds-orchestration'
+      - target_label: component
+        replacement: 'loop-prevention'
+
+  # Loop Prevention Engine Metrics (dedicated endpoint)
+  - job_name: 'reynolds-loop-prevention'
+    static_configs:
+      - targets: ['reynolds:8080']
+    metrics_path: '/health/loop-prevention/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 8s
+    honor_labels: true
+    metric_relabel_configs:
+      - target_label: service_type
+        replacement: 'loop-prevention'
+      - target_label: system
+        replacement: 'reynolds-orchestration'
+      - target_label: component
+        replacement: 'monitoring'
+
+  # Confidence Tracking Metrics (high frequency)
+  - job_name: 'reynolds-confidence-tracking'
+    static_configs:
+      - targets: ['reynolds:8080']
+    metrics_path: '/health/metrics'
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    honor_labels: true
+    params:
+      confidence_only: ['true']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'reynolds_loop_prevention_confidence.*'
+        action: keep
+      - target_label: service_type
+        replacement: 'confidence-tracking'
+      - target_label: system
+        replacement: 'reynolds-orchestration'
+      - target_label: priority
+        replacement: 'high'
 
   # DevOps Agent Metrics
   - job_name: 'devops-agents'

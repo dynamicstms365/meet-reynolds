@@ -55,6 +55,18 @@ builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrat
 // Register Octokit webhook processor as scoped to fix lifetime mismatch with IGitHubWorkflowOrchestrator
 builder.Services.AddScoped<WebhookEventProcessor, OctokitWebhookEventProcessor>();
 
+// Register GitHub Models Integration Services (Issue #72)
+builder.Services.AddHttpClient<IGitHubModelsService, GitHubModelsService>();
+builder.Services.AddScoped<IGitHubModelsService, GitHubModelsService>();
+builder.Services.AddScoped<IGitHubModelsOrchestrator, GitHubModelsOrchestrator>();
+
+// Register Cross-Platform Event Routing Services (Issue #73)
+builder.Services.AddScoped<ICrossPlatformEventRouter, CrossPlatformEventRouter>();
+builder.Services.AddScoped<IEventClassificationService, EventClassificationService>();
+builder.Services.AddScoped<IAzureEventProcessor, AzureEventProcessor>();
+builder.Services.AddScoped<IEventRoutingMetrics, EventRoutingMetrics>();
+builder.Services.AddSingleton<EventRoutingMetrics>();
+
 // Add MCP SDK services - Reynolds Enterprise Integration (Preview 0.2.0-preview.3)
 builder.Services.AddMcpServer()
     .WithHttpTransport()
