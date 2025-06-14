@@ -4,7 +4,7 @@
   "parameters": {
     "containerName": {
       "type": "string",
-      "defaultValue": "github-copilot-bot",
+      "defaultValue": "copilot-powerplatform-bot",
       "metadata": {
         "description": "Name for the container group"
       }
@@ -42,21 +42,75 @@
         "description": "GitHub App private key (PEM format)"
       }
     },
+    "azureOpenAiEndpoint": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure OpenAI endpoint URL"
+      }
+    },
+    "azureOpenAiApiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Azure OpenAI API key"
+      }
+    },
+    "azureOpenAiDeploymentName": {
+      "type": "string",
+      "defaultValue": "gpt-4",
+      "metadata": {
+        "description": "Azure OpenAI deployment name"
+      }
+    },
+    "azureOpenAiApiVersion": {
+      "type": "string",
+      "defaultValue": "2024-02-15-preview",
+      "metadata": {
+        "description": "Azure OpenAI API version"
+      }
+    },
     "dnsNameLabel": {
       "type": "string",
-      "defaultValue": "[concat('copilot-github-app-', uniqueString(resourceGroup().id))]",
+      "defaultValue": "[concat('copilot-powerplatform-', uniqueString(resourceGroup().id))]",
       "metadata": {
         "description": "DNS name label for the public IP"
       }
+    },
+    "enableSecurityHardening": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable additional security hardening measures"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Log Analytics workspace ID for monitoring (optional)"
+      }
     }
   },
-  "variables": {},
+  "variables": {
+    "containerGroupName": "[parameters('containerName')]",
+    "logAnalyticsEnabled": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+    "securityPolicies": {
+      "privileged": false,
+      "allowPrivilegeEscalation": false,
+      "readOnlyRootFilesystem": false,
+      "runAsNonRoot": true,
+      "runAsUser": 1000,
+      "runAsGroup": 1000
+    }
+  },
   "resources": [
     {
       "type": "Microsoft.ContainerInstance/containerGroups",
-      "apiVersion": "2021-10-01",
-      "name": "[parameters('containerName')]",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('containerGroupName')]",
       "location": "[resourceGroup().location]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
       "properties": {
         "containers": [
           {
@@ -65,11 +119,11 @@
               "image": "[parameters('imageName')]",
               "ports": [
                 {
-                  "port": 80,
+                  "port": 8080,
                   "protocol": "TCP"
                 },
                 {
-                  "port": 443,
+                  "port": 8443,
                   "protocol": "TCP"
                 }
               ],
@@ -84,19 +138,80 @@
                 },
                 {
                   "name": "ASPNETCORE_URLS",
-                  "value": "http://+:80"
+                  "value": "http://+:8080"
                 },
                 {
                   "name": "NGL_DEVOPS_BOT_PEM",
                   "secureValue": "[parameters('githubAppPrivateKey')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_ENDPOINT",
+                  "value": "[parameters('azureOpenAiEndpoint')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_API_KEY",
+                  "secureValue": "[parameters('azureOpenAiApiKey')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_DEPLOYMENT_NAME",
+                  "value": "[parameters('azureOpenAiDeploymentName')]"
+                },
+                {
+                  "name": "AZURE_OPENAI_API_VERSION",
+                  "value": "[parameters('azureOpenAiApiVersion')]"
+                },
+                {
+                  "name": "SECURITY_HEADERS_ENABLED",
+                  "value": "[if(parameters('enableSecurityHardening'), 'true', 'false')]"
+                },
+                {
+                  "name": "CORS_ENABLED",
+                  "value": "true"
+                },
+                {
+                  "name": "RATE_LIMITING_ENABLED",
+                  "value": "[if(parameters('enableSecurityHardening'), 'true', 'false')]"
+                },
+                {
+                  "name": "HEALTH_CHECK_ENABLED",
+                  "value": "true"
+                },
+                {
+                  "name": "METRICS_ENABLED",
+                  "value": "true"
+                },
+                {
+                  "name": "AZURE_OPENAI_RATE_LIMIT_ENABLED",
+                  "value": "true"
+                },
+                {
+                  "name": "AZURE_OPENAI_MAX_TOKENS",
+                  "value": "4096"
+                },
+                {
+                  "name": "AZURE_OPENAI_TEMPERATURE",
+                  "value": "0.7"
+                },
+                {
+                  "name": "AZURE_OPENAI_TIMEOUT",
+                  "value": "30"
+                },
+                {
+                  "name": "AZURE_OPENAI_RETRY_COUNT",
+                  "value": "3"
                 }
               ],
               "resources": {
                 "requests": {
-                  "cpu": 1,
-                  "memoryInGb": 1.5
+                  "cpu": 1.0,
+                  "memoryInGb": 2.0
+                },
+                "limits": {
+                  "cpu": 2.0,
+                  "memoryInGb": 4.0
                 }
-              }
+              },
+              "securityContext": "[if(parameters('enableSecurityHardening'), variables('securityPolicies'), json('{}'))]"
             }
           }
         ],
@@ -107,11 +222,11 @@
           "ports": [
             {
               "protocol": "TCP",
-              "port": 80
+              "port": 8080
             },
             {
               "protocol": "TCP",
-              "port": 443
+              "port": 8443
             }
           ],
           "dnsNameLabel": "[parameters('dnsNameLabel')]"
@@ -122,18 +237,31 @@
             "username": "[parameters('registryUsername')]",
             "password": "[parameters('registryPassword')]"
           }
-        ]
+        ],
+        "diagnostics": "[if(variables('logAnalyticsEnabled'), json(concat('{\"logAnalytics\":{\"workspaceId\":\"', parameters('logAnalyticsWorkspaceId'), '\",\"workspaceKey\":\"[listKeys(parameters(''logAnalyticsWorkspaceId''), ''2020-08-01'').primarySharedKey]\"}}'), json('{}'))]"
       }
     }
   ],
   "outputs": {
     "containerIPv4Address": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.ip]"
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', variables('containerGroupName'))).ipAddress.ip]"
     },
     "containerFQDN": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', parameters('containerName'))).ipAddress.fqdn]"
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', variables('containerGroupName'))).ipAddress.fqdn]"
+    },
+    "containerEndpoint": {
+      "type": "string",
+      "value": "[concat('https://', reference(resourceId('Microsoft.ContainerInstance/containerGroups', variables('containerGroupName'))).ipAddress.fqdn, ':8443')]"
+    },
+    "healthEndpoint": {
+      "type": "string",
+      "value": "[concat('http://', reference(resourceId('Microsoft.ContainerInstance/containerGroups', variables('containerGroupName'))).ipAddress.fqdn, ':8080/health')]"
+    },
+    "systemAssignedIdentity": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups', variables('containerGroupName')), '2023-05-01', 'Full').identity.principalId]"
     }
   }
 }

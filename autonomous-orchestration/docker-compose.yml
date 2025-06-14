@@ -20,9 +20,29 @@ services:
       - GITHUB_ISSUES_INTEGRATION=enabled
       - POSTGRES_CONNECTION_STRING=postgresql://reynolds:${DB_PASSWORD}@postgres:5432/orchestration
       - REDIS_CONNECTION_STRING=redis://redis:6379
+      # Azure OpenAI Integration
+      - AZURE_OPENAI_ENDPOINT_FILE=/run/secrets/azure_openai_endpoint
+      - AZURE_OPENAI_API_KEY_FILE=/run/secrets/azure_openai_key
+      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME:-gpt-4}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
+      - AZURE_OPENAI_MAX_TOKENS=${AZURE_OPENAI_MAX_TOKENS:-4096}
+      - AZURE_OPENAI_TEMPERATURE=${AZURE_OPENAI_TEMPERATURE:-0.7}
+      - AZURE_OPENAI_TIMEOUT=${AZURE_OPENAI_TIMEOUT:-30}
+      - AZURE_OPENAI_RETRY_COUNT=${AZURE_OPENAI_RETRY_COUNT:-3}
+      - AZURE_OPENAI_RATE_LIMIT_ENABLED=${AZURE_OPENAI_RATE_LIMIT_ENABLED:-true}
+      # Security Hardening
+      - SECURITY_HEADERS_ENABLED=true
+      - CORS_ENABLED=true
+      - RATE_LIMITING_ENABLED=true
+      - HEALTH_CHECK_ENABLED=true
+      - METRICS_ENABLED=true
+      - ENCRYPTION_AT_REST_ENABLED=true
+      - AUDIT_LOGGING_ENABLED=true
+      - SECURE_COMMUNICATION_ENABLED=true
     env_file:
       - ./config/reynolds.env
       - ./config/agents.env
+      - ./config/security.env
     volumes:
       - reynolds-memory:/app/memory
       - orchestration-logs:/app/logs
@@ -34,20 +54,30 @@ services:
     depends_on:
       - redis
       - postgres
+    secrets:
+      - azure_openai_endpoint
+      - azure_openai_key
+      - github_token
+      - encryption_key
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
     deploy:
       resources:
         limits:
-          memory: 2G
-          cpus: '1.5'
+          memory: 4G
+          cpus: '2.0'
         reservations:
-          memory: 1G
-          cpus: '0.5'
+          memory: 2G
+          cpus: '1.0'
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp:noexec,nosuid,size=1G
 
   # DevOps Agent Cluster
   devops-agent:
@@ -396,7 +426,17 @@ secrets:
     file: ./secrets/tenant_id.txt
   openai_key:
     file: ./secrets/openai_api_key.txt
+  azure_openai_endpoint:
+    file: ./secrets/azure_openai_endpoint.txt
+  azure_openai_key:
+    file: ./secrets/azure_openai_key.txt
   db_password:
     file: ./secrets/db_password.txt
   grafana_password:
     file: ./secrets/grafana_password.txt
+  encryption_key:
+    file: ./secrets/encryption_key.txt
+  jwt_signing_key:
+    file: ./secrets/jwt_signing_key.txt
+  webhook_secret:
+    file: ./secrets/webhook_secret.txt

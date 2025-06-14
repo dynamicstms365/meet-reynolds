@@ -1,15 +1,15 @@
-apiVersion: 2021-10-01
+apiVersion: 2023-05-01
 location: eastus
-name: github-copilot-bot
+name: copilot-powerplatform-bot
 properties:
   containers:
-  - name: github-copilot-bot
+  - name: copilot-powerplatform-bot
     properties:
       image: ghcr.io/dynamicstms365/copilot-powerplatform/copilot-agent:latest
       ports:
-      - port: 80
+      - port: 8080
         protocol: TCP
-      - port: 443
+      - port: 8443
         protocol: TCP
       environmentVariables:
       - name: NGL_DEVOPS_APP_ID
@@ -17,53 +17,78 @@ properties:
       - name: ASPNETCORE_ENVIRONMENT
         value: Production
       - name: ASPNETCORE_URLS
-        value: "http://+:80"
+        value: "http://+:8080"
       - name: NGL_DEVOPS_BOT_PEM
-        secureValue: |
-          -----BEGIN RSA PRIVATE KEY-----
-          MIIEowIBAAKCAQEAzs+Q1WNx5uBsYsWmZRSBlTzDiO2nEDSjX66jydPbjFaPeixv
-          pyiW7r5qtamlXKAIftHmwJJ2fBeNyLIOXx4pCW/ttfqiXDiLtf31wJrP6ckWuxr5
-          EGEJu0KMICGqsw/R3OCIGu94QnffFQOdYnwRf6NHaUJa+0FnQdeurbcw3c1kfpLp
-          07YuF/2QllH6NMZwUtIEhLyVce4tn0RBdY4A+bUhZwyyenW+smAGG9kFhI73D2IG
-          //4iktOocEhZljLos7r7aFBvoH96XERrjpllB9N1b5/VUphdUUZpNxc7Ahr2zX8L
-          CTyM21x27bViSMk8WeJOTsh0gNK5Qsi4sMq4rQIDAQABAoIBADMgqYO3pA8Z6HG6
-          v1o56ZdFgGm3pxegi8s515Ar6hkVxT7FAY1nwXigZq0mlZUCk1cW+V8eVmBzSkAV
-          lOv6/tYwb6oPnlgCOrfxYvIM093OMupqzqw38Tn0R8QhzpuaC535fGx8S1TTYblG
-          PYB9f634Zc0l9GwtTSO/+JVFtrT+gdKyXZrbiu+WsyDIQF07+O8kClfJb6gj+GL/
-          niiYQBldhPY7RPKsL/kZel9KPrPj2efuvnjyNlxhSo5G1hkTRCdNMD+XiwRBQUn5
-          VirObh0hAwzyl8vviIWf3JE/QCNwMk7EHP8aljjkODRb27eB0dmpHA5p42sxSSdl
-          90bxKpkCgYEA/RKYBdJ43CoedCN6Ty2j/idx8bJk/5fC1oYFnWTC2isCKZeTsfhG
-          bpBxEJyJTBIDTajKjfJ8uvVlTBJWPZTEuztHCRqSinkIPR+IMWNaqXpXQPs7dXCt
-          xSTkVHdn9LhMSU94IuWJvlbE0a8XitCQuwY3baT1pxDyb8xaPo0zbb8CgYEA0TP6
-          4sjgcqZlTzVDB8DhUEaJanQ83BOQC14CK3kB36XgZ7axnMbN6I49JfYO8UCztBXX
-          PMNLoXeUG/iMMKyPXvLivzFFxR0o2CBI0WjDSND3mqcuOu65s0zlAEkOp/zilyKZ
-          OS1HuLCbCoRLvbF1IEnK9QWgFeGQxfW8A+/STJMCgYEA0yfihGkawsi55Dl94fa4
-          8GTFI9+vebuMrCXjJXJfSl28TivU5he73KDUVgHmZPxamT+O0mVTQUNjo9dg8bzh
-          cT+Cg8wSHUvjXeyjXGID0YjsqKF2+QRtWSLxCLEgogXsUPbnzGYtSg1n53Tqdb6U
-          JBiJwwhyl1UCk9m0KqDyGk0CgYA63O1SskK0/6yxxMK/g73h4Hb5xQr6wWZeTG0/
-          3iRw0TN6+ySugCGftaXu8HTz3MizexG8vxagsAy0chK//0234Y97TFndRH8hkLPs
-          eBW6f1Gr6i5P1qvZj2E/206MZdM7wzhpphvwE4EMTH0jOrNCCoFYv+RzQ6yAhswI
-          L4p0kQKBgFTri7mhhW80vrKgQWEqtAonfwEIRJ1g1AGIn/JtwJGpt2FsS6CCeCTB
-          ne3mUpZoqXGr3IhWvB7g3hzV+XRl9WE51DrFMmBvJ9s0PCFu14Dy98M7ikWMLduf
-          fnD4LFEQ94lpRbH5tNQrQrv3n92my7KJ1IEheSyLnU+E6Rt84DB/
-          -----END RSA PRIVATE KEY-----
+        secureValue: "$(GITHUB_APP_PRIVATE_KEY)"
+      # Azure OpenAI Integration
+      - name: AZURE_OPENAI_ENDPOINT
+        value: "$(AZURE_OPENAI_ENDPOINT)"
+      - name: AZURE_OPENAI_API_KEY
+        secureValue: "$(AZURE_OPENAI_API_KEY)"
+      - name: AZURE_OPENAI_DEPLOYMENT_NAME
+        value: "gpt-4"
+      - name: AZURE_OPENAI_API_VERSION
+        value: "2024-02-15-preview"
+      - name: AZURE_OPENAI_MAX_TOKENS
+        value: "4096"
+      - name: AZURE_OPENAI_TEMPERATURE
+        value: "0.7"
+      - name: AZURE_OPENAI_TIMEOUT
+        value: "30"
+      - name: AZURE_OPENAI_RETRY_COUNT
+        value: "3"
+      - name: AZURE_OPENAI_RATE_LIMIT_ENABLED
+        value: "true"
+      # Security Configuration
+      - name: SECURITY_HEADERS_ENABLED
+        value: "true"
+      - name: CORS_ENABLED
+        value: "true"
+      - name: RATE_LIMITING_ENABLED
+        value: "true"
+      - name: HEALTH_CHECK_ENABLED
+        value: "true"
+      - name: METRICS_ENABLED
+        value: "true"
+      - name: LOGGING_LEVEL
+        value: "Information"
       resources:
         requests:
-          cpu: 1
-          memoryInGb: 1.5
+          cpu: 1.0
+          memoryInGb: 2.0
+        limits:
+          cpu: 2.0
+          memoryInGb: 4.0
+      securityContext:
+        privileged: false
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: false
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+  identity:
+    type: SystemAssigned
   imageRegistryCredentials:
   - server: ghcr.io
     username: cege7480
-    password: $(gh auth token)
+    password: "$(REGISTRY_PASSWORD)"
   ipAddress:
     type: Public
     ports:
     - protocol: tcp
-      port: 80
+      port: 8080
     - protocol: tcp
-      port: 443
-    dnsNameLabel: copilot-github-app-$(date +%s | tail -c 6)
+      port: 8443
+    dnsNameLabel: copilot-powerplatform-$(date +%s | tail -c 6)
   osType: Linux
   restartPolicy: Always
-tags: {}
+  diagnostics:
+    logAnalytics:
+      workspaceId: "$(LOG_ANALYTICS_WORKSPACE_ID)"
+      workspaceKey: "$(LOG_ANALYTICS_WORKSPACE_KEY)"
+tags:
+  environment: production
+  project: copilot-powerplatform
+  version: "1.0.0"
+  security: hardened
 type: Microsoft.ContainerInstance/containerGroups
