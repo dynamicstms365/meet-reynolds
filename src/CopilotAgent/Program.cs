@@ -57,7 +57,7 @@ builder.Services.AddScoped<WebhookEventProcessor, OctokitWebhookEventProcessor>(
 
 
 // Register Codespace and Onboarding services
-builder.Services.AddScoped<ICodespaceManagementService, CodespaceManagementService>();
+builder.Services.AddHttpClient<ICodespaceManagementService, CodespaceManagementService>();
 builder.Services.AddScoped<IOnboardingService, OnboardingService>();
 
 // Register Octokit webhook processor (replaces custom webhook controller)
