@@ -45,6 +45,165 @@ groups:
           summary: "High task duration detected"
           description: "95th percentile task duration is {{ $value }}s, exceeding 5 minutes."
 
+  - name: reynolds-loop-prevention
+    rules:
+      # Loop Prevention System Alerts
+      - alert: ReynoldsLoopPreventionDown
+        expr: up{job="reynolds-loop-prevention"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: loop-prevention
+        annotations:
+          summary: "Reynolds Loop Prevention System is down"
+          description: "Loop prevention monitoring is offline. System is vulnerable to infinite loops."
+
+      - alert: ReynoldsConfidenceThresholdViolation
+        expr: reynolds_loop_prevention_average_confidence < 0.999
+        for: 30s
+        labels:
+          severity: critical
+          component: loop-prevention
+        annotations:
+          summary: "99.9% confidence threshold violated"
+          description: "Average confidence is {{ $value | humanizePercentage }}, below the 99.9% requirement. Loop prevention may be compromised."
+
+      - alert: ReynoldsMultipleCircuitBreakersOpen
+        expr: sum(reynolds_loop_prevention_circuit_breaker_open) > 3
+        for: 2m
+        labels:
+          severity: critical
+          component: loop-prevention
+        annotations:
+          summary: "Multiple circuit breakers are open"
+          description: "{{ $value }} circuit breakers are currently open, indicating systemic loop detection issues."
+
+      - alert: ReynoldsRapidLoopDetection
+        expr: rate(reynolds_loop_prevention_loop_detected_total[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+          component: loop-prevention
+        annotations:
+          summary: "High rate of loop detection"
+          description: "Detecting {{ $value }} loops per second over the last 5 minutes."
+
+      - alert: ReynoldsEventChainDepthExceeded
+        expr: max(reynolds_loop_prevention_chain_depth) > 8
+        for: 1m
+        labels:
+          severity: warning
+          component: loop-prevention
+        annotations:
+          summary: "Event chain depth approaching limit"
+          description: "Maximum event chain depth is {{ $value }}, approaching the limit of 10."
+
+      - alert: ReynoldsHighEventProcessingTime
+        expr: histogram_quantile(0.95, rate(reynolds_event_processing_duration_seconds_bucket[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: loop-prevention
+        annotations:
+          summary: "High event processing time"
+          description: "95th percentile event processing time is {{ $value }}s, indicating performance issues."
+
+  - name: reynolds-issue-obsession
+    rules:
+      # Reynolds Issue Obsession™ Alerts
+      - alert: ReynoldsMaximumEffortOverdrive
+        expr: reynolds_issue_obsession_patterns_total{obsession_type="maximum_effort_overdrive"} > 0
+        for: 30s
+        labels:
+          severity: warning
+          component: reynolds-personality
+        annotations:
+          summary: "Reynolds Maximum Effort™ Overdrive detected"
+          description: "Reynolds is showing signs of Maximum Effort™ overdrive. Intervention may be required."
+
+      - alert: ReynoldsTaskRepetitionObsession
+        expr: reynolds_issue_obsession_patterns_total{obsession_type="task_repetition_obsession"} > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: reynolds-personality
+        annotations:
+          summary: "Reynolds task repetition obsession detected"
+          description: "Reynolds is showing obsessive behavior with task repetition. Reality check recommended."
+
+      - alert: ReynoldsSupernaturalPerfectionism
+        expr: reynolds_issue_obsession_patterns_total{obsession_type="supernatural_perfectionism"} > 0
+        for: 2m
+        labels:
+          severity: info
+          component: reynolds-personality
+        annotations:
+          summary: "Reynolds supernatural perfectionism detected"
+          description: "Reynolds is exhibiting perfectionist behavior that may be impacting efficiency."
+
+      - alert: ReynoldsCriticalObsessionIntervention
+        expr: reynolds_issue_obsession_active{severity="critical"} > 0
+        for: 10s
+        labels:
+          severity: critical
+          component: reynolds-personality
+        annotations:
+          summary: "CRITICAL: Reynolds intervention required"
+          description: "Reynolds is exhibiting critical obsession patterns. Immediate supernatural reality check required."
+
+      - alert: ReynoldsMultipleActiveObsessions
+        expr: sum(reynolds_issue_obsession_active) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: reynolds-personality
+        annotations:
+          summary: "Multiple Reynolds obsessions active"
+          description: "{{ $value }} Reynolds obsession patterns are currently active. Maximum Effort™ may be misdirected."
+
+  - name: reynolds-pattern-detection
+    rules:
+      # Pattern Detection Alerts
+      - alert: ReynoldsRapidFirePattern
+        expr: rate(reynolds_rapid_fire_patterns_total[1m]) > 0.1
+        for: 30s
+        labels:
+          severity: warning
+          component: pattern-detection
+        annotations:
+          summary: "Rapid fire execution pattern detected"
+          description: "Detecting rapid fire patterns at {{ $value }} per second. System may be in a tight loop."
+
+      - alert: ReynoldsRecursivePattern
+        expr: rate(reynolds_recursive_patterns_total[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: warning
+          component: pattern-detection
+        annotations:
+          summary: "Recursive execution pattern detected"
+          description: "Detecting recursive patterns at {{ $value }} per second over 5 minutes."
+
+      - alert: ReynoldsFanOutPattern
+        expr: rate(reynolds_fan_out_patterns_total[5m]) > 0.02
+        for: 2m
+        labels:
+          severity: warning
+          component: pattern-detection
+        annotations:
+          summary: "Fan-out execution pattern detected"
+          description: "Detecting fan-out patterns at {{ $value }} per second. Resource consumption may be excessive."
+
+      - alert: ReynoldsExecutionTimeoutPrevention
+        expr: rate(reynolds_loop_prevention_executions_prevented_total{pattern_type="execution_timeout"}[5m]) > 0.01
+        for: 1m
+        labels:
+          severity: warning
+          component: pattern-detection
+        annotations:
+          summary: "Execution timeouts being prevented"
+          description: "Preventing execution timeouts at {{ $value }} per second. Tasks may be too complex or system overloaded."
+
   - name: reynolds-agents
     rules:
       # Agent Health Alerts
