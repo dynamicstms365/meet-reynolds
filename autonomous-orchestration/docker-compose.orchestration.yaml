@@ -1,0 +1,296 @@
+version: '3.8'
+
+services:
+  # Reynolds Orchestrator - The Supernatural Project Manager
+  reynolds:
+    build:
+      context: ./reynolds
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    environment:
+      - ORCHESTRATOR_MODE=production
+      - AGENT_POOL_SIZE=10
+      - MCP_PORT=8080
+      - REYNOLDS_PERSONALITY=maximum_effort
+      - LOOP_PREVENTION_ENABLED=true
+      - GITHUB_ISSUES_INTEGRATION=enabled
+      - POSTGRES_CONNECTION_STRING=postgresql://reynolds:${DB_PASSWORD}@postgres:5432/orchestration
+      - REDIS_CONNECTION_STRING=redis://redis:6379
+    volumes:
+      - reynolds-memory:/app/memory
+      - orchestration-logs:/app/logs
+      - project-context:/app/context
+      - ./context:/app/context/runtime:ro
+    networks:
+      - agent-network
+    depends_on:
+      - redis
+      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.5'
+
+  # DevOps Agent Cluster
+  devops-agent:
+    build:
+      context: ./agents/devops-polyglot
+      dockerfile: Dockerfile
+    environment:
+      - CLUSTER_ID=devops
+      - AGENT_TYPE=devops-polyglot
+      - AGENT_ID=${HOSTNAME}-devops
+      - MCP_ENDPOINT=http://reynolds:8080/mcp
+      - GITHUB_TOKEN_FILE=/run/secrets/github_token
+      - AZURE_CREDENTIALS_FILE=/run/secrets/azure_creds
+    volumes:
+      - devops-knowledge:/app/knowledge:ro
+      - project-context:/app/context:ro
+      - devops-memory:/app/memory
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./context:/app/context/runtime:ro
+    networks:
+      - agent-network
+    depends_on:
+      - reynolds
+    secrets:
+      - github_token
+      - azure_creds
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+
+  # Platform Agent Cluster  
+  platform-agent:
+    build:
+      context: ./agents/platform-specialist
+      dockerfile: Dockerfile
+    environment:
+      - CLUSTER_ID=platform
+      - AGENT_TYPE=platform-specialist
+      - AGENT_ID=${HOSTNAME}-platform
+      - MCP_ENDPOINT=http://reynolds:8080/mcp
+      - M365_CREDENTIALS_FILE=/run/secrets/m365_creds
+      - TENANT_ID_FILE=/run/secrets/tenant_id
+    volumes:
+      - platform-knowledge:/app/knowledge:ro
+      - project-context:/app/context:ro
+      - platform-memory:/app/memory
+      - solution-templates:/app/templates:ro
+      - ./context:/app/context/runtime:ro
+    networks:
+      - agent-network
+    depends_on:
+      - reynolds
+    secrets:
+      - m365_creds
+      - tenant_id
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 1.5G
+          cpus: '0.8'
+
+  # Code Intelligence Agent Cluster
+  code-agent:
+    build:
+      context: ./agents/code-intelligence
+      dockerfile: Dockerfile
+    environment:
+      - CLUSTER_ID=code
+      - AGENT_TYPE=code-intelligence
+      - AGENT_ID=${HOSTNAME}-code
+      - MCP_ENDPOINT=http://reynolds:8080/mcp
+      - OPENAI_API_KEY_FILE=/run/secrets/openai_key
+      - GITHUB_TOKEN_FILE=/run/secrets/github_token
+    volumes:
+      - code-knowledge:/app/knowledge:ro
+      - project-context:/app/context:ro
+      - code-memory:/app/memory
+      - codebase-cache:/app/cache
+      - ./context:/app/context/runtime:ro
+    networks:
+      - agent-network
+    depends_on:
+      - reynolds
+    secrets:
+      - openai_key
+      - github_token
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+
+  # Supporting Infrastructure
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis-data:/data
+    networks:
+      - agent-network
+    command: redis-server --appendonly yes
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=orchestration
+      - POSTGRES_USER=reynolds
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./reynolds/sql:/docker-entrypoint-initdb.d
+    networks:
+      - agent-network
+    secrets:
+      - db_password
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.8'
+
+  # Monitoring & Observability
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - agent-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - agent-network
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD_FILE=/run/secrets/grafana_password
+    secrets:
+      - grafana_password
+
+# Persistent Volumes
+volumes:
+  reynolds-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/reynolds/memory
+  devops-knowledge:
+    driver: local
+  platform-knowledge:
+    driver: local
+  code-knowledge:
+    driver: local
+  devops-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/agents/devops/memory
+  platform-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/agents/platform/memory
+  code-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/agents/code/memory
+  project-context:
+    driver: local
+  solution-templates:
+    driver: local
+  codebase-cache:
+    driver: local
+  orchestration-logs:
+    driver: local
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# Networks
+networks:
+  agent-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Secrets Management
+secrets:
+  github_token:
+    file: ./secrets/github_token.txt
+  azure_creds:
+    file: ./secrets/azure_credentials.json
+  m365_creds:
+    file: ./secrets/m365_credentials.json
+  tenant_id:
+    file: ./secrets/tenant_id.txt
+  openai_key:
+    file: ./secrets/openai_api_key.txt
+  db_password:
+    file: ./secrets/db_password.txt
+  grafana_password:
+    file: ./secrets/grafana_password.txt
