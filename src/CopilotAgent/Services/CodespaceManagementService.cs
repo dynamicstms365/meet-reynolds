@@ -151,7 +151,7 @@ public class CodespaceManagementService : ICodespaceManagementService
                     Success = true,
                     CodespaceId = $"cs-{Guid.NewGuid().ToString("N")[..8]}",
                     State = "Available",
-                    WebUrl = $"https://github.com/codespaces/cs-sample1",
+                    WebUrl = $"https://github.com/codespaces/{CodespaceId}",
                     Properties = new Dictionary<string, object>
                     {
                         ["createdAt"] = DateTime.UtcNow.AddHours(-2),
