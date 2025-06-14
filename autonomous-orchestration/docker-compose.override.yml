@@ -1,0 +1,172 @@
+# Reynolds Orchestration System - Development Overrides
+# This file is automatically loaded by Docker Compose for local development
+version: '3.8'
+
+services:
+  # Reynolds Orchestrator - Development Configuration
+  reynolds:
+    environment:
+      - ORCHESTRATOR_MODE=development
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+      - DEBUG_ENABLED=true
+    volumes:
+      - ./reynolds/src:/app/src:ro  # Hot reload for development
+      - ./reynolds/logs:/app/logs
+    ports:
+      - "8080:8080"
+      - "9229:9229"  # Node.js debugging port
+    command: ["node", "--inspect=0.0.0.0:9229", "src/index.js"]
+
+  # DevOps Agent - Development Configuration
+  devops-agent:
+    environment:
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+    volumes:
+      - ./agents/devops-polyglot:/app:ro  # Hot reload
+    ports:
+      - "8081-8083:8080"  # Port range for multiple replicas
+    deploy:
+      replicas: 1  # Reduce replicas for development
+
+  # Platform Agent - Development Configuration
+  platform-agent:
+    environment:
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+    volumes:
+      - ./agents/platform-specialist:/app:ro  # Hot reload
+    ports:
+      - "8084-8085:8080"  # Port range for multiple replicas
+    deploy:
+      replicas: 1  # Reduce replicas for development
+
+  # Code Intelligence Agent - Development Configuration
+  code-agent:
+    environment:
+      - LOG_LEVEL=debug
+      - HOT_RELOAD=true
+    volumes:
+      - ./agents/code-intelligence:/app:ro  # Hot reload
+    ports:
+      - "8086-8087:8080"  # Port range for multiple replicas
+    deploy:
+      replicas: 1  # Reduce replicas for development
+
+  # Redis - Development Configuration
+  redis:
+    ports:
+      - "6379:6379"  # Expose Redis for debugging
+    command: redis-server --appendonly yes --loglevel debug
+
+  # PostgreSQL - Development Configuration
+  postgres:
+    ports:
+      - "5432:5432"  # Expose PostgreSQL for debugging
+    environment:
+      - POSTGRES_LOG_STATEMENT=all  # Log all statements for debugging
+    volumes:
+      - ./volumes/postgres-data:/var/lib/postgresql/data
+      - ./config/postgres-dev.sql:/docker-entrypoint-initdb.d/99-dev-setup.sql:ro
+
+  # Prometheus - Development Configuration
+  prometheus:
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'  # Shorter retention for dev
+      - '--web.enable-lifecycle'
+      - '--log.level=debug'
+
+  # Grafana - Development Configuration
+  grafana:
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_LOG_LEVEL=debug
+      - GF_EXPLORE_ENABLED=true
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/provisioning/dashboards/reynolds-dashboard.json
+
+  # Development Tools Container
+  dev-tools:
+    image: node:18-alpine
+    volumes:
+      - .:/workspace:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    networks:
+      - agent-network
+    command: ["tail", "-f", "/dev/null"]  # Keep container running
+    environment:
+      - NODE_ENV=development
+    profiles:
+      - dev-tools
+
+# Development-specific volumes
+volumes:
+  # Use bind mounts for development to enable hot reload
+  reynolds-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/reynolds-memory
+
+  devops-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/agent-memory/devops
+
+  platform-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/agent-memory/platform
+
+  code-memory:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/agent-memory/code
+
+  redis-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/redis-data
+
+  postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/postgres-data
+
+  prometheus-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/monitoring/prometheus
+
+  grafana-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./volumes/monitoring/grafana
+
+# Development profiles for optional services
+# Use: docker-compose --profile dev-tools up
+# Use: docker-compose --profile monitoring up

@@ -1,0 +1,115 @@
+# Multi-stage build for Platform Specialist Agent
+FROM node:18-alpine AS base
+
+# Install base system dependencies
+RUN apk add --no-cache \
+    curl \
+    git \
+    bash \
+    jq \
+    wget \
+    unzip \
+    tar \
+    gzip \
+    ca-certificates \
+    openssl \
+    python3 \
+    py3-pip \
+    build-base
+
+# Install PowerShell Core for PAC CLI and M365 CLI
+RUN wget https://github.com/PowerShell/PowerShell/releases/download/v7.4.0/powershell-7.4.0-linux-alpine-x64.tar.gz \
+    && mkdir -p /opt/microsoft/powershell/7 \
+    && tar zxf powershell-7.4.0-linux-alpine-x64.tar.gz -C /opt/microsoft/powershell/7 \
+    && chmod +x /opt/microsoft/powershell/7/pwsh \
+    && ln -s /opt/microsoft/powershell/7/pwsh /usr/bin/pwsh \
+    && rm powershell-7.4.0-linux-alpine-x64.tar.gz
+
+# Install .NET Core (required for PAC CLI)
+RUN wget https://download.visualstudio.microsoft.com/download/pr/cd0d0a4d-2a6a-4ca2-b8f8-b25532dcdc57/67beb8c99d0d3e3e6e3a8b5e1bb1b996/dotnet-sdk-8.0.100-linux-musl-x64.tar.gz \
+    && mkdir -p /usr/share/dotnet \
+    && tar -zxf dotnet-sdk-8.0.100-linux-musl-x64.tar.gz -C /usr/share/dotnet \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
+    && rm dotnet-sdk-8.0.100-linux-musl-x64.tar.gz
+
+# Install PAC CLI (Power Platform CLI)
+RUN dotnet tool install --global Microsoft.PowerApps.CLI.Tool
+
+# Install M365 CLI
+RUN npm install -g @pnp/cli-microsoft365
+
+# Install Azure CLI (for authentication and integration)
+RUN pip3 install azure-cli
+
+# Install SharePoint PnP PowerShell (via PowerShell Gallery)
+RUN pwsh -Command "Install-Module -Name PnP.PowerShell -Force -AllowClobber"
+
+# Install additional PowerShell modules for M365
+RUN pwsh -Command "Install-Module -Name Microsoft.Graph -Force -AllowClobber" \
+    && pwsh -Command "Install-Module -Name ExchangeOnlineManagement -Force -AllowClobber" \
+    && pwsh -Command "Install-Module -Name MicrosoftTeams -Force -AllowClobber"
+
+# Create non-root user for security
+RUN addgroup -g 1001 platform && \
+    adduser -D -u 1001 -G platform platform
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better Docker layer caching
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy application code
+COPY . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p \
+    /app/knowledge \
+    /app/context \
+    /app/memory \
+    /app/workspace \
+    /app/cache \
+    /app/tools \
+    /app/secrets \
+    /app/solutions \
+    /app/templates \
+    && chown -R platform:platform /app
+
+# Set environment variables for tools
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH="$PATH:/usr/share/dotnet:/root/.dotnet/tools"
+
+# Set proper ownership
+RUN chown -R platform:platform /app
+
+# Switch to non-root user
+USER platform
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Expose agent port
+EXPOSE 8080
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV AGENT_TYPE=platform-specialist
+ENV LOG_LEVEL=info
+ENV PORT=8080
+
+# Volume mounts for persistence and context
+VOLUME ["/app/workspace", "/app/context", "/app/memory", "/app/secrets", "/app/solutions"]
+
+# Labels for container identification
+LABEL maintainer="Reynolds Orchestration Team" \
+      agent.type="platform-specialist" \
+      agent.philosophy="I understand business needs like a consultant, code like a developer" \
+      agent.version="1.0.0" \
+      agent.capabilities="powerplatform,m365,sharepoint,teams,graph-api,dynamics365,compliance"
+
+# Start the Platform agent
+CMD ["node", "PlatformAgent.js"]

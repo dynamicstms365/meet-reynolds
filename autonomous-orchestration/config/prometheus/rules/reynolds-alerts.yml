@@ -1,0 +1,198 @@
+# Reynolds Orchestration System - Prometheus Alerting Rules
+# Comprehensive monitoring and alerting for the orchestration system
+
+groups:
+  - name: reynolds-orchestrator
+    rules:
+      # Reynolds Core Health Alerts
+      - alert: ReynoldsOrchestratorDown
+        expr: up{job="reynolds-orchestrator"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: orchestrator
+        annotations:
+          summary: "Reynolds Orchestrator is down"
+          description: "The Reynolds Orchestrator has been down for more than 1 minute. This affects all agent coordination."
+
+      - alert: ReynoldsHighTaskFailureRate
+        expr: (rate(orchestrator_tasks_failed_total[5m]) / rate(orchestrator_tasks_total[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: orchestrator
+        annotations:
+          summary: "High task failure rate detected"
+          description: "Task failure rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: ReynoldsLowParallelExecutionRatio
+        expr: (rate(orchestrator_parallel_tasks_total[10m]) / (rate(orchestrator_parallel_tasks_total[10m]) + rate(orchestrator_sequential_tasks_total[10m]))) < 0.6
+        for: 5m
+        labels:
+          severity: warning
+          component: orchestrator
+        annotations:
+          summary: "Low parallel execution ratio"
+          description: "Parallel execution ratio is {{ $value | humanizePercentage }}, below the 60% threshold. Maximum Effort™ may be compromised."
+
+      - alert: ReynoldsHighTaskDuration
+        expr: histogram_quantile(0.95, rate(orchestrator_task_duration_seconds_bucket[5m])) > 300
+        for: 3m
+        labels:
+          severity: warning
+          component: orchestrator
+        annotations:
+          summary: "High task duration detected"
+          description: "95th percentile task duration is {{ $value }}s, exceeding 5 minutes."
+
+  - name: reynolds-agents
+    rules:
+      # Agent Health Alerts
+      - alert: AgentDown
+        expr: up{job=~".*-agents"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{ $labels.instance }} is down"
+          description: "Agent {{ $labels.instance }} of type {{ $labels.agent_type }} has been down for more than 2 minutes."
+
+      - alert: LowAgentCount
+        expr: sum(up{job=~".*-agents"}) < 3
+        for: 1m
+        labels:
+          severity: critical
+          component: agents
+        annotations:
+          summary: "Low agent count"
+          description: "Only {{ $value }} agents are currently running. Minimum recommended is 3."
+
+      - alert: AgentHighMemoryUsage
+        expr: (container_memory_usage_bytes{name=~".*agent.*"} / container_spec_memory_limit_bytes{name=~".*agent.*"}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{ $labels.name }} high memory usage"
+          description: "Agent {{ $labels.name }} memory usage is {{ $value | humanizePercentage }} of limit."
+
+      - alert: AgentHighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{name=~".*agent.*"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: agent
+        annotations:
+          summary: "Agent {{ $labels.name }} high CPU usage"
+          description: "Agent {{ $labels.name }} CPU usage is {{ $value | humanizePercentage }}."
+
+  - name: infrastructure
+    rules:
+      # Infrastructure Alerts
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute. This affects agent coordination and caching."
+
+      - alert: PostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL has been down for more than 1 minute. This affects data persistence and agent learning."
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          component: infrastructure
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is above 90%. Available space: {{ $value | humanizeBytes }}."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 90%. Available memory: {{ $value | humanizeBytes }}."
+
+  - name: monitoring
+    rules:
+      # Monitoring System Alerts
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus has been down for more than 2 minutes. Monitoring may be impacted."
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana has been down for more than 2 minutes. Dashboards are not accessible."
+
+      - alert: HighScrapeErrors
+        expr: rate(prometheus_tsdb_symbol_table_size_bytes[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: monitoring
+        annotations:
+          summary: "High Prometheus scrape error rate"
+          description: "Prometheus scrape error rate is {{ $value | humanizePercentage }}."
+
+  - name: performance
+    rules:
+      # Performance Alerts
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High response time"
+          description: "95th percentile response time is {{ $value }}s."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "High error rate"
+          description: "Error rate is {{ $value | humanizePercentage }}."
+
+      - alert: LowThroughput
+        expr: rate(orchestrator_tasks_completed_total[5m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "Low task throughput"
+          description: "Task completion rate is {{ $value }} tasks/second."

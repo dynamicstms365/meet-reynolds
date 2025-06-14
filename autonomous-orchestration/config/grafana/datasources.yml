@@ -1,0 +1,133 @@
+# Reynolds Orchestration System - Grafana Datasources Configuration
+# Automatic provisioning of datasources for monitoring dashboards
+
+apiVersion: 1
+
+# List of datasources to provision
+datasources:
+  # Prometheus - Main metrics datasource
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    uid: prometheus
+    editable: true
+    jsonData:
+      httpMethod: POST
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.40.0
+      cacheLevel: 'High'
+      disableRecordingRules: false
+      incrementalQueryOverlapWindow: 10m
+      queryTimeout: 60s
+      defaultEditor: code
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: jaeger
+          urlDisplayLabel: View Trace
+    version: 1
+    
+  # PostgreSQL - Database metrics and logs
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: orchestration
+    user: reynolds
+    secureJsonData:
+      password: $__file{/run/secrets/db_password}
+    uid: postgresql
+    editable: true
+    jsonData:
+      sslmode: disable
+      maxOpenConns: 100
+      maxIdleConns: 100
+      maxIdleConnsAuto: true
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    version: 1
+
+  # Redis - Cache and session metrics
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis://redis:6379
+    uid: redis
+    editable: true
+    jsonData:
+      client: standalone
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+    version: 1
+
+  # Loki - Log aggregation (if implemented)
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    editable: true
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - matcherRegex: "traceID=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
+          datasourceUid: jaeger
+    version: 1
+
+  # Jaeger - Distributed tracing (if implemented)
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger:16686
+    uid: jaeger
+    editable: true
+    jsonData:
+      tracesToLogs:
+        datasourceUid: loki
+        tags: ['job', 'instance', 'pod', 'namespace']
+        mappedTags: [
+          {
+            key: 'service.name',
+            value: 'service'
+          }
+        ]
+        mapTagNamesEnabled: false
+        spanStartTimeShift: 1h
+        spanEndTimeShift: 1h
+        filterByTraceID: false
+        filterBySpanID: false
+      tracesToMetrics:
+        datasourceUid: prometheus
+        tags: [
+          {
+            key: 'service.name',
+            value: 'service'
+          },
+          {
+            key: 'job'
+          }
+        ]
+        queries: [
+          {
+            name: 'Sample query',
+            query: 'sum(rate(traces_spanmetrics_latency_bucket{$$__tags}[5m]))'
+          }
+        ]
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      spanBar:
+        type: Tag
+        tag: http.path
+    version: 1
+
+# Notification channels for alerting
+# These will be configured separately in the alerting section

@@ -1,0 +1,186 @@
+# Multi-stage build for Code Intelligence Specialist Agent
+FROM node:18-alpine AS base
+
+# Install base system dependencies
+RUN apk add --no-cache \
+    curl \
+    git \
+    bash \
+    jq \
+    wget \
+    unzip \
+    tar \
+    gzip \
+    ca-certificates \
+    openssl \
+    python3 \
+    py3-pip \
+    python3-dev \
+    build-base \
+    musl-dev \
+    linux-headers \
+    openjdk11-jre \
+    go \
+    rust \
+    cargo \
+    php83 \
+    php83-cli \
+    ruby \
+    ruby-dev
+
+# Install Python development tools
+RUN pip3 install --no-cache-dir --break-system-packages \
+    python-lsp-server \
+    black \
+    flake8 \
+    mypy \
+    bandit \
+    safety \
+    pytest \
+    coverage
+
+# Install Node.js development tools globally
+RUN npm install -g \
+    typescript \
+    typescript-language-server \
+    eslint \
+    prettier \
+    jest \
+    webpack \
+    rollup \
+    vite \
+    @angular/cli \
+    @vue/cli \
+    create-react-app \
+    nodemon \
+    npm-check-updates \
+    snyk \
+    audit-ci
+
+# Install Java development tools
+RUN wget https://download.eclipse.org/jdtls/milestones/1.26.0/jdt-language-server-1.26.0-202307271613.tar.gz \
+    && mkdir -p /opt/jdtls \
+    && tar -xzf jdt-language-server-1.26.0-202307271613.tar.gz -C /opt/jdtls \
+    && rm jdt-language-server-1.26.0-202307271613.tar.gz \
+    && echo '#!/bin/bash\njava -Declipse.application=org.eclipse.jdt.ls.core.id1 -Dosgi.bundles.defaultStartLevel=4 -Declipse.product=org.eclipse.jdt.ls.core.product -jar /opt/jdtls/plugins/org.eclipse.equinox.launcher_*.jar -configuration /opt/jdtls/config_linux -data "${1:-$HOME/workspace}" --add-modules=ALL-SYSTEM --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED "$@"' > /usr/local/bin/jdtls \
+    && chmod +x /usr/local/bin/jdtls
+
+# Install Go development tools
+RUN go install golang.org/x/tools/gopls@latest \
+    && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest \
+    && go install github.com/securecodewarrior/sast-scan@latest
+
+# Install C# development tools (.NET SDK)
+RUN wget https://download.visualstudio.microsoft.com/download/pr/cd0d0a4d-2a6a-4ca2-b8f8-b25532dcdc57/67beb8c99d0d3e3e6e3a8b5e1bb1b996/dotnet-sdk-8.0.100-linux-musl-x64.tar.gz \
+    && mkdir -p /usr/share/dotnet \
+    && tar -zxf dotnet-sdk-8.0.100-linux-musl-x64.tar.gz -C /usr/share/dotnet \
+    && ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet \
+    && rm dotnet-sdk-8.0.100-linux-musl-x64.tar.gz \
+    && dotnet tool install --global csharp-ls
+
+# Install Rust development tools
+RUN cargo install rust-analyzer \
+    && cargo install clippy \
+    && cargo install rustfmt
+
+# Install PHP development tools
+RUN wget https://github.com/phpactor/phpactor/releases/latest/download/phpactor.phar \
+    && chmod +x phpactor.phar \
+    && mv phpactor.phar /usr/local/bin/phpactor \
+    && composer global require phpstan/phpstan \
+    && composer global require squizlabs/php_codesniffer
+
+# Install Ruby development tools
+RUN gem install solargraph \
+    && gem install rubocop \
+    && gem install rspec
+
+# Install additional static analysis tools
+RUN wget https://github.com/github/super-linter/releases/latest/download/super-linter \
+    && chmod +x super-linter \
+    && mv super-linter /usr/local/bin/
+
+# Install SonarQube Scanner
+RUN wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-4.8.0.2856-linux.zip \
+    && unzip sonar-scanner-cli-4.8.0.2856-linux.zip \
+    && mv sonar-scanner-4.8.0.2856-linux /opt/sonar-scanner \
+    && ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner \
+    && rm sonar-scanner-cli-4.8.0.2856-linux.zip
+
+# Install additional linting tools
+RUN npm install -g \
+    stylelint \
+    markdownlint-cli \
+    jsonlint \
+    yaml-lint \
+    dockerfile-utils \
+    alex \
+    textlint
+
+# Create non-root user for security
+RUN addgroup -g 1001 codeagent && \
+    adduser -D -u 1001 -G codeagent codeagent
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first for better Docker layer caching
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy application code
+COPY . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p \
+    /app/knowledge \
+    /app/context \
+    /app/memory \
+    /app/workspace \
+    /app/cache \
+    /app/tools \
+    /app/secrets \
+    /app/analysis \
+    /app/reports \
+    && chown -R codeagent:codeagent /app
+
+# Set environment variables for development tools
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV GOPATH=/home/codeagent/go
+ENV GOROOT=/usr/lib/go
+ENV CARGO_HOME=/home/codeagent/.cargo
+ENV PATH="$PATH:/usr/share/dotnet:/home/codeagent/go/bin:/home/codeagent/.cargo/bin:/root/.dotnet/tools"
+
+# Set proper ownership
+RUN chown -R codeagent:codeagent /app
+
+# Switch to non-root user
+USER codeagent
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Expose agent port
+EXPOSE 8080
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV AGENT_TYPE=code-intelligence
+ENV LOG_LEVEL=info
+ENV PORT=8080
+
+# Volume mounts for persistence and context
+VOLUME ["/app/workspace", "/app/context", "/app/memory", "/app/secrets", "/app/analysis"]
+
+# Labels for container identification
+LABEL maintainer="Reynolds Orchestration Team" \
+      agent.type="code-intelligence" \
+      agent.philosophy="I code in your language, follow your patterns" \
+      agent.version="1.0.0" \
+      agent.capabilities="static-analysis,multi-language,testing,security,performance,refactoring"
+
+# Start the Code Intelligence agent
+CMD ["node", "CodeAgent.js"]
