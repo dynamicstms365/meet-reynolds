@@ -1,0 +1,4 @@
+Deployment trigger for Reynolds Teams Agent
+Generated: 2025-06-13 08:19:13 UTC
+Reason: Manual deployment trigger to test Container Apps infrastructureReynolds orchestration system ready for deployment
+Reynolds orchestration system ready for deployment
