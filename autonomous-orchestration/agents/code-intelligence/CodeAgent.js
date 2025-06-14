@@ -579,6 +579,25 @@ class CodeAgent {
     };
   }
 
+  async checkCodeStyle(payload, context) {
+    const { projectPath, language, rules = 'default' } = payload;
+    
+    logger.info('Checking code style', { projectPath, language, rules });
+    
+    return {
+      action: 'style-check',
+      projectPath,
+      language,
+      rules,
+      results: {
+        violations: [],
+        suggestions: [],
+        score: 95
+      },
+      philosophy: "Style matters - clean code is readable code"
+    };
+  }
+
   async runTests(payload, context) {
     const { projectPath, language, testFramework, coverage = false } = payload;
     

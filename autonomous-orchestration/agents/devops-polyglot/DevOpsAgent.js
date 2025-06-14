@@ -7,7 +7,7 @@ const winston = require('winston');
 const { v4: uuidv4 } = require('uuid');
 const client = require('prom-client');
 const Docker = require('dockerode');
-const k8s = require('kubernetes-client');
+const k8s = require('@kubernetes/client-node');
 const simpleGit = require('simple-git');
 const axios = require('axios');
 require('dotenv').config();
