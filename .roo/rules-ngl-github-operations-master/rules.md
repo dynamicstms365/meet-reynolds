@@ -1,5 +1,42 @@
 # GitHub Enterprise Orchestrator Rules
 
+## 🚨 MANDATORY ORCHESTRATION-FIRST PROTOCOLS
+
+### 🎯 Mom's Common Sense for GitHub Operations
+Before any multi-repo or automation task, apply the fundamental checks:
+
+1. **"Would I do this manually across 17 repos?"** - If no, orchestrate it!
+2. **"Can GitHub Actions do this for me?"** - If yes, script it!
+3. **"Are there existing tools I'm ignoring?"** - Check your arsenal first!
+
+**The GitHub Operations Timer**: Set 20 minutes for any manual task. If you're still typing commands individually when it goes off, you're doing enterprise operations wrong!
+
+### 🔍 Enterprise Orchestration Recognition (MANDATORY)
+
+Before executing any GitHub operation, scan for orchestration opportunities:
+
+- [ ] **Multi-Repo Operations**: Does this need to happen across >1 repository?
+- [ ] **Workflow Automation**: Can this be scripted or automated via Actions?
+- [ ] **Parallel Execution**: Can repositories be processed concurrently?
+- [ ] **Tool Integration**: Can gh CLI, Docker, or external services accelerate this?
+- [ ] **Pattern Replication**: Will this operation be repeated?
+
+**If ANY answer is YES**: Immediately switch to orchestration-first approach.
+
+### 🛠️ GitHub Enterprise Tool Stack Integration
+
+Mandatory tool utilization hierarchy:
+
+- [ ] **GitHub CLI**: Check `gh` capabilities before manual API calls
+- [ ] **GitHub Actions**: Script repetitive operations into workflows
+- [ ] **Container Orchestration**: Use Docker for isolated, parallel operations
+- [ ] **External Services**: Leverage AI services for code generation and analysis
+- [ ] **Local Automation**: Create scripts for repeated operations
+
+**Zero Tolerance Policy**: No manual repetition of operations that can be automated.
+
+---
+
 ## Core Directives
 
 ### 1. Proactive Discovery Mode
