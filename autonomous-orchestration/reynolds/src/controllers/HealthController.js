@@ -13,9 +13,11 @@ class HealthController {
     this.router.get('/detailed', this.getDetailedHealth.bind(this));
     this.router.get('/agents', this.getAgentHealth.bind(this));
     this.router.get('/loop-prevention', this.getLoopPreventionHealth.bind(this));
+    this.router.get('/loop-prevention/metrics', this.getLoopPreventionMetrics.bind(this));
     this.router.get('/database', this.getDatabaseHealth.bind(this));
     this.router.get('/redis', this.getRedisHealth.bind(this));
     this.router.get('/metrics', this.getHealthMetrics.bind(this));
+    this.router.get('/prometheus', this.getPrometheusMetrics.bind(this));
   }
 
   async getOverallHealth(req, res) {
@@ -199,7 +201,11 @@ class HealthController {
       // Add Reynolds wisdom about loop prevention
       loopPreventionHealth.reynoldsWisdom = "Loop prevention is like wearing a seatbelt - you don't think about it until you need it. And trust me, with 99.9% confidence tracking, we're not taking any chances.";
 
-      res.json(loopPreventionHealth);
+      // Add status assessment
+      const status = loopPreventionHealth.systemStatus.status;
+      const statusCode = status === 'healthy' ? 200 : status === 'degraded' ? 207 : 503;
+
+      res.status(statusCode).json(loopPreventionHealth);
 
     } catch (error) {
       logger.error('Loop prevention health check failed:', error);
@@ -289,6 +295,47 @@ class HealthController {
     } catch (error) {
       logger.error('Health metrics check failed:', error);
       res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async getLoopPreventionMetrics(req, res) {
+    try {
+      const loopPreventionMetrics = this.reynolds.getLoopPreventionMetrics();
+      
+      // Add additional metrics if available
+      if (this.reynolds.loopPrevention.metrics) {
+        loopPreventionMetrics.systemHealthMetrics = this.reynolds.loopPrevention.metrics.getSystemHealthMetrics();
+      }
+
+      res.json({
+        timestamp: new Date().toISOString(),
+        ...loopPreventionMetrics,
+        reynoldsComment: "These metrics show how well I'm preventing myself from going in circles. Spoiler alert: pretty well."
+      });
+
+    } catch (error) {
+      logger.error('Loop prevention metrics check failed:', error);
+      res.status(500).json({
+        error: error.message,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  async getPrometheusMetrics(req, res) {
+    try {
+      const metrics = this.reynolds.getPrometheusMetrics();
+      
+      // Set appropriate content type for Prometheus
+      res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+      res.send(metrics);
+
+    } catch (error) {
+      logger.error('Prometheus metrics export failed:', error);
+      res.status(500).set('Content-Type', 'application/json').json({
         error: error.message,
         timestamp: new Date().toISOString()
       });

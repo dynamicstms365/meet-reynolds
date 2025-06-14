@@ -18,12 +18,26 @@ class ReynoldsOrchestrator extends EventEmitter {
       personalityMode: 'maximum_effort',
       loopPreventionEnabled: true,
       githubIssuesEnabled: true,
+      metricsEnabled: true,
       ...config
     };
 
     // Core components
     this.taskDecomposer = new TaskDecomposer();
-    this.loopPrevention = new LoopPreventionEngine();
+    
+    // Initialize loop prevention with enhanced configuration
+    const loopPreventionConfig = {
+      confidenceThreshold: 0.999, // 99.9% requirement
+      maxChainDepth: 10,
+      maxExecutionTime: 300000, // 5 minutes
+      reynoldsObsessionThreshold: 5,
+      rapidFireThreshold: 20,
+      recursivePatternThreshold: 3,
+      fanOutThreshold: 10,
+      metricsEnabled: this.config.metricsEnabled
+    };
+    
+    this.loopPrevention = new LoopPreventionEngine(loopPreventionConfig);
     this.personality = new ReynoldsPersonality(this.config.personalityMode);
     this.agentPools = new Map();
     this.activeExecutions = new Map();
@@ -72,12 +86,19 @@ class ReynoldsOrchestrator extends EventEmitter {
       // Start performance metrics collection
       this.startMetricsCollection();
 
+      // Set up loop prevention event listeners
+      this.setupLoopPreventionIntegration();
+
       this.initialized = true;
       logger.info('✅ Reynolds Orchestrator initialized successfully');
       
       // Reynolds personality check-in
       const welcomeMessage = await this.personality.generateWelcomeMessage();
       logger.info(`🎭 Reynolds says: "${welcomeMessage}"`);
+      
+      // Log initial system status
+      const systemStatus = this.loopPrevention.getSystemStatus();
+      logger.info('🛡️ Loop Prevention System Status:', systemStatus);
 
     } catch (error) {
       logger.error('❌ Failed to initialize Reynolds Orchestrator:', error);
@@ -261,7 +282,15 @@ class ReynoldsOrchestrator extends EventEmitter {
       this.activeExecutions.get(executionId).status = 'executing';
       const executionPromises = subtasks.map(async (subtask) => {
         const agent = await this.selectOptimalAgent(subtask);
-        const eventId = this.loopPrevention.generateEventId();
+        const eventId = this.loopPrevention.generateEventId(null, `subtask_${subtask.type}`);
+
+        // Start execution tracking in loop prevention
+        this.loopPrevention.startExecution(executionId, eventId, {
+          taskType: subtask.type,
+          agentType: agent.type || 'unknown',
+          strategy: strategy.approach,
+          parentTaskId: task.id
+        });
 
         try {
           const result = await this.executeSubtask(subtask, agent, {
@@ -735,6 +764,11 @@ class ReynoldsOrchestrator extends EventEmitter {
     // Stop health monitoring and metrics collection
     clearInterval(this.healthMonitorInterval);
     clearInterval(this.metricsInterval);
+
+    // Shutdown loop prevention engine
+    if (this.loopPrevention) {
+      this.loopPrevention.shutdown();
+    }
 
     // Wait for active executions to complete (with timeout)
     const shutdownPromise = this.waitForActiveExecutions();
