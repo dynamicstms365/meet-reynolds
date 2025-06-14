@@ -17,18 +17,21 @@ public class ReynoldsTeamsBot : TeamsActivityHandler
     private readonly IConfiguration _configuration;
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly IIntentRecognitionService _intentRecognitionService;
+    private readonly ICrossPlatformEventRouter _eventRouter;
     private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
 
     public ReynoldsTeamsBot(
         ILogger<ReynoldsTeamsBot> logger,
         IConfiguration configuration,
         IGitHubWorkflowOrchestrator workflowOrchestrator,
-        IIntentRecognitionService intentRecognitionService)
+        IIntentRecognitionService intentRecognitionService,
+        ICrossPlatformEventRouter eventRouter)
     {
         _logger = logger;
         _configuration = configuration;
         _workflowOrchestrator = workflowOrchestrator;
         _intentRecognitionService = intentRecognitionService;
+        _eventRouter = eventRouter;
         _conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
     }
 
@@ -81,6 +84,27 @@ Just say 'Reynolds, help' or mention any repo/project and I'll work my magic.
     {
         try
         {
+            // Create platform event for cross-platform routing
+            var platformEvent = new PlatformEvent
+            {
+                EventType = "message",
+                SourcePlatform = "Teams",
+                Action = "message_received",
+                UserId = turnContext.Activity.From.Id,
+                Content = userMessage,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["channel_id"] = turnContext.Activity.ChannelId,
+                    ["conversation_id"] = turnContext.Activity.Conversation.Id,
+                    ["activity_type"] = turnContext.Activity.Type
+                }
+            };
+
+            // Route through cross-platform system for intelligent coordination
+            var routingResult = await _eventRouter.RouteEventAsync(platformEvent);
+            
+            _logger.LogInformation("Cross-platform routing completed for Teams message: {Success}", routingResult.Success);
+
             // Recognize intent using our existing service - Reynolds uses default config for Teams
             var defaultConfig = new AgentConfiguration();
             var intent = await _intentRecognitionService.AnalyzeIntentAsync(userMessage, defaultConfig);
@@ -88,13 +112,22 @@ Just say 'Reynolds, help' or mention any repo/project and I'll work my magic.
             _logger.LogInformation("Reynolds detected intent: {IntentType} with confidence: {Confidence}", intent.Type, intent.Confidence);
 
             // Process based on intent with Reynolds personality
-            return intent.Type switch
+            var response = intent.Type switch
             {
                 IntentType.General => await HandleGeneralReynoldsRequest(userMessage),
                 IntentType.KnowledgeQuery => await HandleKnowledgeRequest(userMessage),
                 IntentType.EnvironmentManagement => await HandleEnvironmentRequest(userMessage),
                 _ => await HandleOrganizationalRequest(userMessage, turnContext)
             };
+
+            // Enhance response with cross-platform routing insights if available
+            if (routingResult.Success && routingResult.RouteResults.Any())
+            {
+                var routingSummary = $"\n\n*Cross-platform coordination: {routingResult.RouteResults.Count} platforms synchronized*";
+                response += routingSummary;
+            }
+
+            return response;
         }
         catch (Exception ex)
         {

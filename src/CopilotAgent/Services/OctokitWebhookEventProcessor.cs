@@ -18,15 +18,18 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly ISecurityAuditService _auditService;
     private readonly ILogger<OctokitWebhookEventProcessor> _logger;
+    private readonly ICrossPlatformEventRouter _eventRouter;
 
     public OctokitWebhookEventProcessor(
         IGitHubWorkflowOrchestrator workflowOrchestrator,
         ISecurityAuditService auditService,
-        ILogger<OctokitWebhookEventProcessor> logger)
+        ILogger<OctokitWebhookEventProcessor> logger,
+        ICrossPlatformEventRouter eventRouter)
     {
         _workflowOrchestrator = workflowOrchestrator;
         _auditService = auditService;
         _logger = logger;
+        _eventRouter = eventRouter;
     }
 
     /// <summary>
@@ -107,13 +110,34 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
             // Convert Octokit event to our internal payload format
             var payload = ConvertToInternalPayload(pullRequestEvent, "pull_request", action.ToString());
             
+            // Create platform event for cross-platform routing
+            var platformEvent = new PlatformEvent
+            {
+                EventType = "pull_request",
+                SourcePlatform = "GitHub",
+                Action = action.ToString().ToLowerInvariant(),
+                Repository = pullRequestEvent.Repository?.FullName,
+                UserId = pullRequestEvent.PullRequest.User?.Login,
+                Content = $"PR #{pullRequestEvent.PullRequest.Number}: {pullRequestEvent.PullRequest.Title}\n{pullRequestEvent.PullRequest.Body}",
+                Metadata = new Dictionary<string, object>
+                {
+                    ["pr_number"] = pullRequestEvent.PullRequest.Number,
+                    ["pr_state"] = pullRequestEvent.PullRequest.State.ToString(),
+                    ["draft"] = pullRequestEvent.PullRequest.Draft,
+                    ["delivery_id"] = ExtractHeaderValue(headers, "X-GitHub-Delivery")
+                }
+            };
+
+            // Route through cross-platform system
+            var routingResult = await _eventRouter.RouteEventAsync(platformEvent);
+            
             // Process through existing workflow orchestrator
             var result = await _workflowOrchestrator.ProcessWebhookEventAsync(payload);
             
             await _auditService.LogWebhookEventAsync(payload, result.Success ? "SUCCESS" : "FAILED");
             
-            _logger.LogInformation("Pull request webhook processed: {Success}, Actions: {ActionsCount}", 
-                result.Success, result.Actions.Count);
+            _logger.LogInformation("Pull request webhook processed: {Success}, Actions: {ActionsCount}, Cross-platform routes: {RouteCount}",
+                result.Success, result.Actions.Count, routingResult.RouteResults.Count);
         }
         catch (Exception ex)
         {
@@ -148,12 +172,33 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         try
         {
             var payload = ConvertToInternalPayload(issuesEvent, "issues", action.ToString());
+            
+            // Create platform event for cross-platform routing
+            var platformEvent = new PlatformEvent
+            {
+                EventType = "issues",
+                SourcePlatform = "GitHub",
+                Action = action.ToString().ToLowerInvariant(),
+                Repository = issuesEvent.Repository?.FullName,
+                UserId = issuesEvent.Issue.User?.Login,
+                Content = $"Issue #{issuesEvent.Issue.Number}: {issuesEvent.Issue.Title}\n{issuesEvent.Issue.Body}",
+                Metadata = new Dictionary<string, object>
+                {
+                    ["issue_number"] = issuesEvent.Issue.Number,
+                    ["issue_state"] = issuesEvent.Issue.State?.ToString() ?? "unknown",
+                    ["delivery_id"] = ExtractHeaderValue(headers, "X-GitHub-Delivery")
+                }
+            };
+
+            // Route through cross-platform system
+            var routingResult = await _eventRouter.RouteEventAsync(platformEvent);
+            
             var result = await _workflowOrchestrator.ProcessWebhookEventAsync(payload);
             
             await _auditService.LogWebhookEventAsync(payload, result.Success ? "SUCCESS" : "FAILED");
             
-            _logger.LogInformation("Issues webhook processed: {Success}, Actions: {ActionsCount}", 
-                result.Success, result.Actions.Count);
+            _logger.LogInformation("Issues webhook processed: {Success}, Actions: {ActionsCount}, Cross-platform routes: {RouteCount}",
+                result.Success, result.Actions.Count, routingResult.RouteResults.Count);
         }
         catch (Exception ex)
         {
@@ -188,12 +233,37 @@ public sealed class OctokitWebhookEventProcessor : WebhookEventProcessor
         try
         {
             var payload = ConvertToInternalPayload(workflowRunEvent, "workflow_run", action.ToString());
+            
+            // Create platform event for cross-platform routing
+            var platformEvent = new PlatformEvent
+            {
+                EventType = "workflow_run",
+                SourcePlatform = "GitHub",
+                Action = action.ToString().ToLowerInvariant(),
+                Repository = workflowRunEvent.Repository?.FullName,
+                UserId = workflowRunEvent.WorkflowRun.Actor?.Login,
+                Content = $"Workflow '{workflowRunEvent.WorkflowRun.Name}': {workflowRunEvent.WorkflowRun.Status} -> {workflowRunEvent.WorkflowRun.Conclusion}",
+                Metadata = new Dictionary<string, object>
+                {
+                    ["workflow_id"] = workflowRunEvent.WorkflowRun.Id,
+                    ["workflow_name"] = workflowRunEvent.WorkflowRun.Name ?? "unknown",
+                    ["status"] = workflowRunEvent.WorkflowRun.Status?.ToString() ?? "unknown",
+                    ["conclusion"] = workflowRunEvent.WorkflowRun.Conclusion?.ToString() ?? "unknown",
+                    ["delivery_id"] = ExtractHeaderValue(headers, "X-GitHub-Delivery"),
+                    ["trigger_deployment"] = action.ToString().ToLowerInvariant() == "completed" &&
+                                           workflowRunEvent.WorkflowRun.Conclusion?.ToString()?.ToLowerInvariant() == "success"
+                }
+            };
+
+            // Route through cross-platform system
+            var routingResult = await _eventRouter.RouteEventAsync(platformEvent);
+            
             var result = await _workflowOrchestrator.ProcessWebhookEventAsync(payload);
             
             await _auditService.LogWebhookEventAsync(payload, result.Success ? "SUCCESS" : "FAILED");
             
-            _logger.LogInformation("Workflow run webhook processed: {Success}, Actions: {ActionsCount}", 
-                result.Success, result.Actions.Count);
+            _logger.LogInformation("Workflow run webhook processed: {Success}, Actions: {ActionsCount}, Cross-platform routes: {RouteCount}",
+                result.Success, result.Actions.Count, routingResult.RouteResults.Count);
         }
         catch (Exception ex)
         {
