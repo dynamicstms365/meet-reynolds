@@ -21,7 +21,7 @@ properties:
       - name: NGL_DEVOPS_PRIVATE_KEY
         secureValue: "$(GITHUB_APP_PRIVATE_KEY)"
       - name: NGL_DEVOPS_WEBHOOK_SECRET
-        secureValue: "$(GITHUB_WEBHOOK_SECRET)"
+        secureValue: "96328478de1391f4633f28221ef6d62d8fa42b57cea159ff65360e88015507dd"
       # Azure OpenAI Integration
       - name: AZURE_OPENAI_ENDPOINT
         value: "$(AZURE_OPENAI_ENDPOINT)"
