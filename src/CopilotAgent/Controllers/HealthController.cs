@@ -73,10 +73,10 @@ public class HealthController : ControllerBase
     }
 
     /// <summary>
-    /// Root endpoint to handle requests to / and provide service information
+    /// Service info endpoint to provide service information
     /// </summary>
-    [HttpGet("/")]
-    public IActionResult Root()
+    [HttpGet("/api/info")]
+    public IActionResult ServiceInfo()
     {
         var serviceInfo = new
         {
