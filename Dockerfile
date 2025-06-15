@@ -2,16 +2,21 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy project files and restore dependencies
-COPY *.csproj ./
-RUN dotnet restore
+# Copy solution and project files for dependency resolution
+COPY src/CopilotAgent.sln ./
+COPY src/CopilotAgent/CopilotAgent.csproj ./CopilotAgent/
+COPY src/CopilotAgent.Tests/CopilotAgent.Tests.csproj ./CopilotAgent.Tests/
+COPY src/Shared/Shared.csproj ./Shared/
 
-# Copy source and build
-COPY . ./
-RUN dotnet build -c Release -o /app/build
+# Restore dependencies using solution file
+RUN dotnet restore CopilotAgent.sln
+
+# Copy source and build the main project
+COPY src/ ./
+RUN dotnet build CopilotAgent/CopilotAgent.csproj -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish -c Release -o /app/publish --no-restore
+RUN dotnet publish CopilotAgent/CopilotAgent.csproj -c Release -o /app/publish --no-restore
 
 # Final runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
