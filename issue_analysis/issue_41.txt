@@ -1,0 +1,47 @@
+title:	Create Prompt Template System for MCP Tools
+state:	OPEN
+author:	cege7480
+labels:	enhancement
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	41
+--
+## Overview
+Implement a dynamic prompt template system that allows runtime prompt loading and variable substitution without code recompilation.
+
+## Tasks
+- [ ] Create `PromptTemplateService` in `src/CopilotAgent/Services/`
+- [ ] Implement template variable substitution ({{VARIABLE}} replacement)
+- [ ] Add prompt template loading from `.github/prompts/` directory
+- [ ] Create caching mechanism for frequently used prompts
+- [ ] Add validation for required template variables
+- [ ] Support both file-based and embedded prompts
+
+## Technical Requirements
+- Load prompts from `.github/prompts/discussion-monitor.txt` and other template files
+- Support nested variable replacement and conditional logic
+- Handle missing variables gracefully with defaults or errors
+- Enable hot-reloading of prompts for development iteration
+- Validate template syntax and required variables
+
+## Acceptance Criteria
+- [ ] Prompt templates load dynamically from files
+- [ ] Variable substitution works correctly for all test scenarios
+- [ ] Missing template variables are handled appropriately
+- [ ] Template caching improves performance
+- [ ] Hot-reloading works in development environment
+- [ ] Integration tests validate prompt generation
+
+## Related Files
+- `src/CopilotAgent/Services/PromptTemplateService.cs` (create)
+- `.github/prompts/discussion-monitor.txt`
+- `.github/prompts/pr-review.txt`
+- `.github/prompts/alm-orchestrator.txt`
+- `scripts/dev/results/prompt-discussion-*.txt` (reference examples)
+
+## Definition of Done
+- Prompts can be modified without code changes or recompilation
+- All conversation test scenarios generate appropriate prompts
+- Template system is documented and tested

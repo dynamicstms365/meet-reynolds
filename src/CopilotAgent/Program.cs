@@ -63,7 +63,7 @@ builder.Services.AddScoped<IGitHubModelsOrchestrator, GitHubModelsOrchestrator>(
 // Register Cross-Platform Event Routing Services (Issue #73)
 builder.Services.AddScoped<ICrossPlatformEventRouter, CrossPlatformEventRouter>();
 builder.Services.AddScoped<IEventClassificationService, EventClassificationService>();
-builder.Services.AddScoped<IAzureEventProcessor, AzureEventProcessor>();
+// builder.Services.AddScoped<IAzureEventProcessor, AzureEventProcessor>(); // Temporarily disabled
 builder.Services.AddScoped<IEventRoutingMetrics, EventRoutingMetrics>();
 builder.Services.AddSingleton<EventRoutingMetrics>();
 

@@ -62,6 +62,8 @@ public class EventRoutingMetrics : IEventRoutingMetrics
 
     public async Task RecordEventRoutingAsync(string sourcePlatform, int routeCount, int successCount, TimeSpan processingTime)
     {
+        await Task.CompletedTask;
+        
         try
         {
             var key = $"{sourcePlatform}_{DateTime.UtcNow:yyyy-MM-dd-HH}";
@@ -104,6 +106,8 @@ public class EventRoutingMetrics : IEventRoutingMetrics
 
     public async Task RecordClassificationMetricsAsync(string category, EventPriority priority, double confidence, TimeSpan processingTime)
     {
+        await Task.CompletedTask;
+        
         try
         {
             var key = $"{category}_{priority}_{DateTime.UtcNow:yyyy-MM-dd-HH}";
@@ -149,6 +153,8 @@ public class EventRoutingMetrics : IEventRoutingMetrics
 
     public async Task RecordPlatformLatencyAsync(string targetPlatform, TimeSpan latency, bool success)
     {
+        await Task.CompletedTask;
+        
         try
         {
             var key = $"{targetPlatform}_{DateTime.UtcNow:yyyy-MM-dd-HH}";
@@ -200,6 +206,8 @@ public class EventRoutingMetrics : IEventRoutingMetrics
 
     public async Task<EventRoutingStats> GetRoutingStatsAsync(TimeSpan period)
     {
+        await Task.CompletedTask;
+        
         try
         {
             var cutoff = DateTime.UtcNow - period;
@@ -308,6 +316,8 @@ public class EventRoutingMetrics : IEventRoutingMetrics
 
     public async Task IncrementDuplicateEventCountAsync(string platform)
     {
+        await Task.CompletedTask;
+        
         try
         {
             _duplicateEventCounts.AddOrUpdate(platform, 1, (key, value) => value + 1);
@@ -324,6 +334,8 @@ public class EventRoutingMetrics : IEventRoutingMetrics
 
     public async Task RecordRoutingFailureAsync(string sourcePlatform, string targetPlatform, string error)
     {
+        await Task.CompletedTask;
+        
         try
         {
             var key = $"{sourcePlatform}_to_{targetPlatform}_{DateTime.UtcNow:yyyy-MM-dd-HH}";

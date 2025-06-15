@@ -1,0 +1,27 @@
+title:	🚨 WORKFLOW FAILURE: Azure Container Apps Deploy Action Parameter Mismatch
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	cege7480
+projects:	
+milestone:	
+number:	53
+--
+## Failure Summary
+
+**Workflow:** Deploy GitHub App Service to Azure  
+**Run ID:** 15616844402  
+**Failure Type:** Invalid action parameters  
+
+## Error Details
+
+The `azure/container-apps-deploy-action@v2` action rejected several parameters:
+- `secrets`, `cpu`, `memory`, `minReplicas`, `maxReplicas` are invalid
+
+## Fix Required
+
+Remove unsupported parameters and configure via Azure CLI after deployment.
+
+## Status
+🔄 **In Progress** - Implementing fix per mandatory validation protocol

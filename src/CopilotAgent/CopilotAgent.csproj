@@ -30,6 +30,7 @@
     <PackageReference Include="Microsoft.Graph" Version="5.56.0" />
     <PackageReference Include="Azure.Identity" Version="1.12.1" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.65.0" />
+    <PackageReference Include="Azure.ResourceManager" Version="1.13.1" />
     
     <!-- Azure Bot Framework Enterprise Authentication -->
     <PackageReference Include="Microsoft.Bot.Builder.Azure" Version="4.21.2" />

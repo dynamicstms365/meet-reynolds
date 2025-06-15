@@ -1,0 +1,47 @@
+title:	Copilot Learning: GitHub Actions Marketplace Reliability Issues
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	49
+--
+## Problem
+During JWT token generation troubleshooting, we discovered that multiple suggested GitHub Actions from the marketplace don't actually exist:
+
+- `github-jwt/github-jwt@v1.2` → **Action not found**
+- `gha-utils/jwt-generator@v1` → **Action not found**
+
+## Impact
+- Workflow failures at job setup stage
+- Time wasted debugging non-existent dependencies
+- Need for alternative implementation approaches
+
+## Root Cause Analysis
+1. **Limited JWT Action Availability**: Very few public actions exist for JWT generation
+2. **Action Naming Inconsistencies**: Actions may be private, archived, or incorrectly named
+3. **Version Management**: Actions may exist but not at specified versions
+4. **Documentation Gaps**: Marketplace search may not reflect actual availability
+
+## Solution Strategy
+1. **Verify Before Use**: Always check action existence before implementation
+2. **Prefer Standard Tools**: Use Node.js, Python, or shell scripts over external actions
+3. **Local Dependencies**: Install packages like `jsonwebtoken` within workflows
+4. **Fallback Plans**: Have manual implementation ready as backup
+
+## Key Learnings
+- External GitHub Actions introduce dependency risks
+- Standard tooling (Node.js + npm packages) is more reliable
+- Always validate action existence in marketplace before committing
+- Custom scripts provide better control and reliability
+
+## Best Practices
+
+up to date, audited 31 packages in 475ms
+
+2 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities

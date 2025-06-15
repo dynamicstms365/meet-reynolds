@@ -302,7 +302,15 @@ public class GitHubModelsOrchestrator : IGitHubModelsOrchestrator
             if (modelAssignment != null)
             {
                 workload.AssignedModel = modelAssignment.SelectedModel;
-                workload.EnhancedContext = await _reynoldsPersona.EnhanceWorkloadContextAsync(workload.Context, workload.Type);
+                if (workload.Context != null)
+                {
+                    var enhancedContext = await _reynoldsPersona.EnhanceWorkloadContextAsync(workload.Context, workload.Type);
+                    workload.EnhancedContext = enhancedContext?.ToString() ?? workload.Context.ToString() ?? "";
+                }
+                else
+                {
+                    workload.EnhancedContext = "";
+                }
                 enhancedWorkloads.Add(workload);
             }
         }

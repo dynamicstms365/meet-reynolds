@@ -1,0 +1,64 @@
+title:	Copilot Learning: Systematic Debugging Methodology for GitHub Workflows
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	50
+--
+## Problem
+Complex GitHub workflow failures require systematic debugging approach to identify root causes efficiently.
+
+## Debugging Methodology Applied
+
+### 1. Error Analysis
+- Read complete workflow logs
+- Identify exact failure points
+- Categorize error types (authentication, configuration, dependency)
+
+### 2. Root Cause Investigation
+- Analyze 5-7 possible sources
+- Distill to 1-2 most likely causes
+- Validate assumptions with logs/evidence
+
+### 3. Solution Implementation
+- Test one fix at a time
+- Commit and push changes systematically
+- Monitor workflow runs for success/failure
+
+### 4. Documentation
+- Record learnings as issues
+- Document solution approaches
+- Share knowledge for future debugging
+
+## Key Techniques Used
+1. **Log Analysis**: `gh run view [ID] --log` for detailed inspection
+2. **Incremental Testing**: Fix one issue, test, then move to next
+3. **Evidence-Based Decisions**: Use actual error messages, not assumptions
+4. **Alternative Approaches**: When external dependencies fail, use standard tools
+
+## Tools and Commands
+```bash
+# Monitor workflow progress
+gh run watch [ID]
+
+# Get detailed logs
+gh run view [ID] --log
+
+# List recent runs
+gh run list --limit 5
+```
+
+## Success Metrics
+- Moved from initial JWT authentication failure
+- Through multiple token generation attempts  
+- To successful workflow completion with proper authentication
+- Documented all learnings for future reference
+
+## Best Practices
+- Always wait for tool use confirmation before proceeding
+- Use step-by-step approach rather than multiple simultaneous changes
+- Validate each fix before moving to next issue
+- Document both failures and solutions

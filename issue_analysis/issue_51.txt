@@ -1,0 +1,56 @@
+title:	Copilot Learning: MCP Server Authentication and Token Management
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	51
+--
+## Problem
+Setting up MCP (Model Context Protocol) server authentication requires understanding different token types and generation methods.
+
+## Key Discoveries
+
+### Token Types for MCP Servers
+1. **Personal Access Tokens**: `gho_...` format - Good for general API access
+2. **GitHub App Installation Tokens**: `ghs_...` format - Repository-specific operations  
+3. **GitHub App JWT Tokens**: `eyJ...` format - App-level operations
+
+### Token Generation Methods
+```bash
+# Personal Access Token (simple)
+gh auth token
+
+# GitHub App Installation Token (recommended for MCP)
+gh api /repos/OWNER/REPO/installation --jq '.id' | \
+  xargs -I {} gh api /app/installations/{}/access_tokens -X POST --jq '.token'
+
+# Manual JWT Generation (for app-level ops)
+npm install jsonwebtoken @octokit/auth-app
+node generate_jwt_script.js
+```
+
+## MCP Server Integration
+- MCP servers typically need installation tokens for repository operations
+- Personal access tokens work but have broader scope than needed
+- GitHub App tokens provide better security isolation
+- Token refresh/rotation should be considered for production use
+
+## Best Practices
+1. Use GitHub App installation tokens for MCP servers when possible
+2. Scope tokens to minimum required permissions
+3. Store tokens securely (environment variables, secrets)
+4. Implement token refresh logic for long-running services
+5. Test token permissions before deploying MCP server
+
+## Security Considerations
+- Personal tokens have user-level access
+- App tokens can be scoped to specific repositories
+- Installation tokens expire and need refresh
+- JWT tokens are short-lived (10 minutes max)
+
+## References
+- [MCP Protocol Documentation](https://modelcontextprotocol.io/)
+- [GitHub App Authentication](https://docs.github.com/en/developers/apps/building-github-apps/authenticating-with-github-apps)

@@ -1,0 +1,44 @@
+title:	🚀 Automated CLI Environment Validation
+state:	OPEN
+author:	cege7480
+labels:	enhancement, foundation, phase-1
+comments:	1
+assignees:	cege7480
+projects:	
+milestone:	Foundation
+number:	30
+--
+## 🎯 Objective
+Implement automated validation of CLI tools (PAC CLI, M365 CLI) to ensure proper environment setup for the Power Platform ecosystem.
+
+## 📋 Description
+Create an intelligent validation system that automatically checks CLI tool installations, configurations, and connectivity. This supports the foundation layer of our binary tree architecture by ensuring reliable tool availability.
+
+## 🔧 Actions Required
+- [ ] Enhance validation script in `scripts/validation/validate-environment.sh`
+- [ ] Add CLI version compatibility checks
+- [ ] Implement connectivity testing for Power Platform and M365 services
+- [ ] Create automated fix suggestions for common issues
+- [ ] Add logging and reporting capabilities
+- [ ] Generate environment status dashboard
+
+## ✅ Acceptance Criteria
+- [ ] Validates PAC CLI installation and authentication
+- [ ] Validates M365 CLI installation and authentication  
+- [ ] Checks CLI versions for compatibility
+- [ ] Tests connectivity to required services
+- [ ] Provides clear error messages and fix suggestions
+- [ ] Generates structured validation report
+
+## 🔗 Dependencies
+- None (Foundation level task)
+
+## 📊 Success Metrics
+- Validation completes in <30 seconds
+- Detects 100% of common CLI issues
+- Provides actionable fix suggestions for >90% of problems
+
+## 🏷️ Tags
+`cli-validation` `foundation` `automation` `environment-setup`
+
+@copilot please work on this issue

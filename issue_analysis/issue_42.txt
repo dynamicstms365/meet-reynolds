@@ -1,0 +1,55 @@
+title:	Test and Validate Conversational Flows
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	42
+--
+## Overview
+Test the complete discussion monitoring system with real conversational scenarios and validate the expected behaviors.
+
+## Tasks
+- [ ] Create integration tests for all 3 conversation scenarios
+- [ ] Test MCP tools with deployed Azure Container Apps agent
+- [ ] Validate natural language confirmation flows
+- [ ] Test conversation context retention across interactions
+- [ ] Verify discussion search accuracy and relevance
+- [ ] Test discussion creation workflow end-to-end
+
+## Test Scenarios
+### Scenario 1: No Discussion Exists
+- User asks about Power Platform canvas app performance
+- Agent should suggest creating new discussion with compelling title
+- Test discussion creation through MCP tools
+
+### Scenario 2: Discussion Exists  
+- User asks about MCP server implementation
+- Agent should ask: "Just checking, are you discussing 'Best practices for MCP server development' (#42) by chance?"
+- Test conversation context awareness
+
+### Scenario 3: Multiple Discussions Match
+- User has Azure deployment issues
+- Agent should present 2-3 relevant options and help choose
+- Test disambiguation and user guidance
+
+## Testing Methods
+- [ ] Use curl commands from `scripts/dev/results/mcp-integration-plan.md`
+- [ ] Run conversation test framework: `./scripts/dev/discussion-monitor-test.sh`
+- [ ] Manual testing with real users and conversations
+- [ ] Automated integration tests in CI/CD pipeline
+- [ ] Performance testing under load
+
+## Acceptance Criteria
+- [ ] All 3 test scenarios work as expected with deployed agent
+- [ ] Natural language responses are contextually appropriate
+- [ ] Conversation flows feel intuitive and helpful
+- [ ] Performance meets acceptable thresholds (< 2s response time)
+- [ ] Edge cases are handled gracefully
+
+## Definition of Done
+- All conversation scenarios validated with real MCP server responses
+- User acceptance testing confirms natural conversational flow
+- Performance benchmarks meet requirements

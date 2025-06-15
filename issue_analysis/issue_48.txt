@@ -1,0 +1,37 @@
+title:	Copilot Learning: GitHub App JWT vs Installation Token Authentication
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	48
+--
+## Problem
+During deployment workflow debugging, we discovered that `tibdex/github-app-token@v2` generates GitHub App **installation tokens** (`ghs_...`) instead of **JWT tokens** (`eyJ...`) required for app-level operations.
+
+## Root Cause
+- Installation tokens are for repository-specific operations
+- JWT tokens are required for app-level operations like updating webhook URLs
+- The `installation_retrieval_mode: none` parameter is unsupported by `tibdex/github-app-token@v2`
+
+## Solution Implemented
+
+added 15 packages, and audited 31 packages in 715ms
+
+2 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+## Key Learnings
+1. **Token Types**: Understand the difference between JWT and installation tokens
+2. **Authentication Flow**: App-level operations require JWT tokens
+3. **Action Limitations**: Not all GitHub Actions support all authentication modes
+4. **Manual Generation**: Node.js + jsonwebtoken is more reliable than external actions
+
+## References
+- [GitHub App Authentication](https://docs.github.com/en/developers/apps/building-github-apps/authenticating-with-github-apps)
+- [JWT Token Format](https://jwt.io/)
+
