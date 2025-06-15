@@ -74,12 +74,81 @@ jobs:
         with:
           dotnet-version: '8.x'
 
-      - name: Build and Test
+      - name: Build and Test with Coverage
         run: |
+          echo "🏗️ Restoring dependencies..."
           dotnet restore src/CopilotAgent.sln
-          dotnet build src/CopilotAgent.sln -c Release
-          dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj
-          dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish          
+          
+          echo "🔨 Building solution..."
+          dotnet build src/CopilotAgent.sln -c Release --no-restore
+          
+          echo "🧪 Running tests with code coverage..."
+          # Install local tools for coverage and reporting
+          dotnet tool install --local dotnet-reportgenerator-globaltool
+          dotnet tool install --local coverlet.console
+          
+          # Create test results directory
+          mkdir -p TestResults
+          
+          # Run tests with code coverage using coverlet
+          dotnet test src/CopilotAgent.Tests/CopilotAgent.Tests.csproj \
+            --configuration Release \
+            --no-build \
+            --verbosity normal \
+            --logger "trx;LogFileName=TestResults.trx" \
+            --logger "junit;LogFileName=TestResults.xml" \
+            --results-directory ./TestResults \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings
+          
+          echo "📊 Generating code coverage reports..."
+          # Generate HTML coverage report using ReportGenerator
+          dotnet tool run reportgenerator \
+            -reports:"./TestResults/**/coverage.cobertura.xml" \
+            -targetdir:"./TestResults/CoverageReport" \
+            -reporttypes:"Html;Cobertura;JsonSummary;MarkdownSummary" \
+            -verbosity:Info
+          
+          echo "📈 Coverage Summary:"
+          if [ -f "./TestResults/CoverageReport/Summary.md" ]; then
+            cat ./TestResults/CoverageReport/Summary.md
+          fi
+          
+          echo "🚀 Publishing application..."
+          dotnet publish src/CopilotAgent/CopilotAgent.csproj -c Release -o ./publish --no-build
+
+      - name: Publish Test Results and Coverage
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: 'Test Results'
+          path: './TestResults/TestResults.trx'
+          reporter: 'dotnet-trx'
+          fail-on-error: false
+
+      - name: Publish Code Coverage Report
+        uses: irongut/CodeCoverageSummary@v1.3.0
+        with:
+          filename: './TestResults/**/coverage.cobertura.xml'
+          badge: true
+          fail_below_min: false
+          format: markdown
+          hide_branch_rate: false
+          hide_complexity: false
+          indicators: true
+          output: both
+          thresholds: '60 80'
+
+      - name: Upload Coverage Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports
+          path: |
+            ./TestResults/CoverageReport/
+            ./TestResults/TestResults.trx
+            ./TestResults/TestResults.xml
+          retention-days: 30
 
       - name: Build and Push to GitHub Container Registry
         id: build_push
