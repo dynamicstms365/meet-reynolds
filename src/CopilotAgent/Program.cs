@@ -143,6 +143,13 @@ app.MapControllers();
 app.MapMcp();
 app.Logger.LogInformation("🎭 Reynolds MCP Server HTTP endpoints mapped successfully");
 
+// Initialize Reynolds MCP Server Configuration with supernatural intelligence
+using (var scope = app.Services.CreateScope())
+{
+    var reynoldsConfig = scope.ServiceProvider.GetRequiredService<ReynoldsMcpServerConfiguration>();
+    await reynoldsConfig.InitializeAsync();
+}
+
 // Configure Reynolds Teams integration
 if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
 {
