@@ -97,10 +97,10 @@ if command -v az &> /dev/null; then
                 print_status "WARNING" "This explains the WEBHOOK_SECRET_NOT_CONFIGURED error"
             fi
             
-            if echo "$ENV_VARS" | grep -q "NGL_DEVOPS_BOT_PEM"; then
-                print_status "SUCCESS" "NGL_DEVOPS_BOT_PEM environment variable is configured"
+            if echo "$ENV_VARS" | grep -q "NGL_DEVOPS_PRIVATE_KEY"; then
+                print_status "SUCCESS" "NGL_DEVOPS_PRIVATE_KEY environment variable is configured"
             else
-                print_status "ERROR" "NGL_DEVOPS_BOT_PEM environment variable is MISSING"
+                print_status "ERROR" "NGL_DEVOPS_PRIVATE_KEY environment variable is MISSING"
             fi
             
             if echo "$ENV_VARS" | grep -q "NGL_DEVOPS_APP_ID"; then
@@ -217,7 +217,7 @@ echo ""
 
 print_status "INFO" "Priority 3: Monitor Deployment Pipeline"
 echo "   • Check GitHub Actions workflow: deploy-azure-container.yml"
-echo "   • Verify GitHub secrets: NGL_DEVOPS_WEBHOOK_SECRET, NGL_DEVOPS_BOT_PEM"
+echo "   • Verify GitHub secrets: NGL_DEVOPS_WEBHOOK_SECRET, NGL_DEVOPS_PRIVATE_KEY"
 echo ""
 
 print_status "INFO" "Priority 4: Test Webhook Delivery"

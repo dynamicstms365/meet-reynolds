@@ -141,7 +141,7 @@
                   "value": "http://+:8080"
                 },
                 {
-                  "name": "NGL_DEVOPS_BOT_PEM",
+                  "name": "NGL_DEVOPS_PRIVATE_KEY",
                   "secureValue": "[parameters('githubAppPrivateKey')]"
                 },
                 {
