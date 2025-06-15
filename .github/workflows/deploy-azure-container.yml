@@ -97,7 +97,6 @@ jobs:
             --no-build \
             --verbosity normal \
             --logger "trx;LogFileName=TestResults.trx" \
-            --logger "junit;LogFileName=TestResults.xml" \
             --results-directory ./TestResults \
             --collect:"XPlat Code Coverage" \
             --settings coverlet.runsettings
