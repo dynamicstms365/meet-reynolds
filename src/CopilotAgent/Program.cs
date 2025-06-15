@@ -110,8 +110,8 @@ if (!app.Environment.IsProduction())
 
 app.UseAuthorization();
 
-// Configure MCP Server middleware - required for HTTP transport endpoints
-app.UseMcp();
+// MCP Server endpoints are automatically configured via AddMcpServer() with WithHttpTransport()
+// No additional middleware needed for MCP SDK 0.2.0-preview.3
 
 // Add webhook logging middleware before webhook processing
 app.UseWebhookLogging();
