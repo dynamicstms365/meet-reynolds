@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - 'src/CopilotAgent/**'
+      - 'src/CopilotAgent.Tests/**'
       - 'src/Shared/**'
+      - 'Dockerfile'
       - '.github/workflows/deploy-azure-container.yml'
   workflow_dispatch:
 
