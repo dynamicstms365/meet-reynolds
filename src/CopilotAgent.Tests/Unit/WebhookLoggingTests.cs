@@ -11,6 +11,7 @@ public class WebhookLoggingTests
     private Mock<ILogger<OctokitWebhookEventProcessor>> _mockLogger;
     private Mock<IGitHubWorkflowOrchestrator> _mockOrchestrator;
     private Mock<ISecurityAuditService> _mockAuditService;
+    private Mock<ICrossPlatformEventRouter> _mockEventRouter;
 
     [SetUp]
     public void Setup()
@@ -18,6 +19,7 @@ public class WebhookLoggingTests
         _mockLogger = new Mock<ILogger<OctokitWebhookEventProcessor>>();
         _mockOrchestrator = new Mock<IGitHubWorkflowOrchestrator>();
         _mockAuditService = new Mock<ISecurityAuditService>();
+        _mockEventRouter = new Mock<ICrossPlatformEventRouter>();
     }
 
     [Test]
@@ -27,7 +29,8 @@ public class WebhookLoggingTests
         var processor = new OctokitWebhookEventProcessor(
             _mockOrchestrator.Object,
             _mockAuditService.Object,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockEventRouter.Object);
 
         // Assert
         Assert.That(processor, Is.Not.Null);
@@ -40,7 +43,8 @@ public class WebhookLoggingTests
         var processor = new OctokitWebhookEventProcessor(
             _mockOrchestrator.Object,
             _mockAuditService.Object,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockEventRouter.Object);
 
         // Act & Assert - This validates that the processor is properly constructed
         // and can handle enhanced logging scenarios

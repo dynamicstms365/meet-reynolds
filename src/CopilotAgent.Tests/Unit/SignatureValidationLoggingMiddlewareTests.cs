@@ -48,7 +48,7 @@ public class SignatureValidationLoggingMiddlewareTests
 
         var nextCalled = false;
         var middleware = new SignatureValidationLoggingMiddleware(
-            async (ctx) => { nextCalled = true; },
+            async (ctx) => { await Task.CompletedTask; nextCalled = true; },
             _mockLogger.Object,
             _serviceProvider);
 
@@ -123,9 +123,11 @@ public class SignatureValidationLoggingMiddlewareTests
     [Test]
     public async Task SignatureValidationMiddleware_ShouldBeConstructable()
     {
+        await Task.CompletedTask;
+        
         // Arrange & Act
         var middleware = new SignatureValidationLoggingMiddleware(
-            async (ctx) => { },
+            async (ctx) => { await Task.CompletedTask; },
             _mockLogger.Object,
             _serviceProvider);
 
