@@ -4,6 +4,7 @@ using CopilotAgent.Skills;
 using CopilotAgent.Middleware;
 using CopilotAgent.Startup;
 using CopilotAgent.MCP;
+using CopilotAgent.Bot;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 using ModelContextProtocol.AspNetCore;
@@ -86,6 +87,11 @@ if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Config
 {
     builder.Services.AddReynoldsTeamsServices(builder.Configuration);
 }
+else
+{
+    // Register stub implementation when Teams integration is disabled
+    builder.Services.AddScoped<IReynoldsTeamsService, StubReynoldsTeamsService>();
+}
 
 var app = builder.Build();
 
@@ -129,3 +135,26 @@ var webhookSecret = builder.Configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
 app.MapGitHubWebhooks("/api/github/webhook", webhookSecret);
 
 app.Run();
+
+// Stub implementation for when Teams integration is disabled
+public class StubReynoldsTeamsService : IReynoldsTeamsService
+{
+    private readonly ILogger<StubReynoldsTeamsService> _logger;
+
+    public StubReynoldsTeamsService(ILogger<StubReynoldsTeamsService> logger)
+    {
+        _logger = logger;
+    }
+
+    public Task NotifyTeamsAsync(string eventType, string details, string? userEmail = null)
+    {
+        _logger.LogDebug("Teams integration disabled - would have sent notification: {EventType} - {Details}", eventType, details);
+        return Task.CompletedTask;
+    }
+
+    public Task NotifyCoordinationNeededAsync(string[] participants, string coordinationContext)
+    {
+        _logger.LogDebug("Teams integration disabled - would have initiated coordination for {ParticipantCount} participants", participants.Length);
+        return Task.CompletedTask;
+    }
+}
