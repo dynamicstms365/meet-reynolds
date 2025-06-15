@@ -128,7 +128,7 @@ Feel free to reach out anytime! I'm here to make collaboration smoother than my 
             {
                 _logger.LogInformation("✅ Reynolds successfully introduced to {TargetUser}", targetMapping.DisplayName);
                 return IntroductionResult.CreateSuccess(
-                    $"🎯 Maximum Effort™ successful! I've introduced myself to {targetMapping.DisplayName} ({targetMapping.Email}) with my signature Reynolds charm. They should have received a direct message from me!"
+                    $"🎯 Maximum Effort™ successful! I've introduced myself to {targetMapping.DisplayName} ({targetMapping.Email}) and coordinated with their GitHub account ({targetMapping.GitHubId}). They should have received a direct message from me!"
                 );
             }
             else
