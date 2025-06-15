@@ -112,7 +112,7 @@ app.UseAuthorization();
 // Default endpoints: /mcp/capabilities, /mcp/sse, /mcp/tools/{toolName}
 // 17 Reynolds tools loaded with Maximum Effort™ precision
 app.Logger.LogInformation("🎭 Reynolds MCP Server configured with HTTP transport - 17 tools available at /mcp/*");
-app.Logger.LogInformation("🔧 MCP Endpoints: /mcp/capabilities, /mcp/sse, /mcp/tools/{toolName}");
+app.Logger.LogInformation("🔧 MCP Endpoints: /mcp/capabilities, /mcp/sse, /mcp/tools/[toolName]");
 app.Logger.LogInformation("⚡ Maximum Effort™ coordination protocols active");
 
 // Add webhook logging middleware before webhook processing
