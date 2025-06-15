@@ -417,8 +417,12 @@ jobs:
                 if az containerapp update \
                   --name ${{ env.CONTAINER_APP_NAME }} \
                   --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-                  --set-env-vars "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key" \
-                                "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
+                  --set-env-vars \
+                    NGL_DEVOPS_APP_ID="${{ secrets.NGL_DEVOPS_APP_ID }}" \
+                    NGL_DEVOPS_INSTALLATION_ID="${{ secrets.NGL_DEVOPS_INSTALLATION_ID }}" \
+                    NGL_DEVOPS_PRIVATE_KEY="secretref:ngl-devops-private-key" \
+                    NGL_DEVOPS_WEBHOOK_SECRET="secretref:ngl-devops-webhook-secret" \
+                    COPILOT_VERSION="${{ needs.build.outputs.semantic_version }}" \
                   --cpu 1.0 \
                   --memory 2.0Gi \
                   --min-replicas 1 \
