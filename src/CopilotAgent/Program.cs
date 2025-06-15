@@ -49,6 +49,7 @@ builder.Services.AddScoped<IGitHubWebhookValidator, GitHubWebhookValidator>();
 builder.Services.AddHttpClient<IGitHubDiscussionsService, GitHubDiscussionsService>();
 builder.Services.AddHttpClient<IGitHubIssuesService, GitHubIssuesService>();
 builder.Services.AddHttpClient<IGitHubSemanticSearchService, GitHubSemanticSearchService>();
+builder.Services.AddHttpClient<IGitHubIssuePRSynchronizationService, GitHubIssuePRSynchronizationService>();
 
 // Register GitHub workflow orchestrator
 builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrator>();
