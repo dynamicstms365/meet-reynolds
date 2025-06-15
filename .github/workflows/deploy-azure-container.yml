@@ -328,12 +328,8 @@ jobs:
           targetPort: 8080
           ingress: external
           environmentVariables: |
-            NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
-            NGL_DEVOPS_WEBHOOK_SECRET=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}
             ASPNETCORE_ENVIRONMENT=Production
             ASPNETCORE_URLS=http://+:8080
-            COPILOT_VERSION=${{ needs.build.outputs.semantic_version }}
-            COPILOT_COMMIT_SHA=${{ needs.build.outputs.commit_sha }}
 
       - name: Configure Container App Resources and Secrets
         run: |
@@ -410,7 +406,7 @@ jobs:
               if az containerapp secret set \
                 --name ${{ env.CONTAINER_APP_NAME }} \
                 --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-                --secrets "ngl-devops-bot-pem=$PRIVATE_KEY_SECRET" \
+                --secrets "ngl-devops-private-key=$PRIVATE_KEY_SECRET" \
                           "ngl-devops-webhook-secret=$WEBHOOK_SECRET"; then
                 
                 echo "🔧 Updating container app configuration..."
@@ -420,7 +416,7 @@ jobs:
                   --set-env-vars \
                     NGL_DEVOPS_APP_ID="${{ vars.NGL_DEVOPS_APP_ID }}" \
                     NGL_DEVOPS_INSTALLATION_ID="${{ vars.NGL_DEVOPS_INSTALLATION_ID }}" \
-                    NGL_DEVOPS_PRIVATE_KEY="secretref:ngl-devops-bot-pem" \
+                    NGL_DEVOPS_PRIVATE_KEY="secretref:ngl-devops-private-key" \
                     NGL_DEVOPS_WEBHOOK_SECRET="secretref:ngl-devops-webhook-secret" \
                     COPILOT_VERSION="${{ needs.build.outputs.semantic_version }}" \
                   --cpu 1.0 \
