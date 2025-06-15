@@ -16,6 +16,7 @@ public class GitHubController : ControllerBase
     private readonly IGitHubSemanticSearchService _semanticSearchService;
     private readonly IGitHubDiscussionsService _discussionsService;
     private readonly IGitHubIssuesService _issuesService;
+    private readonly IGitHubIssuePRSynchronizationService _synchronizationService;
     private readonly ILogger<GitHubController> _logger;
     private readonly IConfiguration _configuration;
 
@@ -27,6 +28,7 @@ public class GitHubController : ControllerBase
         IGitHubSemanticSearchService semanticSearchService,
         IGitHubDiscussionsService discussionsService,
         IGitHubIssuesService issuesService,
+        IGitHubIssuePRSynchronizationService synchronizationService,
         ILogger<GitHubController> logger,
         IConfiguration configuration)
     {
@@ -37,6 +39,7 @@ public class GitHubController : ControllerBase
         _semanticSearchService = semanticSearchService;
         _discussionsService = discussionsService;
         _issuesService = issuesService;
+        _synchronizationService = synchronizationService;
         _logger = logger;
         _configuration = configuration;
     }
@@ -324,6 +327,243 @@ public class GitHubController : ControllerBase
         {
             _logger.LogError(ex, "Error getting organization issues: {Organization}", organization);
             return StatusCode(500, new { error = "Internal server error getting organization issues" });
+        }
+    }
+
+    // GitHub Issue-PR Synchronization endpoints
+
+    [HttpGet("sync/report/{repository}")]
+    public async Task<ActionResult<IssuePRSynchronizationReport>> GetSynchronizationReport(string repository)
+    {
+        try
+        {
+            _logger.LogInformation("Generating synchronization report for repository: {Repository}", repository);
+            
+            var report = await _synchronizationService.GenerateSynchronizationReportAsync(repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Sync_Report_Generated",
+                action: "GenerateReport",
+                result: "SUCCESS",
+                details: new { 
+                    Repository = repository,
+                    TotalIssues = report.Summary.TotalIssues,
+                    TotalPRs = report.Summary.TotalPRs,
+                    OrphanedPRs = report.Summary.OrphanedPRs,
+                    OrphanedIssues = report.Summary.OrphanedIssues
+                });
+
+            return Ok(report);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating synchronization report for repository: {Repository}", repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Sync_Report_Generated",
+                action: "GenerateReport",
+                result: "ERROR",
+                details: new { Repository = repository, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error generating synchronization report" });
+        }
+    }
+
+    [HttpPost("sync/issue/{repository}/{issueNumber:int}")]
+    public async Task<ActionResult<object>> SynchronizeIssue(string repository, int issueNumber)
+    {
+        try
+        {
+            _logger.LogInformation("Synchronizing issue #{IssueNumber} in repository: {Repository}", issueNumber, repository);
+            
+            var success = await _synchronizationService.SynchronizeIssueWithPRsAsync(repository, issueNumber);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Issue_Synchronized",
+                action: "SynchronizeIssue",
+                result: success ? "SUCCESS" : "FAILED",
+                details: new { Repository = repository, IssueNumber = issueNumber });
+
+            return Ok(new { 
+                success = success,
+                message = success 
+                    ? $"Issue #{issueNumber} synchronized successfully" 
+                    : $"Failed to synchronize issue #{issueNumber}",
+                issueNumber = issueNumber,
+                repository = repository
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error synchronizing issue #{IssueNumber} in repository: {Repository}", issueNumber, repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Issue_Synchronized",
+                action: "SynchronizeIssue",
+                result: "ERROR",
+                details: new { Repository = repository, IssueNumber = issueNumber, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error synchronizing issue" });
+        }
+    }
+
+    [HttpPost("sync/all/{repository}")]
+    public async Task<ActionResult<object>> SynchronizeAllIssues(string repository)
+    {
+        try
+        {
+            _logger.LogInformation("Synchronizing all issues in repository: {Repository}", repository);
+            
+            var synchronizedCount = await _synchronizationService.SynchronizeAllIssuesWithPRsAsync(repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_All_Issues_Synchronized",
+                action: "SynchronizeAllIssues",
+                result: "SUCCESS",
+                details: new { Repository = repository, SynchronizedCount = synchronizedCount });
+
+            return Ok(new { 
+                success = true,
+                message = $"Synchronized {synchronizedCount} issues in repository {repository}",
+                synchronizedCount = synchronizedCount,
+                repository = repository
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error synchronizing all issues in repository: {Repository}", repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_All_Issues_Synchronized",
+                action: "SynchronizeAllIssues",
+                result: "ERROR",
+                details: new { Repository = repository, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error synchronizing all issues" });
+        }
+    }
+
+    [HttpGet("pullrequests/{repository}")]
+    public async Task<ActionResult<IEnumerable<GitHubPullRequest>>> GetPullRequests(string repository, [FromQuery] string state = "all", [FromQuery] int limit = 100)
+    {
+        try
+        {
+            _logger.LogInformation("Getting pull requests for repository: {Repository} (state: {State}, limit: {Limit})", repository, state, limit);
+            
+            var pullRequests = await _synchronizationService.GetPullRequestsByRepositoryAsync(repository, state, limit);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Pull_Requests_Retrieved",
+                action: "GetPullRequests",
+                result: "SUCCESS",
+                details: new { Repository = repository, State = state, Limit = limit, Count = pullRequests.Count() });
+
+            return Ok(pullRequests);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting pull requests for repository: {Repository}", repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Pull_Requests_Retrieved",
+                action: "GetPullRequests",
+                result: "ERROR",
+                details: new { Repository = repository, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error getting pull requests" });
+        }
+    }
+
+    [HttpGet("pullrequests/{repository}/{pullRequestNumber:int}")]
+    public async Task<ActionResult<GitHubPullRequest>> GetPullRequest(string repository, int pullRequestNumber)
+    {
+        try
+        {
+            _logger.LogInformation("Getting pull request #{PRNumber} for repository: {Repository}", pullRequestNumber, repository);
+            
+            var pullRequest = await _synchronizationService.GetPullRequestAsync(repository, pullRequestNumber);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Pull_Request_Retrieved",
+                action: "GetPullRequest",
+                result: "SUCCESS",
+                details: new { Repository = repository, PRNumber = pullRequestNumber });
+
+            return Ok(pullRequest);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting pull request #{PRNumber} for repository: {Repository}", pullRequestNumber, repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Pull_Request_Retrieved",
+                action: "GetPullRequest",
+                result: "ERROR",
+                details: new { Repository = repository, PRNumber = pullRequestNumber, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error getting pull request" });
+        }
+    }
+
+    [HttpGet("sync/linked-prs/{repository}/{issueNumber:int}")]
+    public async Task<ActionResult<IEnumerable<GitHubPullRequest>>> GetLinkedPullRequests(string repository, int issueNumber)
+    {
+        try
+        {
+            _logger.LogInformation("Finding pull requests linked to issue #{IssueNumber} in repository: {Repository}", issueNumber, repository);
+            
+            var linkedPRs = await _synchronizationService.FindPullRequestsLinkedToIssueAsync(repository, issueNumber);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Linked_PRs_Retrieved",
+                action: "GetLinkedPRs",
+                result: "SUCCESS",
+                details: new { Repository = repository, IssueNumber = issueNumber, LinkedPRCount = linkedPRs.Count() });
+
+            return Ok(linkedPRs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding pull requests linked to issue #{IssueNumber} in repository: {Repository}", issueNumber, repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Linked_PRs_Retrieved",
+                action: "GetLinkedPRs",
+                result: "ERROR",
+                details: new { Repository = repository, IssueNumber = issueNumber, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error finding linked pull requests" });
+        }
+    }
+
+    [HttpGet("sync/linked-issues/{repository}/{pullRequestNumber:int}")]
+    public async Task<ActionResult<IEnumerable<GitHubIssue>>> GetLinkedIssues(string repository, int pullRequestNumber)
+    {
+        try
+        {
+            _logger.LogInformation("Finding issues linked to pull request #{PRNumber} in repository: {Repository}", pullRequestNumber, repository);
+            
+            var linkedIssues = await _synchronizationService.FindIssuesLinkedToPullRequestAsync(repository, pullRequestNumber);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Linked_Issues_Retrieved",
+                action: "GetLinkedIssues",
+                result: "SUCCESS",
+                details: new { Repository = repository, PRNumber = pullRequestNumber, LinkedIssueCount = linkedIssues.Count() });
+
+            return Ok(linkedIssues);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error finding issues linked to pull request #{PRNumber} in repository: {Repository}", pullRequestNumber, repository);
+            
+            await _auditService.LogEventAsync(
+                "GitHub_Linked_Issues_Retrieved",
+                action: "GetLinkedIssues",
+                result: "ERROR",
+                details: new { Repository = repository, PRNumber = pullRequestNumber, Error = ex.Message });
+
+            return StatusCode(500, new { error = "Internal server error finding linked issues" });
         }
     }
 }
