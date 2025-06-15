@@ -10,6 +10,7 @@ using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol;
 
 // Reynolds: Trigger streamlined deployment for MCP protocol testing
+// CI Build Trigger: Test compilation fixes applied for CS7036/CS1998 errors
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
