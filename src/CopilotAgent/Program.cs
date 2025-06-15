@@ -144,10 +144,19 @@ app.MapMcp();
 app.Logger.LogInformation("🎭 Reynolds MCP Server HTTP endpoints mapped successfully");
 
 // Initialize Reynolds MCP Server Configuration with supernatural intelligence
-using (var scope = app.Services.CreateScope())
+try
 {
-    var reynoldsConfig = scope.ServiceProvider.GetRequiredService<ReynoldsMcpServerConfiguration>();
-    await reynoldsConfig.InitializeAsync();
+    using (var scope = app.Services.CreateScope())
+    {
+        var reynoldsConfig = scope.ServiceProvider.GetRequiredService<ReynoldsMcpServerConfiguration>();
+        await reynoldsConfig.InitializeAsync();
+        app.Logger.LogInformation("🎭 Reynolds MCP Server initialization completed successfully");
+    }
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "🎭 Reynolds MCP Server initialization failed, but continuing startup");
+    app.Logger.LogWarning("⚠️ MCP endpoints may not be available due to initialization failure");
 }
 
 // Configure Reynolds Teams integration
