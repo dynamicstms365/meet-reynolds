@@ -132,7 +132,37 @@ if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Config
 var webhookSecret = builder.Configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
                    System.Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
 
-app.MapGitHubWebhooks("/api/github/webhook", webhookSecret);
+// Add error handling for webhook setup
+if (string.IsNullOrEmpty(webhookSecret))
+{
+    app.Logger.LogWarning("Webhook secret not configured - webhook endpoint will reject all requests");
+    
+    // Map a fallback endpoint that returns proper 401 when secret is missing
+    app.MapPost("/api/github/webhook", async (HttpContext context) =>
+    {
+        context.Response.StatusCode = 401;
+        await context.Response.WriteAsync("Webhook secret not configured");
+    });
+}
+else
+{
+    try
+    {
+        app.MapGitHubWebhooks("/api/github/webhook", webhookSecret);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Failed to configure GitHub webhooks - setting up fallback endpoint");
+        
+        // Fallback endpoint that returns proper error codes
+        app.MapPost("/api/github/webhook", async (HttpContext context) =>
+        {
+            var signature = context.Request.Headers["X-Hub-Signature-256"].FirstOrDefault();
+            context.Response.StatusCode = string.IsNullOrEmpty(signature) ? 400 : 401;
+            await context.Response.WriteAsync("Webhook processing temporarily unavailable");
+        });
+    }
+}
 
 app.Run();
 
