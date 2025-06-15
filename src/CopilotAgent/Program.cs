@@ -124,6 +124,10 @@ app.UseSignatureValidationLogging();
 // Map non-MCP controllers only (MCP endpoints handled by SDK)
 app.MapControllers();
 
+// Map Reynolds MCP Server HTTP endpoints
+app.MapMcp();
+app.Logger.LogInformation("🎭 Reynolds MCP Server HTTP endpoints mapped successfully");
+
 // Configure Reynolds Teams integration
 if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
 {
