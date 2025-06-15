@@ -83,7 +83,8 @@ jobs:
           dotnet build src/CopilotAgent.sln -c Release --no-restore
           
           echo "🧪 Running tests with code coverage..."
-          # Install local tools for coverage and reporting
+          # Create tool manifest and install local tools for coverage and reporting
+          dotnet new tool-manifest --force
           dotnet tool install --local dotnet-reportgenerator-globaltool
           dotnet tool install --local coverlet.console
           
