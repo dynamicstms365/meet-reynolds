@@ -29,7 +29,7 @@ public class HealthController : ControllerBase
             {
                 status = "healthy",
                 timestamp = DateTime.UtcNow,
-                version = Environment.GetEnvironmentVariable("COPILOT_VERSION") ?? "dev-local",
+                version = System.Environment.GetEnvironmentVariable("COPILOT_VERSION") ?? "dev-local",
                 server = "reynolds-mcp-server",
                 transport = "mcp-sdk",
                 features = new
