@@ -24,6 +24,8 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      checks: write
+      pull-requests: write
     outputs:
       image_url: ${{ steps.build_push.outputs.image_url }}
       image_url_sha: ${{ steps.build_push.outputs.image_url_sha }}
@@ -102,12 +104,14 @@ jobs:
             --settings coverlet.runsettings
           
           echo "📊 Generating code coverage reports..."
-          # Generate HTML coverage report using ReportGenerator
+          # Generate HTML coverage report using ReportGenerator (skip GitHub URL validation)
           dotnet tool run reportgenerator \
             -reports:"./TestResults/**/coverage.cobertura.xml" \
             -targetdir:"./TestResults/CoverageReport" \
             -reporttypes:"Html;Cobertura;JsonSummary;MarkdownSummary" \
-            -verbosity:Info
+            -verbosity:Info \
+            -riskHotspotsAnalysisThresholds:metricThresholdForCyclomaticComplexity=15 \
+            -plugins:DefaultRiskHotspots
           
           echo "📈 Coverage Summary:"
           if [ -f "./TestResults/CoverageReport/Summary.md" ]; then
