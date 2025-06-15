@@ -85,8 +85,10 @@ builder.Services.AddScoped<IEventClassificationService, EventClassificationServi
 builder.Services.AddScoped<IEventRoutingMetrics, EventRoutingMetrics>();
 builder.Services.AddSingleton<EventRoutingMetrics>();
 
-// Add Reynolds MCP Server - Enterprise Integration with supernatural intelligence (Preview 0.2.0-preview.3)
-builder.Services.AddReynoldsMcpServer();
+// Add MCP Server with standard configuration (following official sample pattern)
+builder.Services.AddMcpServer()
+    .WithHttpTransport()
+    .WithTools<CopilotAgent.MCP.Tools.Reynolds.AnalyzeOrgProjectsTool>();
 
 // Register Reynolds support services as Singletons (required by MCP SDK)
 builder.Services.AddSingleton<EnterpriseAuthService>();
@@ -143,21 +145,8 @@ app.MapControllers();
 app.MapMcp();
 app.Logger.LogInformation("🎭 Reynolds MCP Server HTTP endpoints mapped successfully");
 
-// Initialize Reynolds MCP Server Configuration with supernatural intelligence
-try
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var reynoldsConfig = scope.ServiceProvider.GetRequiredService<ReynoldsMcpServerConfiguration>();
-        await reynoldsConfig.InitializeAsync();
-        app.Logger.LogInformation("🎭 Reynolds MCP Server initialization completed successfully");
-    }
-}
-catch (Exception ex)
-{
-    app.Logger.LogError(ex, "🎭 Reynolds MCP Server initialization failed, but continuing startup");
-    app.Logger.LogWarning("⚠️ MCP endpoints may not be available due to initialization failure");
-}
+// Standard MCP Server - no custom initialization required
+app.Logger.LogInformation("🎭 Reynolds MCP Server configured with standard SDK pattern");
 
 // Configure Reynolds Teams integration
 if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))
