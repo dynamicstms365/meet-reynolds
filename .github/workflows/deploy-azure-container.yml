@@ -327,7 +327,7 @@ jobs:
           location: ${{ env.AZURE_LOCATION }}
           targetPort: 8080
           ingress: external
-          environmentVariables: |
+          environmentVariables:
             ASPNETCORE_ENVIRONMENT=Production
             ASPNETCORE_URLS=http://+:8080
 
