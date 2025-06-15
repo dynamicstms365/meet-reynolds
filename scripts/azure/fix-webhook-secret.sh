@@ -64,8 +64,8 @@ if [[ -z "${NGL_DEVOPS_WEBHOOK_SECRET}" ]]; then
     exit 1
 fi
 
-if [[ -z "${NGL_DEVOPS_BOT_PEM}" ]]; then
-    print_status "ERROR" "NGL_DEVOPS_BOT_PEM environment variable is required"
+if [[ -z "${NGL_DEVOPS_PRIVATE_KEY}" ]]; then
+    print_status "ERROR" "NGL_DEVOPS_PRIVATE_KEY environment variable is required"
     print_status "INFO" "Export this variable with your GitHub App private key before running this script"
     exit 1
 fi
@@ -91,7 +91,7 @@ az containerapp secret set \
     --name "$CONTAINER_APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
     --secrets "ngl-devops-webhook-secret=$NGL_DEVOPS_WEBHOOK_SECRET" \
-               "ngl-devops-private-key=$NGL_DEVOPS_BOT_PEM"
+               "ngl-devops-private-key=$NGL_DEVOPS_PRIVATE_KEY"
 
 if [ $? -eq 0 ]; then
     print_status "SUCCESS" "Secrets configured successfully"
@@ -106,7 +106,7 @@ az containerapp update \
     --name "$CONTAINER_APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
     --set-env-vars "NGL_DEVOPS_WEBHOOK_SECRET=secretref:ngl-devops-webhook-secret" \
-                   "NGL_DEVOPS_BOT_PEM=secretref:ngl-devops-private-key"
+                   "NGL_DEVOPS_PRIVATE_KEY=secretref:ngl-devops-private-key"
 
 if [ $? -eq 0 ]; then
     print_status "SUCCESS" "Environment variables updated successfully"
