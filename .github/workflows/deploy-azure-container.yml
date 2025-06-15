@@ -343,6 +343,7 @@ jobs:
           ingress: external
           environmentVariables: |
             NGL_DEVOPS_APP_ID=${{ vars.NGL_DEVOPS_APP_ID }}
+            NGL_DEVOPS_WEBHOOK_SECRET=${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}
             ASPNETCORE_ENVIRONMENT=Production
             ASPNETCORE_URLS=http://+:8080
             COPILOT_VERSION=${{ needs.build.outputs.semantic_version }}
