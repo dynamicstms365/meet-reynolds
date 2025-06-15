@@ -48,31 +48,6 @@ public class HealthController : ControllerBase
             _logger.LogError(ex, "Health check failed");
             return StatusCode(500, new { status = "unhealthy", error = ex.Message });
         }
-    
-        /// <summary>
-        /// Root endpoint to handle requests to / and provide service information
-        /// </summary>
-        [HttpGet("/")]
-        public IActionResult Root()
-        {
-            var serviceInfo = new
-            {
-                service = "GitHub Copilot Bot",
-                status = "operational",
-                version = System.Environment.GetEnvironmentVariable("COPILOT_VERSION") ?? "dev-local",
-                timestamp = DateTime.UtcNow,
-                endpoints = new
-                {
-                    health = "/health",
-                    ready = "/health/ready",
-                    github_test = "/api/github/test",
-                    github_webhook = "/api/github/webhook"
-                },
-                description = "Reynolds' Maximum Effort™ GitHub Copilot Integration Service"
-            };
-    
-            return Ok(serviceInfo);
-        }
     }
 
     [HttpGet("ready")]
@@ -85,7 +60,19 @@ public class HealthController : ControllerBase
             
             if (!authAvailable)
             {
-/// <summary>
+                return StatusCode(503, new { status = "not ready", reason = "authentication service unavailable" });
+            }
+
+            return Ok(new { status = "ready", timestamp = DateTime.UtcNow });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Readiness check failed");
+            return StatusCode(503, new { status = "not ready", error = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// Root endpoint to handle requests to / and provide service information
     /// </summary>
     [HttpGet("/")]
@@ -108,17 +95,6 @@ public class HealthController : ControllerBase
         };
 
         return Ok(serviceInfo);
-    }
-                return StatusCode(503, new { status = "not ready", reason = "authentication service unavailable" });
-            }
-
-            return Ok(new { status = "ready", timestamp = DateTime.UtcNow });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Readiness check failed");
-            return StatusCode(503, new { status = "not ready", error = ex.Message });
-        }
     }
 
     private async Task<bool> TestAuthServiceAsync()
