@@ -2,7 +2,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy solution and project files for dependency resolution
+# Copy solution and project files for dependency resolution - Cache bust for fresh build
 COPY src/CopilotAgent.sln ./
 COPY src/CopilotAgent/CopilotAgent.csproj ./CopilotAgent/
 COPY src/CopilotAgent.Tests/CopilotAgent.Tests.csproj ./CopilotAgent.Tests/
