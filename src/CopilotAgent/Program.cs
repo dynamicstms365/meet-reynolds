@@ -176,15 +176,21 @@ public class StubReynoldsTeamsService : IReynoldsTeamsService
         _logger = logger;
     }
 
-    public Task NotifyTeamsAsync(string eventType, string details, string? userEmail = null)
+    public Task SendOrganizationalUpdateAsync(string userId, string update)
     {
-        _logger.LogDebug("Teams integration disabled - would have sent notification: {EventType} - {Details}", eventType, details);
+        _logger.LogDebug("Teams integration disabled - would have sent organizational update to {UserId}: {Update}", userId, update);
         return Task.CompletedTask;
     }
 
-    public Task NotifyCoordinationNeededAsync(string[] participants, string coordinationContext)
+    public Task NotifyAboutScopeCreepAsync(string userId, string prNumber, string repository)
     {
-        _logger.LogDebug("Teams integration disabled - would have initiated coordination for {ParticipantCount} participants", participants.Length);
+        _logger.LogDebug("Teams integration disabled - would have notified {UserId} about scope creep in PR {PrNumber} of {Repository}", userId, prNumber, repository);
+        return Task.CompletedTask;
+    }
+
+    public Task CreateChatForCoordinationAsync(string userPrincipalName, string coordinationContext)
+    {
+        _logger.LogDebug("Teams integration disabled - would have created coordination chat for {UserPrincipalName}: {CoordinationContext}", userPrincipalName, coordinationContext);
         return Task.CompletedTask;
     }
 }
