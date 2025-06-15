@@ -5,6 +5,9 @@ using Moq;
 
 namespace CopilotAgent.Tests.Unit;
 
+/// <summary>
+/// Tests for webhook logging functionality - ensuring proper constructor parameter handling
+/// </summary>
 [TestFixture]
 public class WebhookLoggingTests
 {
