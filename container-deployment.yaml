@@ -20,6 +20,8 @@ properties:
         value: "http://+:8080"
       - name: NGL_DEVOPS_BOT_PEM
         secureValue: "$(GITHUB_APP_PRIVATE_KEY)"
+      - name: NGL_DEVOPS_WEBHOOK_SECRET
+        secureValue: "$(GITHUB_WEBHOOK_SECRET)"
       # Azure OpenAI Integration
       - name: AZURE_OPENAI_ENDPOINT
         value: "$(AZURE_OPENAI_ENDPOINT)"
