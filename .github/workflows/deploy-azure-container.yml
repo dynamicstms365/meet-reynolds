@@ -338,15 +338,19 @@ jobs:
           # Skip configuration if this is a routine deployment and config is already set
           NEEDS_CONFIG_UPDATE=false
           
-          # Check if container app exists and has required secrets
+          # Check if container app exists and has required secrets AND environment variables
           if az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} > /dev/null 2>&1; then
             EXISTING_SECRETS=$(az containerapp secret list --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "[].name" -o tsv 2>/dev/null || echo "")
+            EXISTING_ENV_VARS=$(az containerapp show --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} --query "properties.template.containers[0].env[?name=='NGL_DEVOPS_APP_ID'].value" -o tsv 2>/dev/null || echo "")
             
             if [[ "$EXISTING_SECRETS" != *"ngl-devops-private-key"* ]] || [[ "$EXISTING_SECRETS" != *"ngl-devops-webhook-secret"* ]]; then
               echo "🔑 Missing secrets detected, configuration update needed"
               NEEDS_CONFIG_UPDATE=true
+            elif [[ -z "$EXISTING_ENV_VARS" || "$EXISTING_ENV_VARS" == "null" ]]; then
+              echo "🔧 Missing environment variables detected, configuration update needed"
+              NEEDS_CONFIG_UPDATE=true
             else
-              echo "✅ Secrets already configured, skipping configuration to avoid unnecessary restart"
+              echo "✅ Secrets and environment variables already configured, skipping configuration to avoid unnecessary restart"
               echo "💡 This saves one container restart cycle!"
               exit 0
             fi
