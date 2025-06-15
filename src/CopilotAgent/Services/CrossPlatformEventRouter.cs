@@ -658,7 +658,7 @@ This is the kind of infrastructure awareness that keeps our entire organization 
         // Priority matrix based on event type and target platform
         return (platformEvent.EventType, targetPlatform) switch
         {
-            ("workflow_run" when platformEvent.Action == "failed", "Teams") => EventPriority.High,
+            ("workflow_run", "Teams") when platformEvent.Action == "failed" => EventPriority.High,
             ("container_instance_failed", "Teams") => EventPriority.Critical,
             ("container_instance_failed", "GitHub") => EventPriority.High,
             ("pull_request", "Teams") => EventPriority.Medium,
