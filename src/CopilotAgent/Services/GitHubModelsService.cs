@@ -153,6 +153,8 @@ public class GitHubModelsService : IGitHubModelsService
 
     public async Task<List<ModelCapability>> GetAvailableModelsAsync()
     {
+        await Task.CompletedTask;
+        
         try
         {
             var capabilities = new List<ModelCapability>();
@@ -187,6 +189,8 @@ public class GitHubModelsService : IGitHubModelsService
 
     public async Task<ModelPerformanceMetrics> GetModelPerformanceMetricsAsync()
     {
+        await Task.CompletedTask;
+        
         try
         {
             // This would typically query a metrics database
@@ -316,6 +320,8 @@ public class GitHubModelsService : IGitHubModelsService
 
     private async Task<bool> IsEligibleForPilotAsync(ModelRequest request)
     {
+        await Task.CompletedTask;
+        
         if (!_pilotConfig.Enabled)
             return false;
 
@@ -352,6 +358,8 @@ public class GitHubModelsService : IGitHubModelsService
 
     private async Task TrackModelPerformanceAsync(ModelRequest request, ModelResponse response, ModelConfiguration config)
     {
+        await Task.CompletedTask;
+        
         // Track performance metrics for continuous improvement
         _logger.LogInformation("📊 Model Performance - {Model}: Success={Success}, Latency={Latency}ms, Tokens={Tokens}",
             config.ModelName, response.Success, response.ProcessingTime.TotalMilliseconds, response.TokensUsed);

@@ -1,0 +1,36 @@
+title:	Implement MCP Tools for Discussion Monitoring
+state:	OPEN
+author:	cege7480
+labels:	enhancement
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	38
+--
+## Overview
+Implement the core MCP tools needed for intelligent discussion monitoring and conversation analysis.
+
+## Tasks
+- [ ] Add `discussion_search` MCP tool to search discussions by keywords and context
+- [ ] Add `conversation_analyze` MCP tool to determine user intent from conversation text
+- [ ] Add `discussion_suggest` MCP tool to generate contextual recommendations
+- [ ] Update MCP tool registry in `src/CopilotAgent/Services/McpService.cs`
+- [ ] Add input schema validation for new tools
+- [ ] Create unit tests for new MCP tools
+
+## Acceptance Criteria
+- [ ] All three MCP tools are registered and accessible via `/mcp/tools` endpoint
+- [ ] Tools accept properly formatted JSON input as defined in integration plan
+- [ ] Tools return structured responses with discussion data and suggestions
+- [ ] Integration tests pass for all conversation scenarios
+
+## Related Files
+- `src/CopilotAgent/Services/McpService.cs`
+- `scripts/dev/results/mcp-integration-plan.md`
+- `.github/prompts/discussion-monitor.txt`
+
+## Definition of Done
+- MCP tools can be called successfully via curl commands
+- Tools return appropriate responses for test scenarios
+- Code is reviewed and merged

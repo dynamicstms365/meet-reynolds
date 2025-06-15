@@ -217,6 +217,8 @@ public class EventClassificationService : IEventClassificationService
 
     public async Task<double> CalculateUrgencyScoreAsync(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         double urgencyScore = 0.0;
 
         // Base urgency from event type
@@ -331,6 +333,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<double> CalculateGitHubPriorityScore(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         double score = 0.0;
 
         score += platformEvent.EventType switch
@@ -353,6 +357,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<double> CalculateAzurePriorityScore(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         return platformEvent.EventType switch
         {
             "container_instance_failed" => 0.9,
@@ -366,6 +372,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<double> CalculateTeamsPriorityScore(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         var content = platformEvent.Content?.ToLowerInvariant() ?? "";
         
         double score = 0.2; // Base score
@@ -384,6 +392,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<double> CalculateEventTypeScore(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         // Base scoring by event type criticality
         return platformEvent.EventType switch
         {
@@ -397,6 +407,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<double> CalculateContentScore(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         if (string.IsNullOrEmpty(platformEvent.Content))
             return 0.0;
 
@@ -481,6 +493,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<List<string>> ExtractContentKeywords(string content)
     {
+        await Task.CompletedTask;
+        
         var keywords = new List<string>();
         
         // Simple keyword extraction - could be enhanced with NLP
@@ -538,6 +552,8 @@ public class EventClassificationService : IEventClassificationService
 
     private async Task<EnhancedClassification?> ParseEnhancedClassification(string modelResponse)
     {
+        await Task.CompletedTask;
+        
         try
         {
             // Simple parsing - could be enhanced with structured output
@@ -623,6 +639,8 @@ public class EventClassificationRule
 
     public async Task<bool> MatchesAsync(PlatformEvent platformEvent)
     {
+        await Task.CompletedTask;
+        
         // Check platform patterns
         if (PlatformPatterns.Any() && !PlatformPatterns.Contains(platformEvent.SourcePlatform.ToLowerInvariant()))
             return false;

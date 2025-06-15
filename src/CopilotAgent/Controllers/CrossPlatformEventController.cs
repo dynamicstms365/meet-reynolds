@@ -228,73 +228,75 @@ public class CrossPlatformEventController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Webhook endpoint for Azure events
-    /// </summary>
-    [HttpPost("webhook/azure")]
-    public async Task<ActionResult> ProcessAzureWebhook([FromBody] AzureEventPayload payload)
-    {
-        try
-        {
-            _logger.LogInformation("⚡ Processing Azure webhook for cross-platform routing: {EventType}", payload.EventType);
+    // TEMPORARILY DISABLED: Azure webhook endpoint - missing Azure SDK dependencies
+    // /// <summary>
+    // /// Webhook endpoint for Azure events
+    // /// </summary>
+    // [HttpPost("webhook/azure")]
+    // public async Task<ActionResult> ProcessAzureWebhook([FromBody] AzureEventPayload payload)
+    // {
+    //     try
+    //     {
+    //         _logger.LogInformation("⚡ Processing Azure webhook for cross-platform routing: {EventType}", payload.EventType);
+    //
+    //         // Convert Azure event payload to platform event
+    //         var platformEvent = ConvertAzureEventToPlatformEvent(payload);
+    //
+    //         // Route the event
+    //         var result = await _eventRouter.RouteEventAsync(platformEvent);
+    //
+    //         if (result.Success)
+    //         {
+    //             return Ok(new { message = "Azure webhook processed and routed successfully", routingId = result.RoutingId });
+    //         }
+    //         else
+    //         {
+    //             return StatusCode(500, new { error = "Event routing failed", details = result });
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Error processing Azure webhook");
+    //         return StatusCode(500, new { error = "Webhook processing failed", message = ex.Message });
+    //     }
+    // }
 
-            // Convert Azure event payload to platform event
-            var platformEvent = ConvertAzureEventToPlatformEvent(payload);
-            
-            // Route the event
-            var result = await _eventRouter.RouteEventAsync(platformEvent);
-
-            if (result.Success)
-            {
-                return Ok(new { message = "Azure webhook processed and routed successfully", routingId = result.RoutingId });
-            }
-            else
-            {
-                return StatusCode(500, new { error = "Event routing failed", details = result });
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing Azure webhook");
-            return StatusCode(500, new { error = "Webhook processing failed", message = ex.Message });
-        }
-    }
-
-    /// <summary>
-    /// Endpoint for Teams messages to trigger cross-platform actions
-    /// </summary>
-    [HttpPost("teams/message")]
-    public async Task<ActionResult> ProcessTeamsMessage([FromBody] TeamsMessagePayload payload)
-    {
-        try
-        {
-            _logger.LogInformation("💬 Processing Teams message for cross-platform routing: {MessageType}", payload.MessageType);
-
-            // Convert Teams message to platform event
-            var platformEvent = ConvertTeamsMessageToPlatformEvent(payload);
-            
-            // Route the event
-            var result = await _eventRouter.RouteEventAsync(platformEvent);
-
-            if (result.Success)
-            {
-                return Ok(new { 
-                    message = "Teams message processed and routed successfully", 
-                    routingId = result.RoutingId,
-                    reynoldsResponse = result.ReynoldsComment
-                });
-            }
-            else
-            {
-                return StatusCode(500, new { error = "Event routing failed", details = result });
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing Teams message");
-            return StatusCode(500, new { error = "Teams message processing failed", message = ex.Message });
-        }
-    }
+    // TEMPORARILY DISABLED: Teams message endpoint - missing Teams SDK dependencies
+    // /// <summary>
+    // /// Endpoint for Teams messages to trigger cross-platform actions
+    // /// </summary>
+    // [HttpPost("teams/message")]
+    // public async Task<ActionResult> ProcessTeamsMessage([FromBody] TeamsMessagePayload payload)
+    // {
+    //     try
+    //     {
+    //         _logger.LogInformation("💬 Processing Teams message for cross-platform routing: {MessageType}", payload.MessageType);
+    //
+    //         // Convert Teams message to platform event
+    //         var platformEvent = ConvertTeamsMessageToPlatformEvent(payload);
+    //
+    //         // Route the event
+    //         var result = await _eventRouter.RouteEventAsync(platformEvent);
+    //
+    //         if (result.Success)
+    //         {
+    //             return Ok(new {
+    //                 message = "Teams message processed and routed successfully",
+    //                 routingId = result.RoutingId,
+    //                 reynoldsResponse = result.ReynoldsComment
+    //             });
+    //         }
+    //         else
+    //         {
+    //             return StatusCode(500, new { error = "Event routing failed", details = result });
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Error processing Teams message");
+    //         return StatusCode(500, new { error = "Teams message processing failed", message = ex.Message });
+    //     }
+    // }
 
     /// <summary>
     /// Manual event injection for testing and debugging
@@ -360,46 +362,47 @@ public class CrossPlatformEventController : ControllerBase
         };
     }
 
-    private PlatformEvent ConvertAzureEventToPlatformEvent(AzureEventPayload payload)
-    {
-        return new PlatformEvent
-        {
-            EventId = payload.EventId,
-            EventType = payload.EventType,
-            SourcePlatform = "Azure",
-            Action = payload.Action,
-            Repository = ExtractRepositoryFromAzureEvent(payload),
-            Content = $"Azure {payload.EventType}: {payload.Action}",
-            Metadata = new Dictionary<string, object>
-            {
-                ["resource_id"] = payload.ResourceId,
-                ["subscription_id"] = payload.SubscriptionId,
-                ["resource_group"] = payload.ResourceGroupName,
-                ["azure_properties"] = payload.Properties
-            },
-            Timestamp = payload.Timestamp
-        };
-    }
+    // TEMPORARILY DISABLED: Azure and Teams event conversion methods - missing SDK dependencies
+    // private PlatformEvent ConvertAzureEventToPlatformEvent(AzureEventPayload payload)
+    // {
+    //     return new PlatformEvent
+    //     {
+    //         EventId = payload.EventId,
+    //         EventType = payload.EventType,
+    //         SourcePlatform = "Azure",
+    //         Action = payload.Action,
+    //         Repository = ExtractRepositoryFromAzureEvent(payload),
+    //         Content = $"Azure {payload.EventType}: {payload.Action}",
+    //         Metadata = new Dictionary<string, object>
+    //         {
+    //             ["resource_id"] = payload.ResourceId,
+    //             ["subscription_id"] = payload.SubscriptionId,
+    //             ["resource_group"] = payload.ResourceGroupName,
+    //             ["azure_properties"] = payload.Properties
+    //         },
+    //         Timestamp = payload.Timestamp
+    //     };
+    // }
 
-    private PlatformEvent ConvertTeamsMessageToPlatformEvent(TeamsMessagePayload payload)
-    {
-        return new PlatformEvent
-        {
-            EventId = Guid.NewGuid().ToString(),
-            EventType = payload.MessageType,
-            SourcePlatform = "Teams",
-            Action = "message_received",
-            UserId = payload.UserId,
-            Content = payload.Content,
-            Metadata = new Dictionary<string, object>
-            {
-                ["channel_id"] = payload.ChannelId ?? "",
-                ["conversation_id"] = payload.ConversationId ?? "",
-                ["teams_metadata"] = payload.Metadata ?? new Dictionary<string, object>()
-            },
-            Timestamp = payload.Timestamp
-        };
-    }
+    // private PlatformEvent ConvertTeamsMessageToPlatformEvent(TeamsMessagePayload payload)
+    // {
+    //     return new PlatformEvent
+    //     {
+    //         EventId = Guid.NewGuid().ToString(),
+    //         EventType = payload.MessageType,
+    //         SourcePlatform = "Teams",
+    //         Action = "message_received",
+    //         UserId = payload.UserId,
+    //         Content = payload.Content,
+    //         Metadata = new Dictionary<string, object>
+    //         {
+    //             ["channel_id"] = payload.ChannelId ?? "",
+    //             ["conversation_id"] = payload.ConversationId ?? "",
+    //             ["teams_metadata"] = payload.Metadata ?? new Dictionary<string, object>()
+    //         },
+    //         Timestamp = payload.Timestamp
+    //     };
+    // }
 
     private string ExtractContentFromGitHubPayload(GitHubWebhookPayload payload)
     {
@@ -449,35 +452,37 @@ public class CrossPlatformEventController : ControllerBase
         return Math.Max(50, content.Length / 10); // Rough estimation
     }
 
-    private string? ExtractRepositoryFromAzureEvent(AzureEventPayload payload)
-    {
-        // Try to extract repository information from Azure resource tags or metadata
-        if (payload.Properties.TryGetValue("repository", out var repo))
-        {
-            return repo.ToString();
-        }
-
-        // Default to main repository if resource is related to copilot-powerplatform
-        if (payload.ResourceId.Contains("copilot", StringComparison.OrdinalIgnoreCase))
-        {
-            return "dynamicstms365/copilot-powerplatform";
-        }
-
-        return null;
-    }
+    // TEMPORARILY DISABLED: Azure repository extraction method - missing Azure SDK dependencies
+    // private string? ExtractRepositoryFromAzureEvent(AzureEventPayload payload)
+    // {
+    //     // Try to extract repository information from Azure resource tags or metadata
+    //     if (payload.Properties.TryGetValue("repository", out var repo))
+    //     {
+    //         return repo.ToString();
+    //     }
+    //
+    //     // Default to main repository if resource is related to copilot-powerplatform
+    //     if (payload.ResourceId.Contains("copilot", StringComparison.OrdinalIgnoreCase))
+    //     {
+    //         return "dynamicstms365/copilot-powerplatform";
+    //     }
+    //
+    //     return null;
+    // }
 }
 
 // Supporting classes for API payloads
-public class TeamsMessagePayload
-{
-    public string MessageType { get; set; } = "message";
-    public string UserId { get; set; } = "";
-    public string Content { get; set; } = "";
-    public string? ChannelId { get; set; }
-    public string? ConversationId { get; set; }
-    public Dictionary<string, object>? Metadata { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-}
+// TEMPORARILY DISABLED: Teams payload class - missing Teams SDK dependencies
+// public class TeamsMessagePayload
+// {
+//     public string MessageType { get; set; } = "message";
+//     public string UserId { get; set; } = "";
+//     public string Content { get; set; } = "";
+//     public string? ChannelId { get; set; }
+//     public string? ConversationId { get; set; }
+//     public Dictionary<string, object>? Metadata { get; set; }
+//     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+// }
 
 public class TestEventRequest
 {

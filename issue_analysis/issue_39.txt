@@ -1,0 +1,44 @@
+title:	Add GitHub Discussions API Integration
+state:	OPEN
+author:	cege7480
+labels:	enhancement
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	39
+--
+## Overview
+Integrate GitHub Discussions API to enable searching, creating, and managing discussions from the MCP server.
+
+## Tasks
+- [ ] Add GitHub Discussions API client to `src/CopilotAgent/Services/`
+- [ ] Implement discussion search functionality with keyword matching
+- [ ] Add discussion creation capabilities with title, body, and category
+- [ ] Implement discussion comment and update operations
+- [ ] Add error handling and rate limiting for API calls
+- [ ] Create service layer for discussion operations
+
+## Technical Requirements
+- Use existing GitHub App authentication from `NGL_DEVOPS_BOT_PEM`
+- Support repository-specific discussion searches
+- Handle pagination for large result sets
+- Cache frequent searches to improve performance
+- Follow GitHub API best practices and rate limits
+
+## Acceptance Criteria
+- [ ] Can search discussions by keywords and return structured results
+- [ ] Can create new discussions programmatically
+- [ ] API client handles authentication and errors gracefully
+- [ ] Integration tests cover all discussion operations
+- [ ] Performance is acceptable for real-time conversation flows
+
+## Related Files
+- `src/CopilotAgent/Services/GitHubService.cs` (if exists, or create new)
+- `src/CopilotAgent/Models/DiscussionModels.cs` (create)
+- `scripts/dev/results/mcp-integration-plan.md`
+
+## Definition of Done
+- GitHub Discussions API is fully integrated and tested
+- Discussion search returns properly formatted results matching test scenarios
+- New discussions can be created through MCP tools

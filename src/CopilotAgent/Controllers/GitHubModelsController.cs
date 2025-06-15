@@ -257,6 +257,8 @@ public class GitHubModelsController : ControllerBase
     {
         try
         {
+            await Task.CompletedTask; // Satisfy async requirement
+            
             var health = new
             {
                 service = "GitHub Models Integration",
@@ -330,6 +332,8 @@ public class GitHubModelsController : ControllerBase
     {
         try
         {
+            await Task.CompletedTask; // Satisfy async requirement
+            
             var sampleRequest = new OrchestrationRequest
             {
                 Repository = config.Repository ?? "dynamicstms365/copilot-powerplatform",

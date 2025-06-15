@@ -1,0 +1,103 @@
+title:	Implement API Key Management and Developer Portal
+state:	OPEN
+author:	cege7480
+labels:	enhancement
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	44
+--
+## Overview
+Create a secure, user-friendly system for generating and managing API keys and webhook secrets for the MCP server.
+
+## Options Analysis
+
+### Option 1: GitHub Actions + Markdown (Quick Solution)
+- [ ] Create `workflow_dispatch` GitHub Action for key generation
+- [ ] Add markdown buttons that trigger the workflow
+- [ ] Store generated keys in repository secrets or user-specific locations
+- [ ] Provide markdown interface in README or docs
+
+### Option 2: Azure API Management Integration (Recommended)
+- [ ] Deploy Azure APIM in front of our Container Apps agent
+- [ ] Configure APIM developer portal with interactive key generation
+- [ ] Implement subscription tiers (free, premium, enterprise)
+- [ ] Add rate limiting and analytics
+- [ ] Create branded developer experience
+
+### Option 3: GitHub Pages Web Interface
+- [ ] Create simple web app hosted on GitHub Pages
+- [ ] Integrate with GitHub App for key generation
+- [ ] Provide interactive form for key creation
+- [ ] Store keys securely and provide download
+
+## Technical Implementation
+
+### Azure APIM Integration Benefits
+- **Professional Developer Portal**: Interactive docs with "Try It" buttons
+- **Automatic Key Management**: Subscription keys generated on-demand
+- **Rate Limiting**: Control usage per key/user
+- **Analytics**: Usage metrics and monitoring
+- **Security**: JWT tokens, OAuth2, IP filtering
+- **Tiered Access**: Different limits for different user types
+
+### Architecture
+```
+User → APIM Developer Portal → APIM Gateway → Container Apps Agent
+     ↓
+   Generate API Key → Store in APIM → Use for MCP calls
+```
+
+## Implementation Tasks
+
+### Phase 1: APIM Setup
+- [ ] Deploy Azure APIM instance
+- [ ] Configure backend pointing to Container Apps agent
+- [ ] Set up basic API policies and rate limiting
+- [ ] Create developer portal branding
+
+### Phase 2: API Configuration
+- [ ] Import MCP API definitions (`/mcp/tools`, `/mcp/capabilities`)
+- [ ] Configure subscription products (free/premium tiers)
+- [ ] Set up key validation policies
+- [ ] Add request/response transformations if needed
+
+### Phase 3: Developer Experience
+- [ ] Customize developer portal with documentation
+- [ ] Add interactive API testing interface
+- [ ] Create webhook secret generation endpoint
+- [ ] Implement self-service key management
+
+### Phase 4: Enhanced Features
+- [ ] OAuth2 integration for enterprise users
+- [ ] Analytics dashboard for API usage
+- [ ] Automated key rotation
+- [ ] Integration with GitHub App permissions
+
+## Acceptance Criteria
+- [ ] Users can generate API keys through web interface
+- [ ] Webhook secrets are securely generated and provided
+- [ ] Rate limiting prevents abuse
+- [ ] Analytics track usage patterns
+- [ ] Developer portal provides excellent UX
+
+## Cost Considerations
+- APIM Consumption tier: Pay-per-call (good for MVP)
+- APIM Developer tier: ~0/month (full features)
+- Integration with existing Azure infrastructure
+
+## Alternative: Quick Markdown Solution
+If APIM is too complex initially:
+```markdown
+## Generate API Key
+
+[![Generate New API Key](https://github.com/dynamicstms365/copilot-powerplatform/actions/workflows/generate-api-key.yml/badge.svg)](https://github.com/dynamicstms365/copilot-powerplatform/actions/workflows/generate-api-key.yml)
+
+Click the badge above to trigger API key generation workflow.
+```
+
+## Definition of Done
+- Users can easily generate and manage API keys
+- Webhook secrets are securely created and distributed
+- System is secure, scalable, and user-friendly

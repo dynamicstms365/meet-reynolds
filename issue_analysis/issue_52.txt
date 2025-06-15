@@ -1,0 +1,70 @@
+title:	Copilot Learning: Complete Azure Container Apps Deployment Troubleshooting Summary
+state:	OPEN
+author:	cege7480
+labels:	
+comments:	0
+assignees:	
+projects:	
+milestone:	
+number:	52
+--
+## Overview
+This issue summarizes the complete debugging journey for resolving GitHub App authentication issues in Azure Container Apps deployment workflow.
+
+## Initial Problem
+- JWT authentication error: "A JSON web token could not be decoded (HTTP 401)"
+- GitHub workflow failing during webhook URL update operation
+- Deployment pipeline unable to complete successfully
+
+## Debugging Journey
+
+### Phase 1: Token Type Identification
+- **Issue**: `actions/create-github-app-token@v2` generating `ghs_...` (installation) instead of `eyJ...` (JWT) tokens
+- **Solution**: Switched to `tibdex/github-app-token@v2` with `installation_retrieval_mode: none`
+- **Result**: "Unsupported retrieval mode: none" error
+
+### Phase 2: Action Availability Problems  
+- **Issue**: `github-jwt/github-jwt@v1.2` action not found
+- **Issue**: `gha-utils/jwt-generator@v1` action not found
+- **Learning**: GitHub Actions marketplace has limited JWT generation options
+
+### Phase 3: Custom Implementation
+- **Solution**: Node.js script with `jsonwebtoken` library
+- **Approach**: Generate JWT tokens using RS256 algorithm with proper payload
+- **Result**: Successful JWT generation and workflow progression
+
+## Final Resolution
+
+up to date, audited 31 packages in 501ms
+
+2 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+## Key Learnings Applied
+1. **Authentication Types**: Understanding JWT vs installation token use cases
+2. **External Dependencies**: Avoiding unreliable GitHub Actions marketplace dependencies  
+3. **Custom Solutions**: Using standard tools (Node.js + npm) for reliability
+4. **Systematic Approach**: One issue at a time, validate with logs, document findings
+5. **Token Management**: Proper token generation for MCP server integration
+
+## Workflow Status
+✅ Build job completing successfully  
+✅ Deploy job reaching JWT generation  
+✅ Azure Container Apps deployment working  
+✅ Health checks passing  
+✅ MCP capabilities endpoint responding  
+⚠️ Webhook URL update (resolved manually)  
+
+## Related Issues
+- #48: JWT vs Installation Token Authentication
+- #49: GitHub Actions Marketplace Reliability  
+- #50: Systematic Debugging Methodology
+- #51: MCP Server Authentication and Token Management
+
+## Final State
+- GitHub App deployed to Azure Container Apps
+- Webhook configured and delivering (with expected 404s during initial setup)
+- MCP server ready for connection with provided tokens
+- All learnings documented for future reference
