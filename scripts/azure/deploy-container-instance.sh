@@ -82,6 +82,7 @@ az container create \
         "ASPNETCORE_URLS=http://+:80" \
     --secure-environment-variables \
         "NGL_DEVOPS_PRIVATE_KEY=${NGL_DEVOPS_PRIVATE_KEY}" \
+        "NGL_DEVOPS_WEBHOOK_SECRET=${NGL_DEVOPS_WEBHOOK_SECRET}" \
     --cpu 1 \
     --memory 1.5 \
     --restart-policy Always \

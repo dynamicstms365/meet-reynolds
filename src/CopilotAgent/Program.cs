@@ -70,10 +70,8 @@ builder.Services.AddScoped<IEventClassificationService, EventClassificationServi
 builder.Services.AddScoped<IEventRoutingMetrics, EventRoutingMetrics>();
 builder.Services.AddSingleton<EventRoutingMetrics>();
 
-// Add MCP SDK services - Reynolds Enterprise Integration (Preview 0.2.0-preview.3)
-builder.Services.AddMcpServer()
-    .WithHttpTransport()
-    .WithToolsFromAssembly();
+// Add Reynolds MCP Server - Enterprise Integration with supernatural intelligence (Preview 0.2.0-preview.3)
+builder.Services.AddReynoldsMcpServer();
 
 // Register Reynolds support services
 builder.Services.AddScoped<EnterpriseAuthService>();
@@ -110,8 +108,12 @@ if (!app.Environment.IsProduction())
 
 app.UseAuthorization();
 
-// MCP Server endpoints are automatically configured via AddMcpServer() with WithHttpTransport()
-// No additional middleware needed for MCP SDK 0.2.0-preview.3
+// Reynolds MCP Server endpoints are automatically configured via AddReynoldsMcpServer() with WithHttpTransport()
+// Default endpoints: /mcp/capabilities, /mcp/sse, /mcp/tools/{toolName}
+// 17 Reynolds tools loaded with Maximum Effort™ precision
+app.Logger.LogInformation("🎭 Reynolds MCP Server configured with HTTP transport - 17 tools available at /mcp/*");
+app.Logger.LogInformation("🔧 MCP Endpoints: /mcp/capabilities, /mcp/sse, /mcp/tools/{toolName}");
+app.Logger.LogInformation("⚡ Maximum Effort™ coordination protocols active");
 
 // Add webhook logging middleware before webhook processing
 app.UseWebhookLogging();
@@ -130,13 +132,24 @@ if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Config
 
 // Map GitHub webhook endpoint using Octokit.Webhooks.AspNetCore
 // This replaces the custom webhook controller endpoint
+// Enhanced webhook secret resolution with detailed logging
 var webhookSecret = builder.Configuration["NGL_DEVOPS_WEBHOOK_SECRET"] ??
                    System.Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET");
+
+app.Logger.LogInformation("🔍 Webhook secret configuration check:");
+app.Logger.LogInformation("  - Configuration[NGL_DEVOPS_WEBHOOK_SECRET]: {HasConfigSecret}",
+    !string.IsNullOrEmpty(builder.Configuration["NGL_DEVOPS_WEBHOOK_SECRET"]) ? "SET" : "NOT_SET");
+app.Logger.LogInformation("  - Environment[NGL_DEVOPS_WEBHOOK_SECRET]: {HasEnvSecret}",
+    !string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("NGL_DEVOPS_WEBHOOK_SECRET")) ? "SET" : "NOT_SET");
+app.Logger.LogInformation("  - Final webhook secret: {HasFinalSecret}",
+    !string.IsNullOrEmpty(webhookSecret) ? "AVAILABLE" : "MISSING");
 
 // Add error handling for webhook setup
 if (string.IsNullOrEmpty(webhookSecret))
 {
-    app.Logger.LogWarning("Webhook secret not configured - webhook endpoint will reject all requests");
+    app.Logger.LogError("❌ WEBHOOK_SECRET_NOT_CONFIGURED: No webhook secret found in configuration or environment");
+    app.Logger.LogError("🔧 Expected sources: Configuration['NGL_DEVOPS_WEBHOOK_SECRET'] or Environment['NGL_DEVOPS_WEBHOOK_SECRET']");
+    app.Logger.LogWarning("⚠️  Webhook endpoint will reject all requests with 401 Unauthorized");
     
     // Map a fallback endpoint that returns proper 401 when secret is missing
     app.MapPost("/api/github/webhook", async (HttpContext context) =>
