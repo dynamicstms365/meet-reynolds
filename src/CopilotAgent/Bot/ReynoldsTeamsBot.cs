@@ -18,6 +18,7 @@ public class ReynoldsTeamsBot : TeamsActivityHandler
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly IIntentRecognitionService _intentRecognitionService;
     private readonly ICrossPlatformEventRouter _eventRouter;
+    private readonly IIntroductionOrchestrator _introductionOrchestrator;
     private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
 
     public ReynoldsTeamsBot(
@@ -25,13 +26,15 @@ public class ReynoldsTeamsBot : TeamsActivityHandler
         IConfiguration configuration,
         IGitHubWorkflowOrchestrator workflowOrchestrator,
         IIntentRecognitionService intentRecognitionService,
-        ICrossPlatformEventRouter eventRouter)
+        ICrossPlatformEventRouter eventRouter,
+        IIntroductionOrchestrator introductionOrchestrator)
     {
         _logger = logger;
         _configuration = configuration;
         _workflowOrchestrator = workflowOrchestrator;
         _intentRecognitionService = intentRecognitionService;
         _eventRouter = eventRouter;
+        _introductionOrchestrator = introductionOrchestrator;
         _conversationReferences = new ConcurrentDictionary<string, ConversationReference>();
     }
 
@@ -111,6 +114,13 @@ Just say 'Reynolds, help' or mention any repo/project and I'll work my magic.
             
             _logger.LogInformation("Reynolds detected intent: {IntentType} with confidence: {Confidence}", intent.Type, intent.Confidence);
 
+            // Check for introduction requests first - Reynolds loves making connections!
+            if (IsIntroductionRequest(userMessage))
+            {
+                var introResult = await _introductionOrchestrator.ProcessIntroductionRequestAsync(userMessage, turnContext.Activity.From.Id);
+                return $"🎭 **Reynolds Introduction Service**\n\n{introResult.Message}";
+            }
+
             // Process based on intent with Reynolds personality
             var response = intent.Type switch
             {
@@ -161,12 +171,18 @@ Here's what I can do for you across the dynamicstms365 organization:
 • `sync issues` - Bi-directional issue/PR linking
 • `milestone status` - Project timeline alignment
 
-**💬 Reynolds Specials:**
+**👋 Cross-Platform Introductions:**
+• `introduce yourself to [name]` - I'll find them and introduce myself!
+• `introduce to [email]` - Direct email-based introductions
+• `say hello to [name]` - Alternative introduction phrasing
+• I automatically map Teams users to GitHub accounts for seamless coordination
+
+**� Reynolds Specials:**
 • Ask about any repo and I'll provide organizational context
 • Mention scope creep and I'll channel my inner deflection skills
 • Just say 'Reynolds' followed by your question
 
-*Remember: I make complex coordination look effortless, stakeholders feel heard, and GitHub sing in harmony.*
+*Remember: I make complex coordination look effortless, stakeholders feel heard, GitHub sing in harmony, and introductions happen with Maximum Effort™.*
 
 What can I orchestrate for you today? 🎬";
         }
@@ -361,6 +377,22 @@ Want me to orchestrate specific coordination between teams? I'll handle the dipl
             conversationReference.User.Id,
             conversationReference,
             (key, newValue) => conversationReference);
+    }
+
+    private static bool IsIntroductionRequest(string message)
+    {
+        var lowerMessage = message.ToLowerInvariant();
+        var introductionTriggers = new[]
+        {
+            "introduce yourself to",
+            "introduce to",
+            "say hello to",
+            "say hi to",
+            "meet",
+            "introduce"
+        };
+
+        return introductionTriggers.Any(trigger => lowerMessage.Contains(trigger));
     }
 }
 
