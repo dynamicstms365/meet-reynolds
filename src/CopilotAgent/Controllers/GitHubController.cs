@@ -93,7 +93,7 @@ public class GitHubController : ControllerBase
             status = "healthy",
             service = "GitHub Integration",
             timestamp = DateTime.UtcNow,
-            version = "1.0.0"
+            version = Environment.GetEnvironmentVariable("COPILOT_VERSION") ?? "dev-local"
         });
     }
 

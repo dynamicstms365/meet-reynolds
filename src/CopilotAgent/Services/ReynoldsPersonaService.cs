@@ -39,7 +39,7 @@ public async Task InitializeAsync()
             {
                 enhancedDict["reynolds_touch"] = GetReynoldsTouch(toolName);
                 enhancedDict["maximum_effort_applied"] = true;
-                enhancedDict["persona_version"] = "2.0.0-sdk";
+                enhancedDict["persona_version"] = Environment.GetEnvironmentVariable("COPILOT_VERSION") ?? "dev-local";
             }
 
             _logger.LogDebug("🎭 Reynolds persona enhancement applied to {ToolName}", toolName);
