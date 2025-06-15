@@ -58,6 +58,21 @@ builder.Services.AddScoped<IGitHubWorkflowOrchestrator, GitHubWorkflowOrchestrat
 // Register Octokit webhook processor as scoped to fix lifetime mismatch with IGitHubWorkflowOrchestrator
 builder.Services.AddScoped<WebhookEventProcessor, OctokitWebhookEventProcessor>();
 
+// Register Reynolds User Introduction and Cross-Platform Mapping Services (Issue #85 + #86)
+builder.Services.AddMemoryCache(); // Required for caching services
+builder.Services.AddScoped<IUserMappingService, UserMappingService>();
+
+// Register Reynolds' enhanced introduction orchestration services - Maximum Effort™
+builder.Services.AddScoped<IMicrosoftGraphUserService, MicrosoftGraphUserService>();
+builder.Services.AddScoped<IGitHubOrganizationService, GitHubOrganizationService>();
+builder.Services.AddScoped<IReynoldsTeamsChatService, ReynoldsTeamsChatService>();
+builder.Services.AddScoped<IIntroductionOrchestrationService, IntroductionOrchestrationService>();
+
+// Keep legacy services for backward compatibility
+builder.Services.AddScoped<IGraphUserLookupService, GraphUserLookupService>();
+builder.Services.AddScoped<IGitHubOrgMemberService, GitHubOrgMemberService>();
+builder.Services.AddScoped<IIntroductionOrchestrator, IntroductionOrchestrator>();
+
 // Register GitHub Models Integration Services (Issue #72)
 builder.Services.AddHttpClient<IGitHubModelsService, GitHubModelsService>();
 builder.Services.AddScoped<IGitHubModelsService, GitHubModelsService>();
