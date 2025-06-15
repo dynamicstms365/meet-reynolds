@@ -88,9 +88,9 @@ builder.Services.AddSingleton<EventRoutingMetrics>();
 // Add Reynolds MCP Server - Enterprise Integration with supernatural intelligence (Preview 0.2.0-preview.3)
 builder.Services.AddReynoldsMcpServer();
 
-// Register Reynolds support services
-builder.Services.AddScoped<EnterpriseAuthService>();
-builder.Services.AddScoped<ReynoldsPersonaService>();
+// Register Reynolds support services as Singletons (required by MCP SDK)
+builder.Services.AddSingleton<EnterpriseAuthService>();
+builder.Services.AddSingleton<ReynoldsPersonaService>();
 
 // Add HTTP context accessor for enterprise authentication
 builder.Services.AddHttpContextAccessor();
