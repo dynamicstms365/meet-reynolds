@@ -47,9 +47,9 @@ public class UserMappingService : IUserMappingService
 
             // Check memory cache first - Reynolds loves efficiency
             var cacheKey = $"user_mapping_{teamsUserId}";
-            if (_cache.TryGetValue(cacheKey, out UserMapping? cachedMapping))
+            if (_cache.TryGetValue(cacheKey, out UserMapping? cachedMapping) && cachedMapping != null)
             {
-                _logger.LogInformation("✅ Reynolds found cached mapping for {TeamsUserId} → {GitHubId}", 
+                _logger.LogInformation("✅ Reynolds found cached mapping for {TeamsUserId} → {GitHubId}",
                     teamsUserId, cachedMapping.GitHubId);
                 return cachedMapping;
             }

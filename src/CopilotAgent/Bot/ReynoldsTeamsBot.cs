@@ -18,7 +18,7 @@ public class ReynoldsTeamsBot : TeamsActivityHandler
     private readonly IGitHubWorkflowOrchestrator _workflowOrchestrator;
     private readonly IIntentRecognitionService _intentRecognitionService;
     private readonly ICrossPlatformEventRouter _eventRouter;
-    private readonly IIntroductionOrchestrator _introductionOrchestrator;
+    private readonly IIntroductionOrchestrationService _introductionOrchestrator;
     private readonly ConcurrentDictionary<string, ConversationReference> _conversationReferences;
 
     public ReynoldsTeamsBot(
@@ -27,7 +27,7 @@ public class ReynoldsTeamsBot : TeamsActivityHandler
         IGitHubWorkflowOrchestrator workflowOrchestrator,
         IIntentRecognitionService intentRecognitionService,
         ICrossPlatformEventRouter eventRouter,
-        IIntroductionOrchestrator introductionOrchestrator)
+        IIntroductionOrchestrationService introductionOrchestrator)
     {
         _logger = logger;
         _configuration = configuration;
@@ -117,7 +117,7 @@ Just say 'Reynolds, help' or mention any repo/project and I'll work my magic.
             // Check for introduction requests first - Reynolds loves making connections!
             if (IsIntroductionRequest(userMessage))
             {
-                var introResult = await _introductionOrchestrator.ProcessIntroductionRequestAsync(userMessage, turnContext.Activity.From.Id);
+                var introResult = await _introductionOrchestrator.OrchestratePlatformIntroductionAsync(turnContext.Activity.From.Name ?? "unknown@domain.com", ExtractTargetName(userMessage));
                 return $"🎭 **Reynolds Introduction Service**\n\n{introResult.Message}";
             }
 
@@ -393,6 +393,30 @@ Want me to orchestrate specific coordination between teams? I'll handle the dipl
         };
 
         return introductionTriggers.Any(trigger => lowerMessage.Contains(trigger));
+    }
+
+    private static string ExtractTargetName(string message)
+    {
+        // Reynolds' name extraction with Maximum Effort™
+        var patterns = new[]
+        {
+            @"introduce\s+(?:yourself\s+)?to\s+(\w+)",
+            @"meet\s+(\w+)",
+            @"connect\s+(?:me\s+)?with\s+(\w+)",
+            @"say\s+hi\s+to\s+(\w+)",
+            @"reach\s+out\s+to\s+(\w+)"
+        };
+
+        foreach (var pattern in patterns)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(message, pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (match.Success && match.Groups.Count > 1)
+            {
+                return match.Groups[1].Value;
+            }
+        }
+
+        return "Unknown";
     }
 }
 

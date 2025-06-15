@@ -58,7 +58,7 @@ public class IntroductionOrchestrationService : IIntroductionOrchestrationServic
             if (graphUser == null)
             {
                 _logger.LogWarning("❌ Reynolds couldn't find {TargetName} in Microsoft Graph", targetName);
-                return IntroductionResult.Failed($"Sorry, couldn't find {targetName} in our directory. Double-check the name?");
+                return IntroductionResult.CreateFailure($"Sorry, couldn't find {targetName} in our directory. Double-check the name?");
             }
 
             // Step 3: Check if we already have GitHub mapping for this Graph user
@@ -73,7 +73,7 @@ public class IntroductionOrchestrationService : IIntroductionOrchestrationServic
             // Step 4: Need to establish GitHub mapping - get org members for assistance
             var githubMembers = await _githubOrgService.GetOrganizationMembersAsync();
             
-            return IntroductionResult.RequiresGitHubMapping(
+            return IntroductionResult.CreateGitHubMappingRequest(
                 graphUser,
                 githubMembers,
                 $"Hey! I found {graphUser.DisplayName} ({graphUser.Mail}) in our Microsoft Graph, but I need help mapping them to GitHub. Here are our GitHub organization members - which one matches?"
@@ -82,7 +82,7 @@ public class IntroductionOrchestrationService : IIntroductionOrchestrationServic
         catch (Exception ex)
         {
             _logger.LogError(ex, "Reynolds orchestration failed for {TargetName}", targetName);
-            return IntroductionResult.Failed($"Reynolds hit a coordination snag! {ex.Message}");
+            return IntroductionResult.CreateFailure($"Reynolds hit a coordination snag! {ex.Message}");
         }
     }
 
@@ -127,14 +127,14 @@ Feel free to reach out anytime! I'm here to make collaboration smoother than my 
             if (success)
             {
                 _logger.LogInformation("✅ Reynolds successfully introduced to {TargetUser}", targetMapping.DisplayName);
-                return IntroductionResult.Success(
+                return IntroductionResult.CreateSuccess(
                     $"🎯 Maximum Effort™ successful! I've introduced myself to {targetMapping.DisplayName} ({targetMapping.Email}) with my signature Reynolds charm. They should have received a direct message from me!"
                 );
             }
             else
             {
                 _logger.LogWarning("⚠️ Reynolds introduction message failed for {TargetUser}", targetMapping.DisplayName);
-                return IntroductionResult.Failed(
+                return IntroductionResult.CreateFailure(
                     $"I found {targetMapping.DisplayName} but couldn't send the introduction message. They might have their DMs locked down tighter than my superhero suit!"
                 );
             }
@@ -142,7 +142,7 @@ Feel free to reach out anytime! I'm here to make collaboration smoother than my 
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing introduction to {TargetUser}", targetMapping.DisplayName);
-            return IntroductionResult.Failed($"Reynolds coordination error: {ex.Message}");
+            return IntroductionResult.CreateFailure($"Reynolds coordination error: {ex.Message}");
         }
     }
 }
@@ -156,21 +156,21 @@ public class IntroductionResult
     public User? GraphUser { get; set; }
     public List<string> GitHubMembers { get; set; } = new();
 
-    public static IntroductionResult Success(string message) => new()
+    public static IntroductionResult CreateSuccess(string message) => new()
     {
         Success = true,
         Message = message,
         RequiresUserInput = false
     };
 
-    public static IntroductionResult Failed(string message) => new()
+    public static IntroductionResult CreateFailure(string message) => new()
     {
         Success = false,
         Message = message,
         RequiresUserInput = false
     };
 
-    public static IntroductionResult RequiresGitHubMapping(User graphUser, List<string> githubMembers, string message) => new()
+    public static IntroductionResult CreateGitHubMappingRequest(User graphUser, List<string> githubMembers, string message) => new()
     {
         Success = false,
         Message = message,

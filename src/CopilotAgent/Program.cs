@@ -68,10 +68,10 @@ builder.Services.AddScoped<IGitHubOrganizationService, GitHubOrganizationService
 builder.Services.AddScoped<IReynoldsTeamsChatService, ReynoldsTeamsChatService>();
 builder.Services.AddScoped<IIntroductionOrchestrationService, IntroductionOrchestrationService>();
 
-// Keep legacy services for backward compatibility
-builder.Services.AddScoped<IGraphUserLookupService, GraphUserLookupService>();
-builder.Services.AddScoped<IGitHubOrgMemberService, GitHubOrgMemberService>();
-builder.Services.AddScoped<IIntroductionOrchestrator, IntroductionOrchestrator>();
+// Legacy service compatibility - using our new services as implementations
+// builder.Services.AddScoped<IGraphUserLookupService, GraphUserLookupService>();
+// builder.Services.AddScoped<IGitHubOrgMemberService, GitHubOrgMemberService>();
+// builder.Services.AddScoped<IIntroductionOrchestrator, IntroductionOrchestrator>();
 
 // Register GitHub Models Integration Services (Issue #72)
 builder.Services.AddHttpClient<IGitHubModelsService, GitHubModelsService>();
