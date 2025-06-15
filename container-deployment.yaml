@@ -89,6 +89,6 @@ properties:
 tags:
   environment: production
   project: copilot-powerplatform
-  version: "1.0.0"
+  version: "${COPILOT_VERSION:-dev-local}"
   security: hardened
 type: Microsoft.ContainerInstance/containerGroups

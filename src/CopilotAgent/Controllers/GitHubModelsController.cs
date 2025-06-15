@@ -263,7 +263,7 @@ public class GitHubModelsController : ControllerBase
             {
                 service = "GitHub Models Integration",
                 status = "healthy",
-                version = "1.0.0",
+                version = Environment.GetEnvironmentVariable("COPILOT_VERSION") ?? "dev-local",
                 features = new[]
                 {
                     "Parallel Workload Management",
