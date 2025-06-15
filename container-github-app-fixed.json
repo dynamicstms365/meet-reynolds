@@ -24,6 +24,9 @@
         "privateKey": {
             "type": "securestring"
         },
+        "webhookSecret": {
+            "type": "securestring"
+        },
         "dnsNameLabel": {
             "type": "string"
         }
@@ -69,6 +72,10 @@
                                 {
                                     "name": "NGL_DEVOPS_PRIVATE_KEY",
                                     "secureValue": "[parameters('privateKey')]"
+                                },
+                                {
+                                    "name": "NGL_DEVOPS_WEBHOOK_SECRET",
+                                    "secureValue": "[parameters('webhookSecret')]"
                                 },
                                 {
                                     "name": "DOCKER_ENABLE_CI",
