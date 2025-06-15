@@ -34,6 +34,17 @@ public interface IGitHubSemanticSearchService
     Task<double> CalculateSemanticSimilarityAsync(string text1, string text2);
 }
 
+public interface IGitHubIssuePRSynchronizationService
+{
+    Task<IEnumerable<GitHubPullRequest>> GetPullRequestsByRepositoryAsync(string repository, string state = "all", int limit = 100);
+    Task<GitHubPullRequest> GetPullRequestAsync(string repository, int pullRequestNumber);
+    Task<IEnumerable<GitHubPullRequest>> FindPullRequestsLinkedToIssueAsync(string repository, int issueNumber);
+    Task<IEnumerable<GitHubIssue>> FindIssuesLinkedToPullRequestAsync(string repository, int pullRequestNumber);
+    Task<IssuePRSynchronizationReport> GenerateSynchronizationReportAsync(string repository);
+    Task<bool> SynchronizeIssueWithPRsAsync(string repository, int issueNumber);
+    Task<int> SynchronizeAllIssuesWithPRsAsync(string repository);
+}
+
 public enum SearchScope
 {
     All,
@@ -119,4 +130,56 @@ public class GitHubComment
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class GitHubPullRequest
+{
+    public string NodeId { get; set; } = string.Empty;
+    public int Number { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public string Repository { get; set; } = string.Empty;
+    public string Author { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty; // open, closed
+    public bool IsMerged { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public DateTime? MergedAt { get; set; }
+    public DateTime? ClosedAt { get; set; }
+    public string HeadBranch { get; set; } = string.Empty;
+    public string BaseBranch { get; set; } = string.Empty;
+    public string[] Labels { get; set; } = Array.Empty<string>();
+    public string[] Assignees { get; set; } = Array.Empty<string>();
+    public int[] LinkedIssueNumbers { get; set; } = Array.Empty<int>(); // Issues referenced in PR
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class IssuePRSynchronizationReport
+{
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public string Repository { get; set; } = string.Empty;
+    public IEnumerable<IssuePRRelation> IssuePRRelations { get; set; } = new List<IssuePRRelation>();
+    public IEnumerable<GitHubPullRequest> OrphanedPRs { get; set; } = new List<GitHubPullRequest>(); // PRs without linked issues
+    public IEnumerable<GitHubIssue> OrphanedIssues { get; set; } = new List<GitHubIssue>(); // Issues without linked PRs
+    public IssuePRSynchronizationSummary Summary { get; set; } = new();
+}
+
+public class IssuePRRelation
+{
+    public GitHubIssue Issue { get; set; } = new();
+    public IEnumerable<GitHubPullRequest> RelatedPRs { get; set; } = new List<GitHubPullRequest>();
+    public string SynchronizationStatus { get; set; } = string.Empty; // "synchronized", "needs_update", "conflict"
+    public string RecommendedAction { get; set; } = string.Empty;
+}
+
+public class IssuePRSynchronizationSummary
+{
+    public int TotalIssues { get; set; }
+    public int TotalPRs { get; set; }
+    public int SynchronizedRelations { get; set; }
+    public int NeedsUpdateRelations { get; set; }
+    public int ConflictedRelations { get; set; }
+    public int OrphanedPRs { get; set; }
+    public int OrphanedIssues { get; set; }
 }
