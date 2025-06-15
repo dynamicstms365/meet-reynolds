@@ -364,11 +364,11 @@ jobs:
           # Validate required secrets exist and are not empty
           echo "🔍 Validating GitHub secrets..."
           
-          PRIVATE_KEY_SECRET="${{ secrets.NGL_DEVOPS_BOT_PEM }}"
+          PRIVATE_KEY_SECRET="${{ secrets.NGL_DEVOPS_PRIVATE_KEY }}"
           WEBHOOK_SECRET="${{ secrets.NGL_DEVOPS_WEBHOOK_SECRET }}"
           
           if [[ -z "$PRIVATE_KEY_SECRET" ]]; then
-            echo "❌ ERROR: GitHub secret 'NGL_DEVOPS_BOT_PEM' is not set or is empty"
+            echo "❌ ERROR: GitHub secret 'NGL_DEVOPS_PRIVATE_KEY' is not set or is empty"
             echo "📝 Please set this secret in repository settings"
             exit 1
           fi
