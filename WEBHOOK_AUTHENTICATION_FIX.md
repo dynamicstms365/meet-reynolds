@@ -31,13 +31,14 @@ GitHub App credentials not configured. Required: NGL_DEVOPS_APP_ID, NGL_DEVOPS_P
 - name: NGL_DEVOPS_PRIVATE_KEY
   secureValue: "$(GITHUB_APP_PRIVATE_KEY)"
 - name: NGL_DEVOPS_WEBHOOK_SECRET
-  secureValue: "96328478de1391f4633f28221ef6d62d8fa42b57cea159ff65360e88015507dd"
+  secureValue: "$(NGL_DEVOPS_WEBHOOK_SECRET)"
 ```
 
 ### 2. Generated Webhook Secret
 
 - **New Webhook Secret**: `96328478de1391f4633f28221ef6d62d8fa42b57cea159ff65360e88015507dd`
 - **Purpose**: For GitHub webhook signature validation (different from JWT token)
+- **Security**: This value should be set as an Azure secret and referenced via placeholder
 
 ## Deployment Instructions
 
@@ -49,14 +50,17 @@ GitHub App credentials not configured. Required: NGL_DEVOPS_APP_ID, NGL_DEVOPS_P
 
 ### Option 2: Manual Deployment
 ```bash
-# Export the private key
+# Export the private key and webhook secret
 export GITHUB_APP_PRIVATE_KEY=$(cat app.pem)
+export NGL_DEVOPS_WEBHOOK_SECRET="96328478de1391f4633f28221ef6d62d8fa42b57cea159ff65360e88015507dd"
 
 # Deploy with Azure CLI
 az container create \
     --resource-group "copilot-powerplatform-rg" \
     --file container-deployment.yaml \
-    --secure-environment-variables GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY"
+    --secure-environment-variables \
+        GITHUB_APP_PRIVATE_KEY="$GITHUB_APP_PRIVATE_KEY" \
+        NGL_DEVOPS_WEBHOOK_SECRET="$NGL_DEVOPS_WEBHOOK_SECRET"
 ```
 
 ## GitHub Webhook Configuration
@@ -118,8 +122,13 @@ curl https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.
 The beauty of this solution:
 - **Parallel Problem Resolution**: Fixed multiple authentication issues simultaneously
 - **Environment Variable Harmony**: Aligned container config with service expectations  
-- **Secure Secret Management**: Proper handling of sensitive credentials
+- **Secure Secret Management**: Proper handling of sensitive credentials via Azure secure placeholders
 - **Comprehensive Verification**: Multiple validation endpoints for confidence
+- **Security Best Practices**: Secrets managed through Azure environment variables, not hardcoded in config files
+
+## Security Note 🔒
+
+**IMPORTANT**: This configuration uses secure placeholders (`$(VARIABLE_NAME)`) instead of hardcoded secret values. The actual webhook secret value must be provided through Azure's secure environment variable system during deployment. Never commit secret values directly to configuration files.
 
 ---
 
