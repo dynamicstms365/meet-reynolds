@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Text.Json" Version="9.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.2" />
@@ -36,10 +36,10 @@
     <PackageReference Include="Microsoft.Bot.Builder.Azure" Version="4.21.2" />
     <PackageReference Include="Microsoft.Bot.Configuration" Version="4.21.2" />
     
-    <!-- MCP SDK packages - Enterprise Enhanced with Issue #365 fixes -->
-    <PackageReference Include="ModelContextProtocol" Version="*-enterprise.*" />
-    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="*-enterprise.*" />
-    <PackageReference Include="ModelContextProtocol.Core" Version="*-enterprise.*" />
+    <!-- MCP SDK packages - Version aligned to prevent type conflicts -->
+    <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.3" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.2.0-preview.3" />
+    <PackageReference Include="ModelContextProtocol.Core" Version="0.2.0-preview.3" />
   </ItemGroup>
 
   <ItemGroup>
