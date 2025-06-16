@@ -58,4 +58,8 @@
     <ProjectReference Include="../Shared/Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>
