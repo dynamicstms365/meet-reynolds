@@ -67,13 +67,14 @@ jobs:
       working-directory: src/CopilotAgent
       run: |
         echo "⚡ Reynolds Fallback Strategy: Using standard packages for maximum compatibility"
-        if [ -f nuget.config ]; then
-          mv nuget.config nuget.config.enterprise.backup
-          echo "Enterprise nuget.config backed up"
-        fi
+        # Remove any GitHub package sources to force NuGet.org fallback
+        dotnet nuget remove source github-enterprise || true
+        dotnet nuget list source
+        echo "GitHub Package source removed - forcing NuGet.org standard packages"
         # Fix package versions for fallback
         sed -i 's/\*-enterprise\.\*/0.2.0-preview.3"/g' CopilotAgent.csproj
-        dotnet restore CopilotAgent.csproj --verbosity normal
+        # Force restore from NuGet.org only
+        dotnet restore CopilotAgent.csproj --verbosity normal --force
 
     - name: 🏗️ Build Enterprise MCP Server
       working-directory: src/CopilotAgent
