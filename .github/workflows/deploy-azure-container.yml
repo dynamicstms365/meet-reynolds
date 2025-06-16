@@ -423,6 +423,8 @@ jobs:
                     NGL_DEVOPS_PRIVATE_KEY="secretref:ngl-devops-private-key" \
                     NGL_DEVOPS_WEBHOOK_SECRET="secretref:ngl-devops-webhook-secret" \
                     COPILOT_VERSION="${{ needs.build.outputs.semantic_version }}" \
+                    SEQ_SERVER_URL="https://seq.${CONTAINER_APP_ENV}.${AZURE_LOCATION}.azurecontainerapps.io" \
+                    SEQ_API_KEY="${{ secrets.SEQ_API_KEY }}" \
                   --cpu 1.0 \
                   --memory 2.0Gi \
                   --min-replicas 1 \

@@ -9,10 +9,35 @@ using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol;
+using Serilog;
+using Serilog.Events;
 
-// Reynolds: Trigger streamlined deployment for MCP protocol testing
-// CI Build Trigger: Force deployment with webhook secret configuration - ffa6974
+// Reynolds: Maximum Effort™ structured logging with Seq integration
+// Configure Serilog for supernatural visibility into Chris Taylor communication system
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithMachineName()
+    .Enrich.WithProcessId()
+    .Enrich.WithThreadId()
+    .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.Seq(
+        serverUrl: Environment.GetEnvironmentVariable("SEQ_SERVER_URL") ?? "http://seq:80",
+        apiKey: Environment.GetEnvironmentVariable("SEQ_API_KEY"),
+        restrictedToMinimumLevel: LogEventLevel.Debug)
+    .CreateLogger();
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Reynolds: Replace default logging with Serilog
+builder.Host.UseSerilog();
+
+try
+{
+    Log.Information("🎭 Reynolds: Starting Copilot Agent with Maximum Effort™ structured logging");
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -199,7 +224,18 @@ else
     }
 }
 
-app.Run();
+    Log.Information("🚀 Reynolds: Copilot Agent application starting with Maximum Effort™");
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "💥 Reynolds: Application terminated unexpectedly");
+}
+finally
+{
+    Log.Information("🎭 Reynolds: Shutting down with supernatural grace");
+    await Log.CloseAndFlushAsync();
+}
 
 // Stub implementation for when Teams integration is disabled
 public class StubReynoldsTeamsService : IReynoldsTeamsService

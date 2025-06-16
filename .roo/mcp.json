@@ -2,7 +2,7 @@
   "mcpServers": {
     "copilot-github-bot": {
       "type": "streamable-http",
-      "url": "http://localhost:5003/mcp",
+      "url": "https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io/mcp",
       "headers": {
         "Content-Type": "application/json",
         "User-Agent": "ReynoldsEnterpriseAgent/1.0",

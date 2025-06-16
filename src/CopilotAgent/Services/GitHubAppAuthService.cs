@@ -113,7 +113,9 @@ public class GitHubAppAuthService : IGitHubAppAuthService
         var installationToken = await GetInstallationAccessTokenAsync(installationId, jwtToken);
 
         _cachedToken = installationToken;
-        _logger.LogInformation("Successfully obtained GitHub App installation token");
+        _logger.LogInformation("🎭 Reynolds: Successfully obtained GitHub App installation token for App ID {AppId}", appId);
+        _logger.LogDebug("Token expires at {ExpiresAt}, permissions: {Permissions}",
+            installationToken.ExpiresAt, string.Join(", ", installationToken.Permissions));
         
         return installationToken;
     }

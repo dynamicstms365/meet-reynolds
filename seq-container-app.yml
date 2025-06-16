@@ -1,0 +1,37 @@
+apiVersion: 2023-05-01
+location: eastus
+name: seq-logging
+properties:
+  containers:
+  - name: seq-logging
+    properties:
+      image: datalust/seq:latest
+      ports:
+      - port: 80
+        protocol: TCP
+      - port: 5341
+        protocol: TCP
+      environmentVariables:
+      - name: ACCEPT_EULA
+        value: "Y"
+      - name: SEQ_FIRSTRUN_ADMINUSERNAME
+        value: "admin"
+      - name: SEQ_FIRSTRUN_ADMINPASSWORDHASH
+        secureValue: "$(SEQ_ADMIN_PASSWORD_HASH)"
+      - name: SEQ_CACHE_SYSTEMRAMTARGET
+        value: "0.8"
+      - name: SEQ_CACHE_TARGETSIZE
+        value: "128MB"
+      resources:
+        requests:
+          cpu: 0.5
+          memoryInGb: 1.0
+  osType: Linux
+  restartPolicy: Always
+  ipAddress:
+    type: Public
+    ports:
+    - port: 80
+      protocol: TCP
+    - port: 5341
+      protocol: TCP
