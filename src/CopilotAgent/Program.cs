@@ -5,6 +5,7 @@ using CopilotAgent.Middleware;
 using CopilotAgent.Startup;
 using CopilotAgent.MCP;
 using CopilotAgent.Bot;
+using CopilotAgent.Configuration;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 using ModelContextProtocol.AspNetCore;
@@ -42,7 +43,9 @@ try
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// Reynolds: Enhanced OpenAPI configuration for Azure APIM MCP integration
+builder.Services.AddSwaggerGenWithMcpSupport();
 
 // Register Copilot Agent services
 builder.Services.AddScoped<IPowerPlatformAgent, PowerPlatformAgent>();
@@ -93,6 +96,9 @@ builder.Services.AddScoped<IGitHubOrganizationService, GitHubOrganizationService
 builder.Services.AddScoped<IReynoldsTeamsChatService, ReynoldsTeamsChatService>();
 builder.Services.AddScoped<IIntroductionOrchestrationService, IntroductionOrchestrationService>();
 
+// Register Reynolds M365 CLI Service for enhanced communication delivery
+builder.Services.AddScoped<IReynoldsM365CliService, ReynoldsM365CliService>();
+
 // Legacy service compatibility - using our new services as implementations
 // builder.Services.AddScoped<IGraphUserLookupService, GraphUserLookupService>();
 // builder.Services.AddScoped<IGitHubOrgMemberService, GitHubOrgMemberService>();
@@ -132,11 +138,38 @@ else
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
+// Configure the HTTP request pipeline - Reynolds: Enhanced OpenAPI for APIM MCP integration
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwagger(c =>
+    {
+        c.RouteTemplate = "api-docs/{documentName}/swagger.json";
+    });
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/api-docs/v1/swagger.json", "Reynolds Communication & Orchestration API v1.0");
+        c.RoutePrefix = "api-docs";
+        c.DocumentTitle = "Reynolds API Documentation";
+        c.EnableDeepLinking();
+        c.EnableValidator();
+        c.EnableTryItOutByDefault();
+        c.InjectStylesheet("/swagger-ui/custom.css");
+    });
+}
+else
+{
+    // Enable Swagger in production for Azure APIM integration
+    app.UseSwagger(c =>
+    {
+        c.RouteTemplate = "api-docs/{documentName}/swagger.json";
+    });
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/api-docs/v1/swagger.json", "Reynolds Communication & Orchestration API v1.0");
+        c.RoutePrefix = "api-docs";
+        c.DocumentTitle = "Reynolds API Documentation - Production";
+        c.EnableDeepLinking();
+    });
 }
 
 // Skip HTTPS redirection in production container environment
