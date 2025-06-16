@@ -1,5 +1,5 @@
 # Multi-stage build for security and optimization
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy solution and project files for dependency resolution - Cache bust for fresh build
@@ -18,8 +18,8 @@ RUN dotnet build CopilotAgent/CopilotAgent.csproj -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish CopilotAgent/CopilotAgent.csproj -c Release -o /app/publish --no-restore
 
-# Final runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# Final runtime image - Reynolds: .NET 9.0 with Maximum Effort™
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 
 # Install security updates and required packages
@@ -41,9 +41,12 @@ RUN mkdir -p /app/logs /app/temp /app/data \
 # Copy published application
 COPY --from=publish --chown=copilot:copilot /app/publish .
 
-# Set up security-hardened environment
-ENV ASPNETCORE_URLS=http://+:8080 \
-    ASPNETCORE_ENVIRONMENT=Production \
+# Set up security-hardened environment - Reynolds: Updated for SEQ integration
+ENV ASPNETCORE_URLS=http://+:8000 \
+    ASPNETCORE_ENVIRONMENT=Development \
+    SEQ_SERVER_URL=http://seq:80 \
+    SEQ_API_KEY= \
+    REYNOLDS_MAXIMUM_EFFORT=true \
     DOTNET_USE_POLLING_FILE_WATCHER=true \
     DOTNET_RUNNING_IN_CONTAINER=true \
     ASPNETCORE_FORWARDEDHEADERS_ENABLED=true \
@@ -71,12 +74,12 @@ ENV SECURITY_HEADERS_ENABLED=true \
 # Switch to non-root user
 USER copilot
 
-# Expose ports
-EXPOSE 8080
+# Expose ports - Reynolds: Updated for consistency
+EXPOSE 8000
 EXPOSE 8443
 
-# Enhanced health check with Azure OpenAI validation
+# Enhanced health check with Azure OpenAI validation - Reynolds: Updated port
 HEALTHCHECK --interval=30s --timeout=15s --start-period=90s --retries=5 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
 ENTRYPOINT ["dotnet", "CopilotAgent.dll"]

@@ -26,8 +26,8 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.WithThreadId()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
     .WriteTo.Seq(
-        serverUrl: Environment.GetEnvironmentVariable("SEQ_SERVER_URL") ?? "http://seq:80",
-        apiKey: Environment.GetEnvironmentVariable("SEQ_API_KEY"),
+        serverUrl: System.Environment.GetEnvironmentVariable("SEQ_SERVER_URL") ?? "http://seq:80",
+        apiKey: System.Environment.GetEnvironmentVariable("SEQ_API_KEY"),
         restrictedToMinimumLevel: LogEventLevel.Debug)
     .CreateLogger();
 
@@ -44,8 +44,8 @@ try
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Reynolds: Enhanced OpenAPI configuration for Azure APIM MCP integration
-builder.Services.AddSwaggerGenWithMcpSupport();
+// Reynolds: .NET 9.0 OpenAPI configuration with Maximum Effort™ MCP integration
+builder.Services.AddReynoldsOpenApiWithMcpSupport();
 
 // Register Copilot Agent services
 builder.Services.AddScoped<IPowerPlatformAgent, PowerPlatformAgent>();
@@ -138,18 +138,18 @@ else
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline - Reynolds: Enhanced OpenAPI for APIM MCP integration
+// Configure HTTP request pipeline - Reynolds: .NET 9.0 OpenAPI with Maximum Effort™ APIM integration
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger(c =>
-    {
-        c.RouteTemplate = "api-docs/{documentName}/swagger.json";
-    });
+    // Map .NET 9.0 OpenAPI endpoint for development
+    app.MapOpenApi("/api-docs/v1/openapi.json");
+    
+    // Use Swagger UI pointing to our OpenAPI endpoint
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/api-docs/v1/swagger.json", "Reynolds Communication & Orchestration API v1.0");
+        c.SwaggerEndpoint("/api-docs/v1/openapi.json", "Reynolds Communication & Orchestration API v1.0");
         c.RoutePrefix = "api-docs";
-        c.DocumentTitle = "Reynolds API Documentation";
+        c.DocumentTitle = "Reynolds API Documentation - .NET 9.0";
         c.EnableDeepLinking();
         c.EnableValidator();
         c.EnableTryItOutByDefault();
@@ -158,16 +158,14 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // Enable Swagger in production for Azure APIM integration
-    app.UseSwagger(c =>
-    {
-        c.RouteTemplate = "api-docs/{documentName}/swagger.json";
-    });
+    // Enable .NET 9.0 OpenAPI in production for Azure APIM integration
+    app.MapOpenApi("/api-docs/v1/openapi.json");
+    
     app.UseSwaggerUI(c =>
     {
-        c.SwaggerEndpoint("/api-docs/v1/swagger.json", "Reynolds Communication & Orchestration API v1.0");
+        c.SwaggerEndpoint("/api-docs/v1/openapi.json", "Reynolds Communication & Orchestration API v1.0");
         c.RoutePrefix = "api-docs";
-        c.DocumentTitle = "Reynolds API Documentation - Production";
+        c.DocumentTitle = "Reynolds API Documentation - Production (.NET 9.0)";
         c.EnableDeepLinking();
     });
 }

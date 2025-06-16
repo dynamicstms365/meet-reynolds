@@ -125,13 +125,13 @@ public class CommunicationController : ControllerBase
                 Timestamp = DateTime.UtcNow
             };
 
-            // Track metrics
-            _telemetryService.TrackEvent("MessageDelivered", new Dictionary<string, object>
+            // Track metrics using RecordCustomMetric
+            _telemetryService.RecordCustomMetric("MessageDelivered", deliveryResult.Success ? 1.0 : 0.0, new Dictionary<string, object>
             {
                 ["Success"] = deliveryResult.Success,
                 ["DeliveryMethod"] = deliveryMethod.ToString(),
                 ["IsCommand"] = commandResult.IsCommand,
-                ["CommandType"] = commandResult.CommandType
+                ["CommandType"] = commandResult.CommandType ?? "Unknown"
             });
 
             return Ok(deliveryResult);
@@ -282,23 +282,23 @@ public class CommunicationController : ControllerBase
     }
 
     // Private helper methods
-    private async Task<string> ResolveUserEmail(string userIdentifier)
+    private Task<string> ResolveUserEmail(string userIdentifier)
     {
         // Enhanced user resolution logic
         if (userIdentifier.Contains("@"))
         {
-            return userIdentifier; // Already an email
+            return Task.FromResult(userIdentifier); // Already an email
         }
 
         // For now, handle the Chris Taylor case specifically
         if (userIdentifier.ToLower().Contains("chris") && userIdentifier.ToLower().Contains("taylor"))
         {
-            return "christaylor@nextgeneration.com";
+            return Task.FromResult("christaylor@nextgeneration.com");
         }
 
         // This would integrate with your user mapping service
         // For demonstration, return the identifier as-is for now
-        return userIdentifier.Contains("@") ? userIdentifier : $"{userIdentifier}@nextgeneration.com";
+        return Task.FromResult(userIdentifier.Contains("@") ? userIdentifier : $"{userIdentifier}@nextgeneration.com");
     }
 
     private CommandParseResult ParseMessageCommand(string message)
