@@ -1,0 +1,590 @@
+[
+  {
+    "createdAt": "2025-06-15T09:16:36Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 520,
+    "state": "OPEN",
+    "title": "Access to HttpContext within handler delegates like ListToolsHandler for authentication-aware logic"
+  },
+  {
+    "createdAt": "2025-06-14T02:20:01Z",
+    "labels": [],
+    "number": 519,
+    "state": "OPEN",
+    "title": "Audit required / init / abstract / sealed / etc. in protocol types"
+  },
+  {
+    "createdAt": "2025-06-13T17:19:14Z",
+    "labels": [],
+    "number": 518,
+    "state": "OPEN",
+    "title": "feat: Adds _meta to additional interface types. #710"
+  },
+  {
+    "createdAt": "2025-06-13T17:10:52Z",
+    "labels": [],
+    "number": 517,
+    "state": "OPEN",
+    "title": "Encourage title properties/usage for objects/resources"
+  },
+  {
+    "createdAt": "2025-06-13T06:31:03Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 516,
+    "state": "OPEN",
+    "title": "MCP Resources without parameters don't work without mime-type specified"
+  },
+  {
+    "createdAt": "2025-06-13T05:05:28Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 515,
+    "state": "OPEN",
+    "title": "`SseClientTransport.Endpoint` should be nullable when `HttpClient` is provided"
+  },
+  {
+    "createdAt": "2025-06-13T04:29:08Z",
+    "labels": [],
+    "number": 514,
+    "state": "OPEN",
+    "title": "如何使用sse协议进行更多的控制，对服务器的配置以及如何处理客户端请求进行细粒度控制？"
+  },
+  {
+    "createdAt": "2025-06-12T20:36:40Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 512,
+    "state": "OPEN",
+    "title": "McpClientFactory.CreateAsync throws ObjectDisposedException claiming CTS is disposed"
+  },
+  {
+    "createdAt": "2025-06-12T15:55:10Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 510,
+    "state": "OPEN",
+    "title": "Add support for resumability and redelivery to Streamable HTTP transport"
+  },
+  {
+    "createdAt": "2025-06-12T10:29:40Z",
+    "labels": [],
+    "number": 508,
+    "state": "OPEN",
+    "title": "Add ResourceLink to CallToolResult"
+  },
+  {
+    "createdAt": "2025-06-10T16:34:25Z",
+    "labels": [],
+    "number": 507,
+    "state": "OPEN",
+    "title": "new auth"
+  },
+  {
+    "createdAt": "2025-06-10T16:31:46Z",
+    "labels": [],
+    "number": 504,
+    "state": "OPEN",
+    "title": "require negotiated version when using HTTP"
+  },
+  {
+    "createdAt": "2025-06-10T08:24:55Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 497,
+    "state": "OPEN",
+    "title": "Add the MCP name to MCPClientTool class"
+  },
+  {
+    "createdAt": "2025-06-09T18:24:05Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 496,
+    "state": "OPEN",
+    "title": "How To: Accept a complex/class object in a McpServerTool function"
+  },
+  {
+    "createdAt": "2025-06-07T01:36:39Z",
+    "labels": [],
+    "number": 495,
+    "state": "OPEN",
+    "title": "Client needs to send MCP-Protocol-Version header"
+  },
+  {
+    "createdAt": "2025-06-06T15:47:41Z",
+    "labels": [],
+    "number": 494,
+    "state": "OPEN",
+    "title": "Capture tool call name in ILogger logs on success an not just failure"
+  },
+  {
+    "createdAt": "2025-06-06T08:01:35Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 490,
+    "state": "OPEN",
+    "title": "Stack overflow. error"
+  },
+  {
+    "createdAt": "2025-06-06T03:49:14Z",
+    "labels": [],
+    "number": 489,
+    "state": "OPEN",
+    "title": "Fix how \"Reference\" is modeled"
+  },
+  {
+    "createdAt": "2025-06-05T21:25:52Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 487,
+    "state": "OPEN",
+    "title": "Full STDERR log"
+  },
+  {
+    "createdAt": "2025-06-04T21:23:08Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 484,
+    "state": "OPEN",
+    "title": "IDataProtectionProvider default implementation prevents use of stateless with a load balancer"
+  },
+  {
+    "createdAt": "2025-06-04T10:22:27Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 483,
+    "state": "OPEN",
+    "title": "Add Granular Authorization Support to SSE ServerTools"
+  },
+  {
+    "createdAt": "2025-06-03T08:57:30Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 481,
+    "state": "OPEN",
+    "title": "Can we expose an interface for session in StreamableHttpHandler for self-implement?"
+  },
+  {
+    "createdAt": "2025-06-01T20:45:54Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 479,
+    "state": "OPEN",
+    "title": "XML docs to tool definition"
+  },
+  {
+    "createdAt": "2025-06-01T04:11:14Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 478,
+    "state": "OPEN",
+    "title": "Questions related when stateless is true"
+  },
+  {
+    "createdAt": "2025-05-29T01:30:14Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 458,
+    "state": "OPEN",
+    "title": "The McpJsonUtilities.DefaultOptions should not be read only"
+  },
+  {
+    "createdAt": "2025-05-28T15:16:48Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 455,
+    "state": "OPEN",
+    "title": "[SSE] Consider aligning to the VSCode configuration"
+  },
+  {
+    "createdAt": "2025-05-27T13:27:48Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 453,
+    "state": "OPEN",
+    "title": "AIContent Input from Client's to MCP Server"
+  },
+  {
+    "createdAt": "2025-05-27T10:47:04Z",
+    "labels": [],
+    "number": 451,
+    "state": "OPEN",
+    "title": "How to create Streamable HTTP server?"
+  },
+  {
+    "createdAt": "2025-05-26T15:07:47Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 450,
+    "state": "OPEN",
+    "title": "Resource-based authorization on tools"
+  },
+  {
+    "createdAt": "2025-05-26T01:07:21Z",
+    "labels": [],
+    "number": 449,
+    "state": "OPEN",
+    "title": "Add samples for HTTP Streamable"
+  },
+  {
+    "createdAt": "2025-05-21T14:02:18Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 443,
+    "state": "OPEN",
+    "title": "McpClientPrompt having a way to specify metdata"
+  },
+  {
+    "createdAt": "2025-05-20T15:28:26Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 438,
+    "state": "OPEN",
+    "title": "Provide notification of STDIO server termination"
+  },
+  {
+    "createdAt": "2025-05-18T15:52:58Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 433,
+    "state": "OPEN",
+    "title": "McpServerPrimitiveCollection needs transactions/updates"
+  },
+  {
+    "createdAt": "2025-05-14T15:50:57Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 414,
+    "state": "OPEN",
+    "title": "Deployment on Multiple Instances"
+  },
+  {
+    "createdAt": "2025-05-14T06:18:03Z",
+    "labels": [],
+    "number": 413,
+    "state": "OPEN",
+    "title": "'MessagesEndpoint' does not contain a definition for 'AsBuilder' and no accessible extension method 'AsBuilder' accepting a first argument of type 'MessagesEndpoint' could be found (are you missing a using directive or an assembly reference?)"
+  },
+  {
+    "createdAt": "2025-05-13T16:00:14Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 409,
+    "state": "OPEN",
+    "title": "Cannot connect to a Hosted MCP Server using Streamable http transport"
+  },
+  {
+    "createdAt": "2025-05-08T19:22:16Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 396,
+    "state": "OPEN",
+    "title": "Unable to create a working example using latest ModelContextProtocol nuget 0.1.0-preview.12"
+  },
+  {
+    "createdAt": "2025-05-08T01:10:18Z",
+    "labels": [],
+    "number": 395,
+    "state": "OPEN",
+    "title": "QuickstartClient not working"
+  },
+  {
+    "createdAt": "2025-04-30T17:40:12Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 369,
+    "state": "OPEN",
+    "title": "Separate client and server APIs into two separate packages"
+  },
+  {
+    "createdAt": "2025-04-29T17:49:24Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 365,
+    "state": "OPEN",
+    "title": "IHttpContextAccessor stopped working since 0.1.0-preview.10"
+  },
+  {
+    "createdAt": "2025-04-26T16:12:14Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 359,
+    "state": "OPEN",
+    "title": "[Feature Request] Add Delegate for Logging Request, Response, and Errors in MCP Server"
+  },
+  {
+    "createdAt": "2025-04-25T14:02:45Z",
+    "labels": [],
+    "number": 355,
+    "state": "OPEN",
+    "title": "Convert `IMcpEndpoint`, `IMcpClient`, and `IMcpServer` types to classes."
+  },
+  {
+    "createdAt": "2025-04-24T19:36:47Z",
+    "labels": [],
+    "number": 352,
+    "state": "OPEN",
+    "title": "Header authentication from n8n"
+  },
+  {
+    "createdAt": "2025-04-24T03:22:10Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 350,
+    "state": "OPEN",
+    "title": "MAUI application create mcp client throw exception:The server shut down unexpectedly."
+  },
+  {
+    "createdAt": "2025-04-23T17:27:15Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 347,
+    "state": "OPEN",
+    "title": "Add options to keep the state of the existing system"
+  },
+  {
+    "createdAt": "2025-04-22T10:14:54Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 340,
+    "state": "OPEN",
+    "title": "Can't connect to SSE server on preview 10"
+  },
+  {
+    "createdAt": "2025-04-19T06:09:37Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhUA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      }
+    ],
+    "number": 333,
+    "state": "OPEN",
+    "title": "ModelContextProtocol.McpException: Transport is not connected"
+  },
+  {
+    "createdAt": "2025-04-17T14:04:48Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 324,
+    "state": "OPEN",
+    "title": "ASP.NET Core SSE server is incompatible with Unity — reimplementation available using EmbedIO"
+  },
+  {
+    "createdAt": "2025-04-16T22:54:05Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 322,
+    "state": "OPEN",
+    "title": "/sse?appid=123  , filter tools by appid?"
+  },
+  {
+    "createdAt": "2025-04-16T08:08:13Z",
+    "labels": [
+      {
+        "id": "LA_kwDOOGV5Y88AAAAB7RAhVQ",
+        "name": "enhancement",
+        "description": "New feature or request",
+        "color": "a2eeef"
+      }
+    ],
+    "number": 317,
+    "state": "OPEN",
+    "title": "Add SourceGenerator driven 'WithToolsFromAssembly' method"
+  }
+]

@@ -85,17 +85,14 @@ builder.Services.AddScoped<IEventClassificationService, EventClassificationServi
 builder.Services.AddScoped<IEventRoutingMetrics, EventRoutingMetrics>();
 builder.Services.AddSingleton<EventRoutingMetrics>();
 
-// Add MCP Server with standard configuration (following official sample pattern)
-builder.Services.AddMcpServer()
-    .WithHttpTransport()
-    .WithTools<CopilotAgent.MCP.Tools.Reynolds.AnalyzeOrgProjectsTool>();
-
-// Register Reynolds support services as Singletons (required by MCP SDK)
-builder.Services.AddSingleton<EnterpriseAuthService>();
-builder.Services.AddSingleton<ReynoldsPersonaService>();
-
-// Add HTTP context accessor for enterprise authentication
+// Add HTTP context accessor BEFORE MCP registration (Issue #365 fix)
 builder.Services.AddHttpContextAccessor();
+
+// Add Reynolds Enterprise MCP Server with automatic tool discovery and Issue #365 fixes
+builder.Services.AddReynoldsMcpServer();
+
+// Initialize Reynolds MCP Server configuration
+builder.Services.AddScoped<ReynoldsMcpServerConfiguration>();
 
 // Register Reynolds Teams integration services
 if (ReynoldsTeamsConfigurationValidator.IsTeamsIntegrationEnabled(builder.Configuration))

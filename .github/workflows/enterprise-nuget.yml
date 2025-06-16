@@ -1,0 +1,68 @@
+# Enterprise NuGet Publishing - Auto-publish enterprise-enhanced MCP packages
+name: Enterprise NuGet Publishing
+
+on:
+  push:
+    branches:
+      - feature/issue-365-httpcontextaccessor-fix
+      - main
+  workflow_dispatch:
+    inputs:
+      version_suffix_override:
+        description: 'Custom version suffix (default: enterprise.{run_number})'
+        type: string
+  schedule:
+    - cron: '0 8 * * *'  # Daily at 08:00 UTC
+
+jobs:
+  enterprise-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      version_suffix: ${{ inputs.version_suffix_override || format('enterprise.{0}', github.run_number) }}
+
+    steps:
+      - name: Clone the repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build solution
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack enterprise packages
+        run: dotnet pack
+          --configuration Release
+          --no-build
+          --version-suffix "${{ env.version_suffix }}"
+          --output "${{ github.workspace }}/artifacts/packages"
+
+      - name: Setup GitHub NuGet source
+        run: |
+          dotnet nuget add source \
+            "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+            --name "github-enterprise" \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }} \
+            --store-password-in-clear-text
+
+      - name: Publish enterprise packages to GitHub
+        run: |
+          dotnet nuget push \
+            "${{ github.workspace }}/artifacts/packages/*.nupkg" \
+            --source "github-enterprise" \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate

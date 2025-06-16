@@ -93,7 +93,7 @@ public class GitHubModelsOrchestrator : IGitHubModelsOrchestrator
             orchestrationResult.ParallelEfficiency = CalculateParallelEfficiency(orchestrationResult);
 
             // Apply Reynolds-style result enhancement
-            orchestrationResult = await _reynoldsPersona.EnhanceOrchestrationResultAsync(orchestrationResult);
+            await _reynoldsPersona.EnhanceOrchestrationResultAsync(orchestrationResult);
 
             _logger.LogInformation("✅ Reynolds Pipeline completed. Success: {Success}, Models: {Models}, Efficiency: {Efficiency:P1}", 
                 orchestrationResult.Success, orchestrationResult.ModelsUsed, orchestrationResult.ParallelEfficiency);
@@ -265,7 +265,7 @@ public class GitHubModelsOrchestrator : IGitHubModelsOrchestrator
             };
 
             // Apply Reynolds intelligence for enhanced analysis
-            analysis = await _reynoldsPersona.EnhanceWorkloadAnalysisAsync(analysis, context) as WorkloadAnalysis ?? analysis;
+            await _reynoldsPersona.EnhanceWorkloadAnalysisAsync(analysis, CancellationToken.None);
 
             _logger.LogInformation("📊 Workload analysis completed. Complexity: {Complexity}, Recommended models: {Models}",
                 analysis.ContextComplexity, analysis.RecommendedModelTypes.Count);
@@ -304,7 +304,7 @@ public class GitHubModelsOrchestrator : IGitHubModelsOrchestrator
                 workload.AssignedModel = modelAssignment.SelectedModel;
                 if (workload.Context != null)
                 {
-                    var enhancedContext = await _reynoldsPersona.EnhanceWorkloadContextAsync(workload.Context, workload.Type);
+                    var enhancedContext = await _reynoldsPersona.EnhanceWorkloadContextAsync(workload.Context, CancellationToken.None);
                     workload.EnhancedContext = enhancedContext?.ToString() ?? workload.Context.ToString() ?? "";
                 }
                 else
