@@ -43,12 +43,21 @@ jobs:
       - name: Build solution
         run: dotnet build src/CopilotAgent/CopilotAgent.csproj --configuration Release --no-restore
 
+      - name: Create artifacts directory
+        run: mkdir -p "${{ github.workspace }}/artifacts/packages"
+
       - name: Pack enterprise packages
-        run: dotnet pack src/CopilotAgent/CopilotAgent.csproj
-          --configuration Release
-          --no-build
-          --version-suffix "${{ env.version_suffix }}"
-          --output "${{ github.workspace }}/artifacts/packages"
+        run: |
+          dotnet pack src/CopilotAgent/CopilotAgent.csproj \
+            --configuration Release \
+            --no-build \
+            --version-suffix "${{ env.version_suffix }}" \
+            --output "${{ github.workspace }}/artifacts/packages"
+
+      - name: Verify packages created
+        run: |
+          echo "Contents of artifacts/packages:"
+          ls -la "${{ github.workspace }}/artifacts/packages" || echo "Directory doesn't exist!"
 
       - name: Setup GitHub NuGet source
         run: |
