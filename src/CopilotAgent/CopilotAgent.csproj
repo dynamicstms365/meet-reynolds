@@ -7,6 +7,17 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <WarningsNotAsErrors>CS1591;NU1701</WarningsNotAsErrors>
+    
+    <!-- Reynolds Enterprise Package Configuration -->
+    <IsPackable>true</IsPackable>
+    <PackageId>Reynolds.CopilotAgent.Enterprise</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <Authors>Reynolds Enterprise Orchestration</Authors>
+    <Company>Dynamic STMS 365</Company>
+    <Description>Reynolds Enterprise MCP Copilot Agent with Maximum Effort™ orchestration, Issue #365 fixes, and enterprise authentication services.</Description>
+    <PackageTags>mcp;copilot;enterprise;reynolds;orchestration;powerplatform</PackageTags>
+    <RepositoryUrl>https://github.com/dynamicstms365/copilot-powerplatform</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
