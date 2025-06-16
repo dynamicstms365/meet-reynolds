@@ -53,7 +53,7 @@ jobs:
       working-directory: src/CopilotAgent
       run: |
         echo "🎭 Reynolds Enterprise Strategy: Attempting enterprise package restore..."
-        dotnet restore --verbosity normal
+        dotnet restore CopilotAgent.csproj --verbosity normal
       continue-on-error: true
 
     - name: 🔄 Standard Package Fallback Strategy
@@ -65,20 +65,22 @@ jobs:
           mv nuget.config nuget.config.enterprise.backup
           echo "Enterprise nuget.config backed up"
         fi
-        dotnet restore --verbosity normal
+        # Fix package versions for fallback
+        sed -i 's/\*-enterprise\.\*/0.2.0-preview.3"/g' CopilotAgent.csproj
+        dotnet restore CopilotAgent.csproj --verbosity normal
 
     - name: 🏗️ Build Enterprise MCP Server
       working-directory: src/CopilotAgent
       run: |
         echo "🎯 Reynolds Build Orchestration: Compiling with Issue #365 fixes and enterprise services"
-        dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal
+        dotnet build CopilotAgent.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore --verbosity normal
 
     - name: 🧪 Test Reynolds MCP Components
       working-directory: src/CopilotAgent
       run: |
         echo "✅ Reynolds Quality Assurance: Testing enterprise integrations"
         # Basic compilation test - the build itself proves HttpContextAccessor fixes work
-        dotnet build --configuration ${{ env.BUILD_CONFIGURATION }} --verbosity diagnostic | grep -i "succeeded\|warning\|error" || true
+        dotnet build CopilotAgent.csproj --configuration ${{ env.BUILD_CONFIGURATION }} --verbosity diagnostic | grep -i "succeeded\|warning\|error" || true
       continue-on-error: true
 
     - name: 📊 Reynolds Build Intelligence Report
