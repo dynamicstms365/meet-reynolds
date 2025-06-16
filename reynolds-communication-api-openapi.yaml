@@ -1,0 +1,2402 @@
+openapi: 3.0.3
+info:
+  title: Reynolds Communication & Orchestration API
+  description: |
+    Enterprise-grade communication and orchestration API with Maximum Effort™ applied to every endpoint.
+    
+    This API provides comprehensive communication orchestration capabilities including:
+    - Microsoft Teams integration with bidirectional messaging
+    - GitHub repository management and coordination
+    - Cross-platform stakeholder communication
+    - Real-time status monitoring and health checks
+    - Advanced orchestration and workflow coordination
+    
+    **Authentication**: Supports both Azure AD OAuth2 and API Key authentication
+    **Rate Limiting**: Implemented at the APIM layer
+    **Monitoring**: Full Application Insights integration
+    
+    *Just Reynolds - Maximum Effort™ • Minimal Drama*
+  version: "1.0.0"
+  contact:
+    name: Reynolds Organization
+    email: reynolds@nextgeneration.com
+    url: https://github.com/dynamicstms365/copilot-powerplatform
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://nextgeneration.com/terms
+
+servers:
+  - url: https://reynolds-apim-prod.azure-api.net/reynolds
+    description: Production APIM endpoint
+  - url: https://reynolds-apim-dev.azure-api.net/reynolds
+    description: Development APIM endpoint
+  - url: https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io
+    description: Direct Container App endpoint (for testing)
+
+security:
+  - AzureAD: []
+  - ApiKeyAuth: []
+
+paths:
+  # ============================================
+  # COMMUNICATION ENDPOINTS
+  # ============================================
+  
+  /api/communication/health:
+    get:
+      tags:
+        - Health & Status
+      summary: Health check endpoint
+      description: Provides comprehensive health status of the communication system
+      operationId: getCommunicationHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/communication/send-message:
+    post:
+      tags:
+        - Communication
+      summary: Send message to user
+      description: |
+        Send a message to a specified user through their preferred communication method.
+        Supports automatic method detection and fallback mechanisms.
+      operationId: sendMessage
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+            examples:
+              basicMessage:
+                summary: Basic message to Chris Taylor
+                value:
+                  userIdentifier: "christaylor@nextgeneration.com"
+                  message: "Hello Chris! This is a test message from Reynolds."
+                  preferredMethod: "Auto"
+              urgentMessage:
+                summary: Urgent message with priority
+                value:
+                  userIdentifier: "chris taylor"
+                  message: "Urgent: Deployment requires your approval."
+                  preferredMethod: "DirectMessage"
+                  priority: "High"
+                  metadata:
+                    requiresResponse: true
+                    deadline: "2024-12-20T15:00:00Z"
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/communication/send-batch:
+    post:
+      tags:
+        - Communication
+      summary: Send messages to multiple users
+      description: |
+        Send messages to multiple users with parallel processing and coordination.
+        Maximum Effort™ applied to delivery optimization.
+      operationId: sendBatchMessages
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchMessageRequest'
+      responses:
+        '200':
+          description: Batch messages processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchMessageResponse'
+        '400':
+          description: Invalid batch request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/communication/status/{userIdentifier}:
+    get:
+      tags:
+        - Communication
+      summary: Get user communication status
+      description: Retrieve communication status and preferences for a specific user
+      operationId: getUserCommunicationStatus
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: userIdentifier
+          in: path
+          required: true
+          description: User identifier (email or Teams ID)
+          schema:
+            type: string
+            example: "christaylor@nextgeneration.com"
+      responses:
+        '200':
+          description: User communication status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCommunicationStatus'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/communication/message-history/{userIdentifier}:
+    get:
+      tags:
+        - Communication
+      summary: Get message history with user
+      description: Retrieve message history for a specific user with pagination
+      operationId: getMessageHistory
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: userIdentifier
+          in: path
+          required: true
+          description: User identifier
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of messages to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 500
+        - name: offset
+          in: query
+          description: Offset for pagination
+          schema:
+            type: integer
+            default: 0
+        - name: since
+          in: query
+          description: Return messages since this timestamp
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Message history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageHistory'
+
+  # ============================================
+  # GITHUB INTEGRATION ENDPOINTS
+  # ============================================
+
+  /api/github/repositories:
+    get:
+      tags:
+        - GitHub Integration
+      summary: List organization repositories
+      description: Get list of repositories with enhanced metadata and coordination status
+      operationId: listRepositories
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: organization
+          in: query
+          description: Organization name
+          schema:
+            type: string
+            default: "dynamicstms365"
+        - name: type
+          in: query
+          description: Repository type filter
+          schema:
+            type: string
+            enum: [all, public, private, forks, sources, member]
+            default: all
+        - name: sort
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [created, updated, pushed, full_name]
+            default: updated
+      responses:
+        '200':
+          description: List of repositories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepositoryList'
+
+  /api/github/repositories/{owner}/{repo}/issues:
+    get:
+      tags:
+        - GitHub Integration
+      summary: List repository issues
+      description: Get issues with enhanced filtering and coordination metadata
+      operationId: listRepositoryIssues
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [open, closed, all]
+            default: open
+        - name: labels
+          in: query
+          description: Comma-separated list of labels
+          schema:
+            type: string
+        - name: assignee
+          in: query
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueList'
+
+    post:
+      tags:
+        - GitHub Integration
+      summary: Create new issue
+      description: Create a new issue with Reynolds-level precision and coordination
+      operationId: createIssue
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIssueRequest'
+      responses:
+        '201':
+          description: Issue created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/github/repositories/{owner}/{repo}/discussions:
+    get:
+      tags:
+        - GitHub Integration
+      summary: List repository discussions
+      description: Get discussions with semantic search and coordination context
+      operationId: listRepositoryDiscussions
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: category
+          in: query
+          description: Discussion category
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of discussions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscussionList'
+
+    post:
+      tags:
+        - GitHub Integration
+      summary: Create new discussion
+      description: Create a new discussion with enterprise coordination features
+      operationId: createDiscussion
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDiscussionRequest'
+      responses:
+        '201':
+          description: Discussion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discussion'
+
+  /api/github/organization/analytics:
+    get:
+      tags:
+        - GitHub Integration
+      summary: Get organization analytics
+      description: |
+        Comprehensive organization analytics with Reynolds-level insights including:
+        - Project health metrics
+        - Dependency analysis
+        - Team coordination effectiveness
+        - Issue velocity trends
+      operationId: getOrganizationAnalytics
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: organization
+          in: query
+          schema:
+            type: string
+            default: "dynamicstms365"
+        - name: timeRange
+          in: query
+          description: Time range for analytics
+          schema:
+            type: string
+            enum: [week, month, quarter, year]
+            default: month
+        - name: includeMetrics
+          in: query
+          description: Include detailed metrics
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Organization analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAnalytics'
+
+  # ============================================
+  # ORCHESTRATION ENDPOINTS
+  # ============================================
+
+  /api/orchestration/coordinate-stakeholders:
+    post:
+      tags:
+        - Orchestration
+      summary: Coordinate stakeholders across projects
+      description: |
+        Reynolds-powered stakeholder coordination with Maximum Effort™ applied to:
+        - Cross-functional team alignment
+        - Communication strategy optimization
+        - Conflict resolution and consensus building
+        - Timeline coordination and resource allocation
+      operationId: coordinateStakeholders
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StakeholderCoordinationRequest'
+      responses:
+        '200':
+          description: Stakeholder coordination initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoordinationResponse'
+        '400':
+          description: Invalid coordination request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/orchestration/cross-repo-coordination:
+    post:
+      tags:
+        - Orchestration
+      summary: Orchestrate work across multiple repositories
+      description: |
+        Coordinate complex workflows across multiple repositories with supernatural precision:
+        - Dependency synchronization
+        - Feature coordination
+        - Release alignment
+        - Issue correlation and resolution
+      operationId: orchestrateCrossRepo
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrossRepoCoordinationRequest'
+      responses:
+        '200':
+          description: Cross-repository coordination initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoordinationResponse'
+
+  /api/orchestration/project-health:
+    get:
+      tags:
+        - Orchestration
+      summary: Assess organizational project health
+      description: |
+        Comprehensive project health assessment with Reynolds-level insights:
+        - Delivery velocity and quality metrics
+        - Team morale and collaboration effectiveness
+        - Technical debt and sustainability indicators
+        - Innovation and growth potential analysis
+      operationId: assessProjectHealth
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: organization
+          in: query
+          schema:
+            type: string
+            default: "dynamicstms365"
+        - name: scope
+          in: query
+          description: Assessment scope
+          schema:
+            type: string
+            enum: [comprehensive, velocity, quality, collaboration, technical_debt]
+            default: comprehensive
+        - name: timeWindow
+          in: query
+          description: Time window for analysis
+          schema:
+            type: string
+            enum: [week, month, quarter, year]
+            default: quarter
+        - name: includePredictions
+          in: query
+          description: Include health trend predictions
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Project health assessment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectHealthAssessment'
+
+  /api/orchestration/dependency-analysis:
+    get:
+      tags:
+        - Orchestration
+      summary: Analyze organizational dependencies
+      description: |
+        Map and analyze dependencies across the organization with Maximum Effort™:
+        - Technical dependencies (code, data, infrastructure)
+        - Business dependencies (processes, decisions, approvals)
+        - Team dependencies (skills, availability, coordination)
+        - Risk assessment and optimization recommendations
+      operationId: analyzeDependencies
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: organization
+          in: query
+          schema:
+            type: string
+            default: "dynamicstms365"
+        - name: analysisScope
+          in: query
+          description: Analysis scope
+          schema:
+            type: string
+            enum: [technical, business, cross_functional, comprehensive]
+            default: comprehensive
+        - name: dependencyTypes
+          in: query
+          description: Comma-separated dependency types
+          schema:
+            type: string
+            default: "code,data,infrastructure,team"
+        - name: includeRiskAssessment
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: includeRecommendations
+          in: query
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Dependency analysis results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependencyAnalysis'
+
+  # ============================================
+  # MONITORING & ANALYTICS ENDPOINTS
+  # ============================================
+
+  /api/monitoring/system-status:
+    get:
+      tags:
+        - Monitoring
+      summary: Get comprehensive system status
+      description: Real-time system status with Reynolds-level monitoring precision
+      operationId: getSystemStatus
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: System status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+
+  /api/monitoring/metrics:
+    get:
+      tags:
+        - Monitoring
+      summary: Get performance metrics
+      description: Detailed performance metrics and analytics
+      operationId: getMetrics
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          description: Time range for metrics
+          schema:
+            type: string
+            enum: [hour, day, week, month]
+            default: hour
+        - name: metrics
+          in: query
+          description: Comma-separated list of metrics to include
+          schema:
+            type: string
+            default: "response_time,throughput,error_rate,availability"
+      responses:
+        '200':
+          description: Performance metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerformanceMetrics'
+
+  /api/monitoring/alerts:
+    get:
+      tags:
+        - Monitoring
+      summary: Get active alerts
+      description: List of active system alerts and notifications
+      operationId: getActiveAlerts
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      parameters:
+        - name: severity
+          in: query
+          description: Filter by alert severity
+          schema:
+            type: string
+            enum: [critical, high, medium, low]
+        - name: status
+          in: query
+          description: Filter by alert status
+          schema:
+            type: string
+            enum: [active, acknowledged, resolved]
+            default: active
+      responses:
+        '200':
+          description: Active alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertList'
+
+    post:
+      tags:
+        - Monitoring
+      summary: Create custom alert
+      description: Create a custom monitoring alert with Reynolds coordination
+      operationId: createAlert
+      security:
+        - AzureAD: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRequest'
+      responses:
+        '201':
+          description: Alert created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+
+# ============================================
+# COMPONENTS
+# ============================================
+
+components:
+  securitySchemes:
+    AzureAD:
+      type: oauth2
+      description: Azure Active Directory OAuth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize
+          tokenUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+          scopes:
+            user.read: Read user profile
+            user.readwrite: Read and write user profile
+            team.readwrite: Read and write team information
+            
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Ocp-Apim-Subscription-Key
+      description: APIM subscription key for service-to-service authentication
+
+  schemas:
+    # ============================================
+    # COMMUNICATION SCHEMAS
+    # ============================================
+    
+    SendMessageRequest:
+      type: object
+      required:
+        - userIdentifier
+        - message
+      properties:
+        userIdentifier:
+          type: string
+          description: User identifier (email, Teams ID, or display name)
+          example: "christaylor@nextgeneration.com"
+        message:
+          type: string
+          description: Message content
+          example: "Hello Chris! This is a test message from Reynolds."
+          maxLength: 4000
+        preferredMethod:
+          type: string
+          enum: [Auto, DirectMessage, ChannelMessage, Email, SMS]
+          default: Auto
+          description: Preferred communication method
+        priority:
+          type: string
+          enum: [Low, Normal, High, Critical]
+          default: Normal
+          description: Message priority level
+        metadata:
+          type: object
+          description: Additional message metadata
+          properties:
+            requiresResponse:
+              type: boolean
+              default: false
+            deadline:
+              type: string
+              format: date-time
+              description: Response deadline
+            tags:
+              type: array
+              items:
+                type: string
+              description: Message tags for categorization
+            correlationId:
+              type: string
+              description: Correlation ID for tracking related messages
+
+    BatchMessageRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/SendMessageRequest'
+          maxItems: 100
+          description: Array of messages to send
+        coordinationStrategy:
+          type: string
+          enum: [parallel, sequential, priority_based]
+          default: parallel
+          description: Message delivery coordination strategy
+        batchMetadata:
+          type: object
+          description: Batch-level metadata
+          properties:
+            batchId:
+              type: string
+              description: Unique batch identifier
+            source:
+              type: string
+              description: Source system or process
+            priority:
+              type: string
+              enum: [Low, Normal, High, Critical]
+              default: Normal
+
+    MessageResponse:
+      type: object
+      properties:
+        messageId:
+          type: string
+          description: Unique message identifier
+          example: "msg_1234567890"
+        status:
+          type: string
+          enum: [sent, queued, failed, delivered, read]
+          description: Message delivery status
+        deliveryMethod:
+          type: string
+          enum: [DirectMessage, ChannelMessage, Email, SMS]
+          description: Actual delivery method used
+        timestamp:
+          type: string
+          format: date-time
+          description: Message sent timestamp
+        recipientInfo:
+          $ref: '#/components/schemas/RecipientInfo'
+        deliveryDetails:
+          type: object
+          description: Detailed delivery information
+          properties:
+            attemptCount:
+              type: integer
+              description: Number of delivery attempts
+            lastAttemptTime:
+              type: string
+              format: date-time
+            nextRetryTime:
+              type: string
+              format: date-time
+            errorMessage:
+              type: string
+              description: Error message if delivery failed
+
+    BatchMessageResponse:
+      type: object
+      properties:
+        batchId:
+          type: string
+          description: Unique batch identifier
+        totalMessages:
+          type: integer
+          description: Total number of messages in batch
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageResponse'
+          description: Individual message results
+        batchSummary:
+          type: object
+          properties:
+            successful:
+              type: integer
+              description: Number of successfully sent messages
+            failed:
+              type: integer
+              description: Number of failed messages
+            queued:
+              type: integer
+              description: Number of queued messages
+            processingTime:
+              type: number
+              format: float
+              description: Total batch processing time in seconds
+
+    RecipientInfo:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: User identifier used
+        displayName:
+          type: string
+          description: User display name
+        email:
+          type: string
+          format: email
+          description: User email address
+        teamsId:
+          type: string
+          description: Microsoft Teams user ID
+        preferredMethod:
+          type: string
+          enum: [DirectMessage, ChannelMessage, Email, SMS]
+          description: User's preferred communication method
+        timezone:
+          type: string
+          description: User's timezone
+          example: "America/New_York"
+
+    UserCommunicationStatus:
+      type: object
+      properties:
+        userIdentifier:
+          type: string
+          description: User identifier
+        status:
+          type: string
+          enum: [available, busy, away, offline, unknown]
+          description: Current availability status
+        lastSeen:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+        preferences:
+          type: object
+          properties:
+            preferredMethod:
+              type: string
+              enum: [Auto, DirectMessage, ChannelMessage, Email, SMS]
+            quietHours:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                startTime:
+                  type: string
+                  format: time
+                endTime:
+                  type: string
+                  format: time
+                timezone:
+                  type: string
+            notificationSettings:
+              type: object
+              properties:
+                priority:
+                  type: string
+                  enum: [all, high_and_critical, critical_only]
+                  default: all
+        statistics:
+          type: object
+          properties:
+            totalMessages:
+              type: integer
+              description: Total messages exchanged
+            averageResponseTime:
+              type: number
+              format: float
+              description: Average response time in minutes
+            lastMessageTime:
+              type: string
+              format: date-time
+
+    MessageHistory:
+      type: object
+      properties:
+        userIdentifier:
+          type: string
+          description: User identifier
+        totalCount:
+          type: integer
+          description: Total number of messages
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoricalMessage'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    HistoricalMessage:
+      type: object
+      properties:
+        messageId:
+          type: string
+          description: Unique message identifier
+        direction:
+          type: string
+          enum: [sent, received]
+          description: Message direction
+        content:
+          type: string
+          description: Message content
+        timestamp:
+          type: string
+          format: date-time
+          description: Message timestamp
+        deliveryMethod:
+          type: string
+          enum: [DirectMessage, ChannelMessage, Email, SMS]
+        status:
+          type: string
+          enum: [sent, delivered, read, failed]
+        metadata:
+          type: object
+          description: Message metadata
+
+    # ============================================
+    # GITHUB INTEGRATION SCHEMAS
+    # ============================================
+
+    RepositoryList:
+      type: object
+      properties:
+        repositories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Repository'
+        totalCount:
+          type: integer
+          description: Total number of repositories
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    Repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Repository ID
+        name:
+          type: string
+          description: Repository name
+        fullName:
+          type: string
+          description: Full repository name (owner/repo)
+        description:
+          type: string
+          description: Repository description
+        htmlUrl:
+          type: string
+          format: uri
+          description: Repository URL
+        private:
+          type: boolean
+          description: Whether repository is private
+        fork:
+          type: boolean
+          description: Whether repository is a fork
+        language:
+          type: string
+          description: Primary programming language
+        stargazersCount:
+          type: integer
+          description: Number of stars
+        forksCount:
+          type: integer
+          description: Number of forks
+        openIssuesCount:
+          type: integer
+          description: Number of open issues
+        createdAt:
+          type: string
+          format: date-time
+          description: Repository creation date
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update date
+        coordinationStatus:
+          type: object
+          description: Reynolds coordination metadata
+          properties:
+            healthScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+              description: Repository health score
+            activityLevel:
+              type: string
+              enum: [low, medium, high, very_high]
+            collaborationScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            lastCoordinationUpdate:
+              type: string
+              format: date-time
+
+    IssueList:
+      type: object
+      properties:
+        issues:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+        totalCount:
+          type: integer
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    Issue:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Issue ID
+        number:
+          type: integer
+          description: Issue number
+        title:
+          type: string
+          description: Issue title
+        body:
+          type: string
+          description: Issue body content
+        state:
+          type: string
+          enum: [open, closed]
+          description: Issue state
+        htmlUrl:
+          type: string
+          format: uri
+          description: Issue URL
+        user:
+          $ref: '#/components/schemas/GitHubUser'
+        assignees:
+          type: array
+          items:
+            $ref: '#/components/schemas/GitHubUser'
+        labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/GitHubLabel'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        commentsCount:
+          type: integer
+          description: Number of comments
+        coordinationMetadata:
+          type: object
+          description: Reynolds coordination metadata
+          properties:
+            priorityScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            complexityEstimate:
+              type: string
+              enum: [trivial, low, medium, high, critical]
+            stakeholderCount:
+              type: integer
+            estimatedResolutionTime:
+              type: string
+              description: Estimated resolution timeframe
+            blockedBy:
+              type: array
+              items:
+                type: string
+              description: List of blocking dependencies
+
+    CreateIssueRequest:
+      type: object
+      required:
+        - title
+        - body
+      properties:
+        title:
+          type: string
+          description: Issue title
+          maxLength: 256
+        body:
+          type: string
+          description: Issue body content
+          maxLength: 65536
+        labels:
+          type: array
+          items:
+            type: string
+          description: Issue labels
+        assignees:
+          type: array
+          items:
+            type: string
+          description: Assignee usernames
+        milestone:
+          type: integer
+          description: Milestone number
+        coordinationOptions:
+          type: object
+          description: Reynolds coordination options
+          properties:
+            priorityLevel:
+              type: string
+              enum: [low, medium, high, critical]
+              default: medium
+            requiresStakeholderApproval:
+              type: boolean
+              default: false
+            estimatedComplexity:
+              type: string
+              enum: [trivial, low, medium, high, critical]
+            dependencies:
+              type: array
+              items:
+                type: string
+              description: List of dependencies
+            notifyStakeholders:
+              type: boolean
+              default: true
+
+    DiscussionList:
+      type: object
+      properties:
+        discussions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Discussion'
+        totalCount:
+          type: integer
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    Discussion:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Discussion ID
+        number:
+          type: integer
+          description: Discussion number
+        title:
+          type: string
+          description: Discussion title
+        body:
+          type: string
+          description: Discussion body content
+        category:
+          $ref: '#/components/schemas/DiscussionCategory'
+        user:
+          $ref: '#/components/schemas/GitHubUser'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        commentsCount:
+          type: integer
+        upvoteCount:
+          type: integer
+        htmlUrl:
+          type: string
+          format: uri
+
+    CreateDiscussionRequest:
+      type: object
+      required:
+        - title
+        - body
+        - categoryId
+      properties:
+        title:
+          type: string
+          description: Discussion title
+          maxLength: 256
+        body:
+          type: string
+          description: Discussion body content
+          maxLength: 65536
+        categoryId:
+          type: string
+          description: Discussion category ID
+
+    DiscussionCategory:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Category ID
+        name:
+          type: string
+          description: Category name
+        description:
+          type: string
+          description: Category description
+        emoji:
+          type: string
+          description: Category emoji
+
+    GitHubUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+        login:
+          type: string
+          description: Username
+        avatarUrl:
+          type: string
+          format: uri
+          description: Avatar URL
+        htmlUrl:
+          type: string
+          format: uri
+          description: User profile URL
+
+    GitHubLabel:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Label ID
+        name:
+          type: string
+          description: Label name
+        color:
+          type: string
+          description: Label color (hex)
+        description:
+          type: string
+          description: Label description
+
+    OrganizationAnalytics:
+      type: object
+      properties:
+        organization:
+          type: string
+          description: Organization name
+        timeRange:
+          type: string
+          description: Analytics time range
+        summary:
+          type: object
+          properties:
+            totalRepositories:
+              type: integer
+            totalIssues:
+              type: integer
+            totalDiscussions:
+              type: integer
+            activeContributors:
+              type: integer
+            averageIssueResolutionTime:
+              type: number
+              format: float
+              description: Average resolution time in days
+        healthMetrics:
+          type: object
+          properties:
+            overallHealthScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            velocityScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            collaborationScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            codeQualityScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+        trends:
+          type: object
+          properties:
+            issueCreationTrend:
+              type: string
+              enum: [increasing, stable, decreasing]
+            resolutionTimeTrend:
+              type: string
+              enum: [improving, stable, declining]
+            contributorEngagementTrend:
+              type: string
+              enum: [increasing, stable, decreasing]
+        topRepositories:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              healthScore:
+                type: number
+                format: float
+              activityLevel:
+                type: string
+                enum: [low, medium, high, very_high]
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+                enum: [velocity, quality, collaboration, process]
+              priority:
+                type: string
+                enum: [low, medium, high, critical]
+              title:
+                type: string
+              description:
+                type: string
+              estimatedImpact:
+                type: string
+                enum: [low, medium, high]
+
+    # ============================================
+    # ORCHESTRATION SCHEMAS
+    # ============================================
+
+    StakeholderCoordinationRequest:
+      type: object
+      required:
+        - coordinationType
+        - stakeholderGroups
+      properties:
+        coordinationType:
+          type: string
+          enum: [alignment, communication, decision_making, conflict_resolution]
+          description: Type of coordination needed
+        stakeholderGroups:
+          type: array
+          items:
+            type: string
+            enum: [development, product, design, qa, devops, management, external]
+          description: Stakeholder groups to coordinate
+        priorityLevel:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+        coordinationScope:
+          type: string
+          enum: [project, team, organization, external]
+          default: project
+        communicationStyle:
+          type: string
+          enum: [formal, casual, technical, executive]
+          default: casual
+        timeline:
+          type: string
+          enum: [immediate, short_term, medium_term, long_term]
+          default: short_term
+        objectives:
+          type: string
+          description: Specific coordination objectives
+          maxLength: 1000
+        context:
+          type: object
+          description: Additional coordination context
+          properties:
+            projectId:
+              type: string
+            repositoryName:
+              type: string
+            relatedIssues:
+              type: array
+              items:
+                type: string
+            deadlines:
+              type: array
+              items:
+                type: object
+                properties:
+                  description:
+                    type: string
+                  date:
+                    type: string
+                    format: date-time
+            constraints:
+              type: array
+              items:
+                type: string
+
+    CrossRepoCoordinationRequest:
+      type: object
+      required:
+        - orchestrationType
+        - targetRepositories
+      properties:
+        orchestrationType:
+          type: string
+          enum: [dependency_sync, feature_coordination, release_alignment, issue_correlation]
+          description: Type of cross-repo orchestration
+        targetRepositories:
+          type: array
+          items:
+            type: string
+          description: Target repositories (owner/repo format)
+        coordinationScope:
+          type: string
+          enum: [specific, related, organization_wide]
+          default: related
+        actionMode:
+          type: string
+          enum: [analyze, plan, coordinate]
+          default: analyze
+        priorityLevel:
+          type: string
+          enum: [low, medium, high, critical]
+          default: medium
+        coordinationContext:
+          type: string
+          description: Additional context for coordination
+          maxLength: 1000
+        parameters:
+          type: object
+          description: Orchestration-specific parameters
+          properties:
+            syncBranches:
+              type: array
+              items:
+                type: string
+              description: Branches to synchronize (for dependency_sync)
+            featureFlags:
+              type: array
+              items:
+                type: string
+              description: Feature flags to coordinate
+            releaseVersion:
+              type: string
+              description: Target release version
+            correlationCriteria:
+              type: object
+              description: Criteria for issue correlation
+              properties:
+                labels:
+                  type: array
+                  items:
+                    type: string
+                keywords:
+                  type: array
+                  items:
+                    type: string
+                timeWindow:
+                  type: string
+                  enum: [week, month, quarter]
+
+    CoordinationResponse:
+      type: object
+      properties:
+        coordinationId:
+          type: string
+          description: Unique coordination identifier
+        status:
+          type: string
+          enum: [initiated, in_progress, completed, failed]
+        coordinationType:
+          type: string
+          description: Type of coordination performed
+        summary:
+          type: string
+          description: Coordination summary
+        details:
+          type: object
+          description: Detailed coordination results
+          properties:
+            tasksCreated:
+              type: integer
+              description: Number of tasks created
+            stakeholdersNotified:
+              type: integer
+              description: Number of stakeholders notified
+            repositoriesAffected:
+              type: integer
+              description: Number of repositories affected
+            estimatedCompletionTime:
+              type: string
+              description: Estimated completion timeframe
+        nextSteps:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+              assignee:
+                type: string
+              dueDate:
+                type: string
+                format: date-time
+              priority:
+                type: string
+                enum: [low, medium, high, critical]
+        monitoring:
+          type: object
+          properties:
+            coordinationUrl:
+              type: string
+              format: uri
+              description: URL to monitor coordination progress
+            notificationPreferences:
+              type: object
+              properties:
+                milestones:
+                  type: boolean
+                  default: true
+                issues:
+                  type: boolean
+                  default: true
+                completion:
+                  type: boolean
+                  default: true
+
+    ProjectHealthAssessment:
+      type: object
+      properties:
+        organization:
+          type: string
+          description: Organization name
+        assessmentId:
+          type: string
+          description: Unique assessment identifier
+        timestamp:
+          type: string
+          format: date-time
+          description: Assessment timestamp
+        overallScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Overall project health score
+        dimensions:
+          type: object
+          properties:
+            delivery:
+              $ref: '#/components/schemas/HealthDimension'
+            innovation:
+              $ref: '#/components/schemas/HealthDimension'
+            sustainability:
+              $ref: '#/components/schemas/HealthDimension'
+            teamMorale:
+              $ref: '#/components/schemas/HealthDimension'
+            technicalExcellence:
+              $ref: '#/components/schemas/HealthDimension'
+        trends:
+          type: object
+          properties:
+            healthTrend:
+              type: string
+              enum: [improving, stable, declining]
+            velocityTrend:
+              type: string
+              enum: [accelerating, stable, slowing]
+            qualityTrend:
+              type: string
+              enum: [improving, stable, declining]
+        predictions:
+          type: object
+          properties:
+            nextQuarterHealth:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+            riskAreas:
+              type: array
+              items:
+                type: object
+                properties:
+                  area:
+                    type: string
+                  riskLevel:
+                    type: string
+                    enum: [low, medium, high, critical]
+                  description:
+                    type: string
+                  recommendedActions:
+                    type: array
+                    items:
+                      type: string
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+                enum: [delivery, innovation, sustainability, team_morale, technical_excellence]
+              priority:
+                type: string
+                enum: [low, medium, high, critical]
+              title:
+                type: string
+              description:
+                type: string
+              expectedImpact:
+                type: string
+                enum: [low, medium, high]
+              timeToImplement:
+                type: string
+                enum: [days, weeks, months]
+              resources:
+                type: array
+                items:
+                  type: string
+
+    HealthDimension:
+      type: object
+      properties:
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        status:
+          type: string
+          enum: [excellent, good, fair, poor, critical]
+        trend:
+          type: string
+          enum: [improving, stable, declining]
+        metrics:
+          type: object
+          description: Dimension-specific metrics
+        topIssues:
+          type: array
+          items:
+            type: string
+          description: Top issues affecting this dimension
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: Specific recommendations for improvement
+
+    DependencyAnalysis:
+      type: object
+      properties:
+        organization:
+          type: string
+          description: Organization name
+        analysisId:
+          type: string
+          description: Unique analysis identifier
+        timestamp:
+          type: string
+          format: date-time
+        summary:
+          type: object
+          properties:
+            totalDependencies:
+              type: integer
+            criticalDependencies:
+              type: integer
+            circularDependencies:
+              type: integer
+            riskScore:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 100
+        dependencyTypes:
+          type: object
+          properties:
+            technical:
+              $ref: '#/components/schemas/DependencyCategory'
+            business:
+              $ref: '#/components/schemas/DependencyCategory'
+            team:
+              $ref: '#/components/schemas/DependencyCategory'
+            infrastructure:
+              $ref: '#/components/schemas/DependencyCategory'
+        riskAssessment:
+          type: object
+          properties:
+            highRiskDependencies:
+              type: array
+              items:
+                $ref: '#/components/schemas/DependencyRisk'
+            singlePointsOfFailure:
+              type: array
+              items:
+                type: string
+            outdatedDependencies:
+              type: array
+              items:
+                type: string
+        recommendations:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+                enum: [reduction, modernization, redundancy, documentation]
+              priority:
+                type: string
+                enum: [low, medium, high, critical]
+              title:
+                type: string
+              description:
+                type: string
+              estimatedEffort:
+                type: string
+                enum: [small, medium, large, extra_large]
+              expectedBenefit:
+                type: string
+                enum: [low, medium, high]
+        visualization:
+          type: object
+          properties:
+            graphData:
+              type: string
+              description: Dependency graph data (JSON format)
+            hierarchyData:
+              type: string
+              description: Dependency hierarchy data (JSON format)
+            matrixData:
+              type: string
+              description: Dependency matrix data (JSON format)
+
+    DependencyCategory:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: Number of dependencies in this category
+        criticalCount:
+          type: integer
+          description: Number of critical dependencies
+        riskScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        topDependencies:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              criticality:
+                type: string
+                enum: [low, medium, high, critical]
+              healthScore:
+                type: number
+                format: float
+                minimum: 0
+                maximum: 100
+
+    DependencyRisk:
+      type: object
+      properties:
+        dependencyName:
+          type: string
+        riskType:
+          type: string
+          enum: [availability, performance, security, compatibility, maintenance]
+        riskLevel:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+        impact:
+          type: string
+        likelihood:
+          type: string
+          enum: [low, medium, high]
+        mitigationStrategies:
+          type: array
+          items:
+            type: string
+
+    # ============================================
+    # MONITORING SCHEMAS
+    # ============================================
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Overall health status
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+        version:
+          type: string
+          description: API version
+        uptime:
+          type: number
+          format: float
+          description: Uptime in seconds
+        services:
+          type: object
+          properties:
+            communication:
+              $ref: '#/components/schemas/ServiceHealth'
+            github:
+              $ref: '#/components/schemas/ServiceHealth'
+            orchestration:
+              $ref: '#/components/schemas/ServiceHealth'
+            monitoring:
+              $ref: '#/components/schemas/ServiceHealth'
+        dependencies:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/DependencyHealth'
+            teamsApi:
+              $ref: '#/components/schemas/DependencyHealth'
+            githubApi:
+              $ref: '#/components/schemas/DependencyHealth'
+            azureAd:
+              $ref: '#/components/schemas/DependencyHealth'
+
+    ServiceHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        responseTime:
+          type: number
+          format: float
+          description: Average response time in milliseconds
+        errorRate:
+          type: number
+          format: float
+          description: Error rate percentage
+        lastCheck:
+          type: string
+          format: date-time
+
+    DependencyHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy, unavailable]
+        responseTime:
+          type: number
+          format: float
+          description: Response time in milliseconds
+        lastCheck:
+          type: string
+          format: date-time
+        errorMessage:
+          type: string
+          description: Error message if unhealthy
+
+    SystemStatus:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        overallStatus:
+          type: string
+          enum: [operational, degraded, major_outage, maintenance]
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentStatus'
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
+        maintenance:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceWindow'
+        performance:
+          $ref: '#/components/schemas/PerformanceSummary'
+
+    ComponentStatus:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Component name
+        status:
+          type: string
+          enum: [operational, degraded, major_outage, maintenance]
+        description:
+          type: string
+          description: Component description
+        lastUpdated:
+          type: string
+          format: date-time
+
+    Incident:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Incident ID
+        title:
+          type: string
+          description: Incident title
+        status:
+          type: string
+          enum: [investigating, identified, monitoring, resolved]
+        severity:
+          type: string
+          enum: [minor, major, critical]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        description:
+          type: string
+        affectedComponents:
+          type: array
+          items:
+            type: string
+
+    MaintenanceWindow:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Maintenance window ID
+        title:
+          type: string
+          description: Maintenance title
+        description:
+          type: string
+          description: Maintenance description
+        scheduledStart:
+          type: string
+          format: date-time
+        scheduledEnd:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [scheduled, in_progress, completed, cancelled]
+        affectedComponents:
+          type: array
+          items:
+            type: string
+
+    PerformanceSummary:
+      type: object
+      properties:
+        averageResponseTime:
+          type: number
+          format: float
+          description: Average response time in milliseconds
+        throughput:
+          type: number
+          format: float
+          description: Requests per second
+        errorRate:
+          type: number
+          format: float
+          description: Error rate percentage
+        availability:
+          type: number
+          format: float
+          description: Availability percentage
+
+    PerformanceMetrics:
+      type: object
+      properties:
+        timeRange:
+          type: string
+          description: Time range for metrics
+        timestamp:
+          type: string
+          format: date-time
+        metrics:
+          type: object
+          properties:
+            responseTime:
+              $ref: '#/components/schemas/MetricData'
+            throughput:
+              $ref: '#/components/schemas/MetricData'
+            errorRate:
+              $ref: '#/components/schemas/MetricData'
+            availability:
+              $ref: '#/components/schemas/MetricData'
+            resourceUtilization:
+              type: object
+              properties:
+                cpu:
+                  $ref: '#/components/schemas/MetricData'
+                memory:
+                  $ref: '#/components/schemas/MetricData'
+                storage:
+                  $ref: '#/components/schemas/MetricData'
+        summary:
+          type: object
+          properties:
+            totalRequests:
+              type: integer
+            successfulRequests:
+              type: integer
+            failedRequests:
+              type: integer
+            averageResponseTime:
+              type: number
+              format: float
+            peakThroughput:
+              type: number
+              format: float
+
+    MetricData:
+      type: object
+      properties:
+        current:
+          type: number
+          format: float
+          description: Current value
+        average:
+          type: number
+          format: float
+          description: Average value
+        minimum:
+          type: number
+          format: float
+          description: Minimum value
+        maximum:
+          type: number
+          format: float
+          description: Maximum value
+        trend:
+          type: string
+          enum: [increasing, stable, decreasing]
+          description: Trend direction
+        dataPoints:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              value:
+                type: number
+                format: float
+
+    AlertList:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        totalCount:
+          type: integer
+        activeCount:
+          type: integer
+        criticalCount:
+          type: integer
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Alert ID
+        title:
+          type: string
+          description: Alert title
+        description:
+          type: string
+          description: Alert description
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        status:
+          type: string
+          enum: [active, acknowledged, resolved]
+        source:
+          type: string
+          description: Alert source
+        category:
+          type: string
+          enum: [performance, availability, security, business]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        acknowledgedAt:
+          type: string
+          format: date-time
+          nullable: true
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        metadata:
+          type: object
+          description: Alert-specific metadata
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [acknowledge, resolve, escalate, notify]
+              description:
+                type: string
+              url:
+                type: string
+                format: uri
+
+    CreateAlertRequest:
+      type: object
+      required:
+        - title
+        - description
+        - severity
+      properties:
+        title:
+          type: string
+          description: Alert title
+          maxLength: 256
+        description:
+          type: string
+          description: Alert description
+          maxLength: 1000
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        category:
+          type: string
+          enum: [performance, availability, security, business]
+          default: business
+        source:
+          type: string
+          description: Alert source
+          default: "API"
+        metadata:
+          type: object
+          description: Additional alert metadata
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [acknowledge, resolve, escalate, notify]
+              description:
+                type: string
+              url:
+                type: string
+                format: uri
+
+    # ============================================
+    # COMMON SCHEMAS
+    # ============================================
+
+    PaginationInfo:
+      type: object
+      properties:
+        currentPage:
+          type: integer
+          minimum: 1
+          description: Current page number
+        totalPages:
+          type: integer
+          minimum: 0
+          description: Total number of pages
+        pageSize:
+          type: integer
+          minimum: 1
+          description: Number of items per page
+        totalItems:
+          type: integer
+          minimum: 0
+          description: Total number of items
+        hasNextPage:
+          type: boolean
+          description: Whether there is a next page
+        hasPreviousPage:
+          type: boolean
+          description: Whether there is a previous page
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: "INVALID_REQUEST"
+            message:
+              type: string
+              description: Error message
+              example: "The request is invalid"
+            details:
+              type: string
+              description: Detailed error information
+            timestamp:
+              type: string
+              format: date-time
+              description: Error timestamp
+            traceId:
+              type: string
+              description: Trace ID for debugging
+            correlationId:
+              type: string
+              description: Correlation ID for request tracking
+
+tags:
+  - name: Health & Status
+    description: Health monitoring and status endpoints
+  - name: Communication
+    description: Message sending and communication management
+  - name: GitHub Integration
+    description: GitHub repository and issue management
+  - name: Orchestration
+    description: Cross-platform coordination and orchestration
+  - name: Monitoring
+    description: System monitoring and analytics
+
+externalDocs:
+  description: Reynolds Communication & Orchestration API Documentation
+  url: https://github.com/dynamicstms365/copilot-powerplatform/docs/api

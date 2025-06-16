@@ -1,0 +1,79 @@
+# Reynolds: Maximum Effort™ SEQ.NET + CopilotAgent Orchestration
+# Supernatural structured logging with beautiful web interface
+version: '3.8'
+
+services:
+  # SEQ.NET Server - The supernatural logging dashboard
+  seq:
+    image: datalust/seq:2024.1
+    container_name: reynolds-seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINUSERNAME=admin
+      - SEQ_FIRSTRUN_ADMINPASSWORD=SupernaturalLogging123!
+      - SEQ_CACHE_SYSTEMRAMTARGET=0.8
+      - SEQ_CACHE_TARGETSIZE=256MB
+    ports:
+      - "5341:5341"  # SEQ ingestion port
+      - "8080:80"    # SEQ web interface
+    volumes:
+      - seq_data:/data
+    restart: unless-stopped
+    networks:
+      - reynolds-logging
+
+  # CopilotAgent - Reynolds enhanced with supernatural logging
+  copilot-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: reynolds-copilot-agent
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8000
+      - SEQ_SERVER_URL=http://seq:80
+      - SEQ_API_KEY=
+      - REYNOLDS_MAXIMUM_EFFORT=true
+      - SERILOG__WRITETO__1__ARGS__SERVERURL=http://seq:80
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app.pem:/app/app.pem:ro
+      - ./src/CopilotAgent/appsettings.json:/app/appsettings.json:ro
+    depends_on:
+      seq:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - reynolds-logging
+
+  # Reynolds Orchestration Dashboard (Optional - for monitoring)
+  portainer:
+    image: portainer/portainer-ce:2.19.4
+    container_name: reynolds-orchestration-dashboard
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+    networks:
+      - reynolds-logging
+
+volumes:
+  seq_data:
+    name: reynolds_seq_data
+  portainer_data:
+    name: reynolds_portainer_data
+
+networks:
+  reynolds-logging:
+    name: reynolds-logging-network
+    driver: bridge

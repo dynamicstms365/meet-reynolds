@@ -71,7 +71,7 @@ app.MapMcp()
 ## 🛠️ Running the Sample
 
 ### Prerequisites
-- .NET 8.0 or later
+- .NET 9.0 or later
 - Valid authentication configuration (JWT/API Keys)
 
 ### Configuration

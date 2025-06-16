@@ -9,7 +9,7 @@ This guide configures your development environment for optimal Copilot agent dev
 ## Prerequisites
 
 ### Required Tools
-- **.NET 8.0 SDK** or later
+- **.NET 9.0 SDK** or later
 - **Visual Studio 2022** or **VS Code** with C# extensions
 - **Power Platform CLI** (`pac cli`)
 - **Microsoft 365 CLI** (`m365 cli`)
@@ -20,8 +20,8 @@ This guide configures your development environment for optimal Copilot agent dev
 
 #### Windows PowerShell
 ```powershell
-# Install .NET 8.0 SDK
-winget install Microsoft.DotNet.SDK.8
+# Install .NET 9.0 SDK
+winget install Microsoft.DotNet.SDK.9
 
 # Install Power Platform CLI
 dotnet tool install --global Microsoft.PowerApps.CLI.Tool
@@ -45,8 +45,8 @@ az --version
 #### Linux/macOS
 ```bash
 #!/bin/bash
-# Install .NET 8.0 SDK
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+# Install .NET 9.0 SDK
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 9.0
 
 # Install Power Platform CLI
 dotnet tool install --global Microsoft.PowerApps.CLI.Tool
@@ -172,7 +172,7 @@ copilot-powerplatform/
             "name": "Launch CopilotAgent",
             "type": "coreclr",
             "request": "launch",
-            "program": "${workspaceFolder}/src/CopilotAgent/bin/Debug/net8.0/CopilotAgent.dll",
+            "program": "${workspaceFolder}/src/CopilotAgent/bin/Debug/net9.0/CopilotAgent.dll",
             "args": [],
             "cwd": "${workspaceFolder}/src/CopilotAgent",
             "console": "internalConsole",
@@ -253,7 +253,7 @@ dotnet add reference ../Shared/Shared.csproj
 <!-- Directory.Build.props -->
 <Project>
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

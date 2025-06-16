@@ -18,7 +18,7 @@ Reynolds leverages these enterprise-grade patterns:
 
 - Azure subscription with contributor access
 - Azure CLI installed and authenticated
-- .NET 8.0 SDK
+- .NET 9.0 SDK
 - Microsoft 365 tenant with Teams admin permissions
 - PowerShell or Bash terminal
 
@@ -223,7 +223,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.x'
           
       - name: Build Reynolds
         run: dotnet publish src/CopilotAgent --configuration Release
@@ -233,7 +233,7 @@ jobs:
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./src/CopilotAgent/bin/Release/net8.0/publish
+          package: ./src/CopilotAgent/bin/Release/net9.0/publish
 ```
 
 ## 🎪 Testing Deployment

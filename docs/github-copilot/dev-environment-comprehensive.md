@@ -38,7 +38,7 @@ environment_setup:
 # Power Platform Development Instructions for Copilot
 
 ## Primary Technologies
-- **Language:** C# (.NET 8+)
+- **Language:** C# (.NET 9+)
 - **Frontend:** Blazor WebAssembly
 - **CLI Tools:** pac CLI, Microsoft 365 CLI
 - **Cloud Platform:** Microsoft Power Platform
@@ -164,8 +164,8 @@ workspace:
         validation: "m365 --version"
       
       - name: "dotnet"
-        version: "8.0"
-        install_command: "curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 8.0.100"
+        version: "9.0"
+        install_command: "curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.100"
         validation: "dotnet --version"
     
     development:
@@ -357,7 +357,7 @@ workspace:
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>power-platform-agent-secrets</UserSecretsId>
@@ -403,7 +403,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
     
     - name: Setup Power Platform CLI
       run: dotnet tool install --global Microsoft.PowerApps.CLI.Tool
@@ -445,10 +445,10 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# Install .NET 8 if not present
+# Install .NET 9 if not present
 if ! command_exists dotnet; then
-    echo "Installing .NET 8..."
-    curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 8.0.100
+    echo "Installing .NET 9..."
+    curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version 9.0.100
     export PATH="$HOME/.dotnet:$PATH"
 fi
 
@@ -526,10 +526,10 @@ validate_tool "az" || TOOL_ISSUES=1
 
 # Check .NET version
 DOTNET_VERSION=$(dotnet --version)
-if [[ "$DOTNET_VERSION" == "8."* ]]; then
-    echo "✓ .NET 8 is installed ($DOTNET_VERSION)"
+if [[ "$DOTNET_VERSION" == "9."* ]]; then
+    echo "✓ .NET 9 is installed ($DOTNET_VERSION)"
 else
-    echo "✗ .NET 8 required, found: $DOTNET_VERSION"
+    echo "✗ .NET 9 required, found: $DOTNET_VERSION"
     TOOL_ISSUES=1
 fi
 

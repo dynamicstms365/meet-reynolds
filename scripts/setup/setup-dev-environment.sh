@@ -15,7 +15,7 @@ command_exists() {
 
 # Function to install .NET SDK
 install_dotnet() {
-    echo "📦 Installing .NET 8.0 SDK..."
+    echo "📦 Installing .NET 9.0 SDK..."
     
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         # Linux installation
@@ -23,7 +23,7 @@ install_dotnet() {
         sudo dpkg -i packages-microsoft-prod.deb
         rm packages-microsoft-prod.deb
         sudo apt-get update
-        sudo apt-get install -y apt-transport-https dotnet-sdk-8.0
+        sudo apt-get install -y apt-transport-https dotnet-sdk-9.0
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS installation
         if command_exists brew; then
@@ -33,7 +33,7 @@ install_dotnet() {
             exit 1
         fi
     else
-        echo "Please install .NET 8.0 SDK manually: https://dotnet.microsoft.com/download"
+        echo "Please install .NET 9.0 SDK manually: https://dotnet.microsoft.com/download"
         exit 1
     fi
 }

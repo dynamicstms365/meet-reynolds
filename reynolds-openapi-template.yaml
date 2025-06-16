@@ -1,0 +1,124 @@
+# GitHub Copilot: Please complete this OpenAPI 3.0 specification for Reynolds Communication & Orchestration API
+# Use the requirements from copilot-openapi-generation-prompt.md as your guide
+# Generate a comprehensive enterprise-grade API specification with Maximum Effort™
+
+openapi: 3.0.3
+info:
+  title: Reynolds Communication & Orchestration API
+  description: |
+    Enterprise-grade communication and orchestration API with Maximum Effort™ applied to every endpoint.
+    
+    This API provides comprehensive communication orchestration capabilities including:
+    - Microsoft Teams integration with bidirectional messaging
+    - GitHub repository management and coordination
+    - Cross-platform stakeholder communication
+    - Real-time status monitoring and health checks
+    - Advanced orchestration and workflow coordination
+    
+    **Authentication**: Supports both Azure AD OAuth2 and API Key authentication
+    **Rate Limiting**: Implemented at the APIM layer
+    **Monitoring**: Full Application Insights integration
+    
+    *Just Reynolds - Maximum Effort™ • Minimal Drama*
+  version: "1.0.0"
+  contact:
+    name: Reynolds Organization
+    email: reynolds@nextgeneration.com
+    url: https://github.com/dynamicstms365/copilot-powerplatform
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://nextgeneration.com/terms
+
+servers:
+  - url: https://reynolds-apim-prod.azure-api.net/reynolds
+    description: Production APIM endpoint
+  - url: https://reynolds-apim-dev.azure-api.net/reynolds
+    description: Development APIM endpoint
+  - url: https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io
+    description: Direct Container App endpoint (for testing)
+
+security:
+  - AzureAD: []
+  - ApiKeyAuth: []
+
+# GitHub Copilot: Please generate comprehensive paths section with all required endpoints
+paths:
+  # Communication endpoints for Teams integration
+  /api/communication/health:
+    get:
+      tags:
+        - Health & Status
+      summary: Health check endpoint
+      description: Provides comprehensive health status of the communication system
+      operationId: getCommunicationHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  # GitHub Copilot: Please complete all remaining endpoints following the pattern above
+  # Include communication, github, orchestration, and monitoring endpoints
+  # with comprehensive request/response schemas
+
+# GitHub Copilot: Please generate comprehensive components section
+components:
+  securitySchemes:
+    AzureAD:
+      type: oauth2
+      description: Azure Active Directory OAuth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize
+          tokenUrl: https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token
+          scopes:
+            user.read: Read user profile
+            user.readwrite: Read and write user profile
+            team.readwrite: Read and write team information
+            
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Ocp-Apim-Subscription-Key
+      description: APIM subscription key for service-to-service authentication
+
+  schemas:
+    # GitHub Copilot: Please generate all required schemas based on the prompt requirements
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Overall health status
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+    
+    # GitHub Copilot: Please complete all remaining schemas including:
+    # - Communication schemas (SendMessageRequest, MessageResponse, etc.)
+    # - GitHub integration schemas (Repository, Issue, Discussion, etc.)
+    # - Orchestration schemas (StakeholderCoordinationRequest, etc.)
+    # - Monitoring schemas (SystemStatus, PerformanceMetrics, etc.)
+    # - Common schemas (PaginationInfo, ErrorResponse, etc.)
+
+# GitHub Copilot: Please add comprehensive tags section
+tags:
+  - name: Health & Status
+    description: Health monitoring and status endpoints
+  - name: Communication
+    description: Message sending and communication management
+  - name: GitHub Integration
+    description: GitHub repository and issue management
+  - name: Orchestration
+    description: Cross-platform coordination and orchestration
+  - name: Monitoring
+    description: System monitoring and analytics
+
+externalDocs:
+  description: Reynolds Communication & Orchestration API Documentation
+  url: https://github.com/dynamicstms365/copilot-powerplatform/docs/api
