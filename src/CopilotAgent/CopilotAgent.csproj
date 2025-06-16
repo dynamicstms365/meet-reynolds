@@ -8,16 +8,17 @@
     <WarningsAsErrors />
     <WarningsNotAsErrors>CS1591;NU1701</WarningsNotAsErrors>
     
-    <!-- Reynolds Enterprise Package Configuration -->
+    <!-- Reynolds Enterprise Package Configuration - PRIVATE dynamicstms365 testing -->
     <IsPackable>true</IsPackable>
     <PackageId>Reynolds.CopilotAgent.Enterprise</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
-    <Authors>Reynolds Enterprise Orchestration</Authors>
+    <PackageVersion>1.0.0-preview</PackageVersion>
+    <Authors>Dynamic STMS 365</Authors>
     <Company>Dynamic STMS 365</Company>
-    <Description>Reynolds Enterprise MCP Copilot Agent with Maximum Effort™ orchestration, Issue #365 fixes, and enterprise authentication services.</Description>
-    <PackageTags>mcp;copilot;enterprise;reynolds;orchestration;powerplatform</PackageTags>
+    <Description>Reynolds enhanced MCP Copilot Agent with additional capabilities for private testing. Contains Issue #365 fixes and enterprise authentication services.</Description>
+    <PackageTags>mcp;copilot;enterprise;private;testing;dynamicstms365</PackageTags>
     <RepositoryUrl>https://github.com/dynamicstms365/copilot-powerplatform</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
