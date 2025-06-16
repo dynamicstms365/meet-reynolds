@@ -10,6 +10,12 @@ on:
     branches: [ main, develop ]
     paths:
       - 'src/CopilotAgent/**'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual build trigger'
+        required: false
+        default: 'Manual Reynolds dependency verification'
 
 env:
   DOTNET_VERSION: '8.0.x'
