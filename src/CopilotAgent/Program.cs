@@ -138,9 +138,9 @@ app.UseSignatureValidationLogging();
 // Map non-MCP controllers only (MCP endpoints handled by SDK)
 app.MapControllers();
 
-// Map Reynolds MCP Server HTTP endpoints
-app.MapMcp();
-app.Logger.LogInformation("🎭 Reynolds MCP Server HTTP endpoints mapped successfully");
+// Map Reynolds MCP Server HTTP endpoints with proper routing
+app.MapMcp("/mcp");
+app.Logger.LogInformation("🎭 Reynolds MCP Server HTTP endpoints mapped successfully at /mcp/*");
 
 // Standard MCP Server - no custom initialization required
 app.Logger.LogInformation("🎭 Reynolds MCP Server configured with standard SDK pattern");

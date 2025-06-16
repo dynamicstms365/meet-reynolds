@@ -2,23 +2,31 @@
   "mcpServers": {
     "copilot-github-bot": {
       "type": "streamable-http",
-      "url": "https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io/mcp",
+      "url": "http://localhost:5003/mcp",
       "headers": {
         "Content-Type": "application/json",
         "User-Agent": "ReynoldsEnterpriseAgent/1.0",
         "X-GitHub-Token": "${env:GITHUB_TOKEN}"
       },
       "alwaysAllow": [
-        "semantic_search",
-        "get_discussion",
-        "get_issue",
-        "search_discussions",
-        "search_issues",
-        "create_discussion",
-        "create_issue",
-        "organization_discussions",
-        "organization_issues",
-        "prompt_action"
+        "SearchSemantic",
+        "GetDiscussion",
+        "GetIssue",
+        "SearchDiscussions",
+        "SearchIssues",
+        "CreateDiscussion",
+        "CreateIssue",
+        "AnalyzeOrganizationDiscussions",
+        "AnalyzeOrganizationIssues",
+        "ProcessPromptAction",
+        "AddComment",
+        "UpdateContent",
+        "AnalyzeDependencies",
+        "AnalyzeOrgProjects",
+        "AssessProjectHealth",
+        "CoordinateStakeholders",
+        "OrchestrateCrossRepo",
+        "SearchRepositories"
       ],
       "disabled": false
     }
