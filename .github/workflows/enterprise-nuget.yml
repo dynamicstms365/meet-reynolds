@@ -38,13 +38,13 @@ jobs:
             8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore src/CopilotAgent/CopilotAgent.csproj
 
       - name: Build solution
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build src/CopilotAgent/CopilotAgent.csproj --configuration Release --no-restore
 
       - name: Pack enterprise packages
-        run: dotnet pack
+        run: dotnet pack src/CopilotAgent/CopilotAgent.csproj
           --configuration Release
           --no-build
           --version-suffix "${{ env.version_suffix }}"
