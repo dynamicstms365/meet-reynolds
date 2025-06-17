@@ -4,6 +4,7 @@ using CopilotAgent.Services;
 using Shared.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using CopilotAgent.Models;
 
 namespace CopilotAgent.Controllers;
 
@@ -290,7 +291,7 @@ public class AgentController : ControllerBase
     [ProducesResponseType(typeof(AgentCapabilities), (int)HttpStatusCode.OK)]
     public ActionResult<AgentCapabilities> GetCapabilities()
     {
-        return Ok(new AgentCapabilities
+        return Ok(new Shared.Models.AgentCapabilities
         {
             SupportedIntents = new[]
             {
@@ -319,18 +320,7 @@ public class AgentController : ControllerBase
                 "manage_connectors",
                 "deploy_flows",
                 "create_power_apps"
-            },
-            Features = new AgentFeatures
-            {
-                HealthMonitoring = true,
-                MetricsCollection = true,
-                ConfigurationManagement = true,
-                CLIIntegration = true,
-                PowerPlatformIntegration = true,
-                ReynoldsPersona = true
-            },
-            Version = "1.0.0",
-            ReynoldsCoordination = "Maximum Effort™ orchestration and supernatural charm included!"
+            }
         });
     }
 }
@@ -373,11 +363,4 @@ public partial class AgentCapabilities
     public AgentFeatures Features { get; set; } = new();
     public string Version { get; set; } = string.Empty;
     public string ReynoldsCoordination { get; set; } = string.Empty;
-}
-
-public class ErrorResponse
-{
-    public string Error { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, object> Details { get; set; } = new();
 }

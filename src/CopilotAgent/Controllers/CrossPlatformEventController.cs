@@ -5,6 +5,7 @@ using CopilotAgent.Services;
 using Shared.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using CopilotAgent.Models;
 
 namespace CopilotAgent.Controllers;
 
@@ -250,7 +251,7 @@ public class CrossPlatformEventController : ControllerBase
                 Version = "1.0.0",
                 RecentActivity = new RecentActivityMetrics
                 {
-                    EventsProcessed = recentStats.TotalEventsProcessed,
+                    EventsProcessed = (int)recentStats.TotalEventsProcessed,
                     SuccessRate = recentStats.SuccessRate,
                     AverageProcessingTime = $"{recentStats.AverageProcessingTime.TotalMilliseconds:F2}ms"
                 },
@@ -555,11 +556,4 @@ public class TestEventRequest
     public string? UserId { get; set; }
     public string? Content { get; set; }
     public Dictionary<string, object>? Metadata { get; set; }
-}
-
-public class ErrorResponse
-{
-    public string Error { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, object> Details { get; set; } = new();
 }

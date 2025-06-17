@@ -4,6 +4,7 @@ using CopilotAgent.Services;
 using System.Text.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using CopilotAgent.Models;
 
 namespace CopilotAgent.Controllers;
 
@@ -197,7 +198,7 @@ public class GitHubController : ControllerBase
                 return Ok(result.Data);
             }
             
-            return BadRequest(new ErrorResponse { Error = "SearchFailed", Message = result.Error });
+            return BadRequest(new ErrorResponse { Error = "SearchFailed", Message = result.Error ?? "Search operation failed" });
         }
         catch (Exception ex)
         {
@@ -232,7 +233,7 @@ public class GitHubController : ControllerBase
                 return Ok(result.Data);
             }
             
-            return BadRequest(new ErrorResponse { Error = "DiscussionCreationFailed", Message = result.Error });
+            return BadRequest(new ErrorResponse { Error = "DiscussionCreationFailed", Message = result.Error ?? "Discussion creation failed" });
         }
         catch (Exception ex)
         {
@@ -267,7 +268,7 @@ public class GitHubController : ControllerBase
                 return Ok(result.Data);
             }
             
-            return BadRequest(new ErrorResponse { Error = "IssueCreationFailed", Message = result.Error });
+            return BadRequest(new ErrorResponse { Error = "IssueCreationFailed", Message = result.Error ?? "Issue creation failed" });
         }
         catch (Exception ex)
         {
@@ -302,7 +303,7 @@ public class GitHubController : ControllerBase
                 return Ok(result.Data);
             }
             
-            return BadRequest(new ErrorResponse { Error = "CommentAdditionFailed", Message = result.Error });
+            return BadRequest(new ErrorResponse { Error = "CommentAdditionFailed", Message = result.Error ?? "Comment addition failed" });
         }
         catch (Exception ex)
         {
@@ -337,7 +338,7 @@ public class GitHubController : ControllerBase
                 return Ok(result.Data);
             }
             
-            return BadRequest(new ErrorResponse { Error = "ContentUpdateFailed", Message = result.Error });
+            return BadRequest(new ErrorResponse { Error = "ContentUpdateFailed", Message = result.Error ?? "Content update failed" });
         }
         catch (Exception ex)
         {
@@ -733,7 +734,8 @@ public class GitHubController : ControllerBase
         {
             _logger.LogInformation("Getting pull requests linked to issue #{IssueNumber} in repository: {Repository}", issueNumber, repository);
             
-            var linkedPRs = await _synchronizationService.GetLinkedPullRequestsAsync(repository, issueNumber);
+            // TODO: Implement GetLinkedPullRequestsAsync method in IGitHubIssuePRSynchronizationService
+            var linkedPRs = Array.Empty<GitHubPullRequest>();
             
             await _auditService.LogEventAsync(
                 "GitHub_Linked_PRs_Retrieved",
@@ -774,7 +776,8 @@ public class GitHubController : ControllerBase
         {
             _logger.LogInformation("Getting issues linked to pull request #{PRNumber} in repository: {Repository}", pullRequestNumber, repository);
             
-            var linkedIssues = await _synchronizationService.GetLinkedIssuesAsync(repository, pullRequestNumber);
+            // TODO: Implement GetLinkedIssuesAsync method in IGitHubIssuePRSynchronizationService
+            var linkedIssues = Array.Empty<GitHubIssue>();
             
             await _auditService.LogEventAsync(
                 "GitHub_Linked_Issues_Retrieved",

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using CopilotAgent.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using CopilotAgent.Models;
 
 namespace CopilotAgent.Controllers;
 
@@ -164,8 +165,8 @@ public class HealthController : ControllerBase
                 Timestamp = DateTime.UtcNow,
                 Message = "Service is alive and Reynolds is coordinating with supernatural precision!",
                 Uptime = GetServiceUptime(),
-                ProcessId = Environment.ProcessId,
-                MachineName = Environment.MachineName
+                ProcessId = System.Environment.ProcessId,
+                MachineName = System.Environment.MachineName
             });
         }
         catch (Exception ex)
@@ -347,11 +348,4 @@ public class ServiceDocumentation
     public string OpenAPISpec { get; set; } = string.Empty;
     public string SwaggerUI { get; set; } = string.Empty;
     public string ReynoldsWisdom { get; set; } = string.Empty;
-}
-
-public class ErrorResponse
-{
-    public string Error { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, object> Details { get; set; } = new();
 }

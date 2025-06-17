@@ -3,6 +3,7 @@ using CopilotAgent.Services;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.OpenApi.Models;
 using System.Net;
+using CopilotAgent.Models;
 
 namespace CopilotAgent.Controllers;
 
@@ -409,12 +410,6 @@ public class CommunicationHealthStatus
     public DateTime CheckedAt { get; set; }
 }
 
-public class ErrorResponse
-{
-    public string Error { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-    public Dictionary<string, object> Details { get; set; } = new();
-}
 
 public enum DeliveryMethod
 {
