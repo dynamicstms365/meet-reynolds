@@ -21,14 +21,31 @@ jobs:
       contents: read
       packages: write
 
-    env:
-      version_suffix: ${{ inputs.version_suffix_override || format('enterprise.{0}', github.run_number) }}
-
     steps:
       - name: Clone the repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Generate Semantic Version
+        id: semver
+        uses: PaulHatch/semantic-version@v5.4.0
+        with:
+          tag_prefix: "v"
+          major_pattern: "BREAKING CHANGE:"
+          minor_pattern: "feat:"
+          version_format: "${major}.${minor}.${patch}"
+          bump_each_commit: true
+          search_commit_body: true
+      
+      - name: Set Enterprise Version
+        id: enterprise_version
+        run: |
+          SEMANTIC_VERSION="${{ steps.semver.outputs.version }}"
+          ENTERPRISE_SUFFIX="${{ inputs.version_suffix_override || format('enterprise.{0}', github.run_number) }}"
+          FULL_VERSION="${SEMANTIC_VERSION}-${ENTERPRISE_SUFFIX}"
+          echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "🎯 Reynolds Enterprise Version: ${FULL_VERSION}"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -51,7 +68,7 @@ jobs:
           dotnet pack src/CopilotAgent/CopilotAgent.csproj \
             --configuration Release \
             --no-build \
-            --version-suffix "${{ env.version_suffix }}" \
+            --property:PackageVersion="${{ steps.enterprise_version.outputs.version }}" \
             --output "${{ github.workspace }}/artifacts/packages"
 
       - name: Verify packages created
