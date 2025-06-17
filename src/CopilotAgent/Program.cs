@@ -139,36 +139,41 @@ else
 var app = builder.Build();
 
 // Configure HTTP request pipeline - Reynolds: .NET 9.0 OpenAPI with Maximum Effort™ APIM integration
-if (app.Environment.IsDevelopment())
+
+// Reynolds: Add static files middleware for SwaggerUI assets - CRITICAL for container deployment
+app.UseStaticFiles();
+
+// Always enable OpenAPI and Swagger in container deployments for APIM integration
+app.MapOpenApi("/api-docs/v1/openapi.json");
+
+// Configure SwaggerUI for all environments - container apps need this for debugging
+app.UseSwaggerUI(c =>
 {
-    // Map .NET 9.0 OpenAPI endpoint for development
-    app.MapOpenApi("/api-docs/v1/openapi.json");
+    c.SwaggerEndpoint("/api-docs/v1/openapi.json", "Reynolds Communication & Orchestration API v1.0");
+    c.RoutePrefix = "api-docs";
+    c.DocumentTitle = $"Reynolds API Documentation - {app.Environment.EnvironmentName} (.NET 9.0)";
+    c.EnableDeepLinking();
+    c.EnableValidator();
+    c.EnableTryItOutByDefault();
     
-    // Use Swagger UI pointing to our OpenAPI endpoint
-    app.UseSwaggerUI(c =>
+    // Reynolds: Skip custom CSS injection in container environments to prevent 404 errors
+    if (app.Environment.IsDevelopment())
     {
-        c.SwaggerEndpoint("/api-docs/v1/openapi.json", "Reynolds Communication & Orchestration API v1.0");
-        c.RoutePrefix = "api-docs";
-        c.DocumentTitle = "Reynolds API Documentation - .NET 9.0";
-        c.EnableDeepLinking();
-        c.EnableValidator();
-        c.EnableTryItOutByDefault();
-        c.InjectStylesheet("/swagger-ui/custom.css");
-    });
-}
-else
-{
-    // Enable .NET 9.0 OpenAPI in production for Azure APIM integration
-    app.MapOpenApi("/api-docs/v1/openapi.json");
-    
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/api-docs/v1/openapi.json", "Reynolds Communication & Orchestration API v1.0");
-        c.RoutePrefix = "api-docs";
-        c.DocumentTitle = "Reynolds API Documentation - Production (.NET 9.0)";
-        c.EnableDeepLinking();
-    });
-}
+        // Only inject custom CSS in development if file exists
+        var webRoot = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+        var cssPath = Path.Combine(webRoot, "swagger-ui", "custom.css");
+        if (File.Exists(cssPath))
+        {
+            c.InjectStylesheet("/swagger-ui/custom.css");
+        }
+    }
+});
+
+// Add root redirect to Swagger for container debugging
+app.MapGet("/", () => Results.Redirect("/api-docs"))
+   .WithName("RootRedirect")
+   .WithSummary("Redirect to API documentation")
+   .ExcludeFromDescription();
 
 // Skip HTTPS redirection in production container environment
 if (!app.Environment.IsProduction())
