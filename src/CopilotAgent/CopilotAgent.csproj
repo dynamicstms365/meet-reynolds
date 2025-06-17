@@ -7,6 +7,8 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
     <WarningsNotAsErrors>CS1591;NU1701</WarningsNotAsErrors>
+    <!-- Reynolds: Suppress XML documentation warnings for cleaner builds -->
+    <NoWarn>CS1591</NoWarn>
     
     <!-- Reynolds: .NET 9.0 OpenAPI generation with Maximum Effort™ -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
