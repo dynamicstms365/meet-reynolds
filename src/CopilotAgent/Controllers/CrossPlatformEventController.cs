@@ -3,16 +3,20 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using CopilotAgent.Services;
 using Shared.Models;
+using System.ComponentModel.DataAnnotations;
+using System.Net;
 
 namespace CopilotAgent.Controllers;
 
 /// <summary>
-/// Cross-Platform Event Controller for Issue #73
-/// Provides REST endpoints for cross-platform event routing and management
-/// Integrates with Teams, GitHub, and Azure event sources
+/// Cross-Platform Event Controller for comprehensive event routing and orchestration
+/// Designed for Azure APIM MCP integration with full cross-platform coordination capabilities
+/// Integrates Teams, GitHub, and Azure event sources with Reynolds-level coordination
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Produces("application/json")]
+[Tags("CrossPlatform")]
 public class CrossPlatformEventController : ControllerBase
 {
     private readonly ILogger<CrossPlatformEventController> _logger;
@@ -36,9 +40,17 @@ public class CrossPlatformEventController : ControllerBase
     }
 
     /// <summary>
-    /// Route a platform event across multiple platforms
+    /// Route a platform event across multiple platforms with Reynolds coordination
     /// </summary>
+    /// <param name="platformEvent">Platform event to route across systems</param>
+    /// <returns>Event routing result with execution details</returns>
+    /// <response code="200">Event routed successfully across platforms</response>
+    /// <response code="400">Invalid event parameters</response>
+    /// <response code="500">Event routing failed</response>
     [HttpPost("route")]
+    [ProducesResponseType(typeof(EventRoutingResult), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
     public async Task<ActionResult<EventRoutingResult>> RouteEvent([FromBody] PlatformEvent platformEvent)
     {
         try
@@ -66,20 +78,38 @@ public class CrossPlatformEventController : ControllerBase
             }
             else
             {
-                return BadRequest(new { error = "Event routing failed", details = result });
+                return BadRequest(new ErrorResponse 
+                { 
+                    Error = "EventRoutingFailed", 
+                    Message = "Event routing failed",
+                    Details = new Dictionary<string, object> { ["RoutingResult"] = result }
+                });
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error routing platform event");
-            return StatusCode(500, new { error = "Internal server error", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "EventRoutingException", 
+                Message = "Internal server error during event routing",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
     }
 
     /// <summary>
-    /// Classify an event without routing it
+    /// Classify an event without routing it for analysis purposes
     /// </summary>
+    /// <param name="platformEvent">Platform event to classify</param>
+    /// <returns>Event classification results with categories and confidence scores</returns>
+    /// <response code="200">Event classified successfully</response>
+    /// <response code="400">Invalid event parameters</response>
+    /// <response code="500">Event classification failed</response>
     [HttpPost("classify")]
+    [ProducesResponseType(typeof(EventClassification), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
     public async Task<ActionResult<EventClassification>> ClassifyEvent([FromBody] PlatformEvent platformEvent)
     {
         try
@@ -94,14 +124,27 @@ public class CrossPlatformEventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error classifying event");
-            return StatusCode(500, new { error = "Classification failed", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "EventClassificationFailed", 
+                Message = "Event classification failed",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
     }
 
     /// <summary>
     /// Analyze routing options for an event without executing them
     /// </summary>
+    /// <param name="platformEvent">Platform event to analyze routing options for</param>
+    /// <returns>List of available routing options with recommendations</returns>
+    /// <response code="200">Routing options analyzed successfully</response>
+    /// <response code="400">Invalid event parameters</response>
+    /// <response code="500">Routing analysis failed</response>
     [HttpPost("analyze")]
+    [ProducesResponseType(typeof(List<PlatformRoute>), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
     public async Task<ActionResult<List<PlatformRoute>>> AnalyzeRoutingOptions([FromBody] PlatformEvent platformEvent)
     {
         try
@@ -116,14 +159,25 @@ public class CrossPlatformEventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error analyzing routing options");
-            return StatusCode(500, new { error = "Analysis failed", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "RoutingAnalysisFailed", 
+                Message = "Routing analysis failed",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
     }
 
     /// <summary>
-    /// Get event routing statistics
+    /// Get event routing statistics and performance metrics
     /// </summary>
+    /// <param name="hours">Number of hours to include in statistics (default: 24, max: 168)</param>
+    /// <returns>Comprehensive routing statistics and metrics</returns>
+    /// <response code="200">Statistics retrieved successfully</response>
+    /// <response code="500">Statistics retrieval failed</response>
     [HttpGet("stats")]
+    [ProducesResponseType(typeof(EventRoutingStats), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
     public async Task<ActionResult<EventRoutingStats>> GetRoutingStats([FromQuery] int hours = 24)
     {
         try
@@ -136,14 +190,24 @@ public class CrossPlatformEventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting routing statistics");
-            return StatusCode(500, new { error = "Statistics retrieval failed", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "StatisticsRetrievalFailed", 
+                Message = "Statistics retrieval failed",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
     }
 
     /// <summary>
-    /// Get Prometheus metrics for monitoring
+    /// Get Prometheus-compatible metrics for monitoring integration
     /// </summary>
+    /// <returns>Prometheus-compatible metrics data</returns>
+    /// <response code="200">Metrics retrieved successfully</response>
+    /// <response code="500">Metrics retrieval failed</response>
     [HttpGet("metrics")]
+    [ProducesResponseType(typeof(Dictionary<string, object>), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
     public async Task<ActionResult<Dictionary<string, object>>> GetMetrics()
     {
         try
@@ -154,31 +218,50 @@ public class CrossPlatformEventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting metrics");
-            return StatusCode(500, new { error = "Metrics retrieval failed", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "MetricsRetrievalFailed", 
+                Message = "Metrics retrieval failed",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
     }
 
     /// <summary>
-    /// Health check endpoint for cross-platform event routing
+    /// Health check endpoint for cross-platform event routing service
     /// </summary>
+    /// <returns>Health status of cross-platform routing services</returns>
+    /// <response code="200">Cross-platform routing services are healthy</response>
+    /// <response code="503">Cross-platform routing services are unhealthy</response>
     [HttpGet("health")]
-    public async Task<ActionResult<object>> GetHealth()
+    [ProducesResponseType(typeof(CrossPlatformHealthStatus), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.ServiceUnavailable)]
+    public async Task<ActionResult<CrossPlatformHealthStatus>> GetHealth()
     {
         try
         {
             var recentStats = await _metrics.GetRoutingStatsAsync(TimeSpan.FromHours(1));
             
-            var health = new
+            var health = new CrossPlatformHealthStatus
             {
                 Status = "Healthy",
                 Service = "Reynolds Cross-Platform Event Router",
                 Timestamp = DateTime.UtcNow,
                 Version = "1.0.0",
-                RecentActivity = new
+                RecentActivity = new RecentActivityMetrics
                 {
                     EventsProcessed = recentStats.TotalEventsProcessed,
                     SuccessRate = recentStats.SuccessRate,
                     AverageProcessingTime = $"{recentStats.AverageProcessingTime.TotalMilliseconds:F2}ms"
+                },
+                Capabilities = new[]
+                {
+                    "GitHubEventRouting",
+                    "TeamsIntegration", 
+                    "AzureEventProcessing",
+                    "EventClassification",
+                    "MetricsCollection",
+                    "PrometheusIntegration"
                 },
                 ReynoldsStatus = "Ready for supernatural cross-platform orchestration! 🎭✨"
             };
@@ -188,19 +271,32 @@ public class CrossPlatformEventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting health status");
-            return StatusCode(500, new { 
-                Status = "Unhealthy",
-                Error = ex.Message,
-                ReynoldsStatus = "Reynolds is experiencing technical difficulties. Even supernatural beings have off days! 🎭"
+            return StatusCode(503, new ErrorResponse 
+            { 
+                Error = "HealthCheckFailed",
+                Message = "Cross-platform health check failed",
+                Details = new Dictionary<string, object>
+                { 
+                    ["Exception"] = ex.Message,
+                    ["ReynoldsStatus"] = "Reynolds is experiencing technical difficulties. Even supernatural beings have off days! 🎭"
+                }
             });
         }
     }
 
     /// <summary>
-    /// Webhook endpoint for GitHub events (integrated with existing webhook processor)
+    /// Webhook endpoint for GitHub events with cross-platform routing integration
     /// </summary>
+    /// <param name="payload">GitHub webhook payload</param>
+    /// <returns>Webhook processing result</returns>
+    /// <response code="200">GitHub webhook processed successfully</response>
+    /// <response code="400">Invalid webhook payload</response>
+    /// <response code="500">Webhook processing failed</response>
     [HttpPost("webhook/github")]
-    public async Task<ActionResult> ProcessGitHubWebhook([FromBody] GitHubWebhookPayload payload)
+    [ProducesResponseType(typeof(WebhookProcessingResult), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
+    public async Task<ActionResult<WebhookProcessingResult>> ProcessGitHubWebhook([FromBody] GitHubWebhookPayload payload)
     {
         try
         {
@@ -214,94 +310,48 @@ public class CrossPlatformEventController : ControllerBase
 
             if (result.Success)
             {
-                return Ok(new { message = "GitHub webhook processed and routed successfully", routingId = result.RoutingId });
+                return Ok(new WebhookProcessingResult 
+                { 
+                    Success = true,
+                    Message = "GitHub webhook processed and routed successfully", 
+                    RoutingId = result.RoutingId,
+                    RoutedPlatforms = result.RouteResults.Select(r => r.TargetPlatform).ToArray()
+                });
             }
             else
             {
-                return StatusCode(500, new { error = "Event routing failed", details = result });
+                return StatusCode(500, new ErrorResponse 
+                { 
+                    Error = "WebhookRoutingFailed", 
+                    Message = "Event routing failed",
+                    Details = new Dictionary<string, object> { ["RoutingResult"] = result }
+                });
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing GitHub webhook");
-            return StatusCode(500, new { error = "Webhook processing failed", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "WebhookProcessingFailed", 
+                Message = "Webhook processing failed",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
     }
 
-    // TEMPORARILY DISABLED: Azure webhook endpoint - missing Azure SDK dependencies
-    // /// <summary>
-    // /// Webhook endpoint for Azure events
-    // /// </summary>
-    // [HttpPost("webhook/azure")]
-    // public async Task<ActionResult> ProcessAzureWebhook([FromBody] AzureEventPayload payload)
-    // {
-    //     try
-    //     {
-    //         _logger.LogInformation("⚡ Processing Azure webhook for cross-platform routing: {EventType}", payload.EventType);
-    //
-    //         // Convert Azure event payload to platform event
-    //         var platformEvent = ConvertAzureEventToPlatformEvent(payload);
-    //
-    //         // Route the event
-    //         var result = await _eventRouter.RouteEventAsync(platformEvent);
-    //
-    //         if (result.Success)
-    //         {
-    //             return Ok(new { message = "Azure webhook processed and routed successfully", routingId = result.RoutingId });
-    //         }
-    //         else
-    //         {
-    //             return StatusCode(500, new { error = "Event routing failed", details = result });
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Error processing Azure webhook");
-    //         return StatusCode(500, new { error = "Webhook processing failed", message = ex.Message });
-    //     }
-    // }
-
-    // TEMPORARILY DISABLED: Teams message endpoint - missing Teams SDK dependencies
-    // /// <summary>
-    // /// Endpoint for Teams messages to trigger cross-platform actions
-    // /// </summary>
-    // [HttpPost("teams/message")]
-    // public async Task<ActionResult> ProcessTeamsMessage([FromBody] TeamsMessagePayload payload)
-    // {
-    //     try
-    //     {
-    //         _logger.LogInformation("💬 Processing Teams message for cross-platform routing: {MessageType}", payload.MessageType);
-    //
-    //         // Convert Teams message to platform event
-    //         var platformEvent = ConvertTeamsMessageToPlatformEvent(payload);
-    //
-    //         // Route the event
-    //         var result = await _eventRouter.RouteEventAsync(platformEvent);
-    //
-    //         if (result.Success)
-    //         {
-    //             return Ok(new {
-    //                 message = "Teams message processed and routed successfully",
-    //                 routingId = result.RoutingId,
-    //                 reynoldsResponse = result.ReynoldsComment
-    //             });
-    //         }
-    //         else
-    //         {
-    //             return StatusCode(500, new { error = "Event routing failed", details = result });
-    //         }
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Error processing Teams message");
-    //         return StatusCode(500, new { error = "Teams message processing failed", message = ex.Message });
-    //     }
-    // }
-
     /// <summary>
-    /// Manual event injection for testing and debugging
+    /// Manual event injection for testing and debugging purposes
     /// </summary>
+    /// <param name="request">Test event parameters</param>
+    /// <returns>Test event routing result</returns>
+    /// <response code="200">Test event injected and routed successfully</response>
+    /// <response code="400">Invalid test event parameters</response>
+    /// <response code="500">Test event injection failed</response>
     [HttpPost("inject")]
+    [ProducesResponseType(typeof(EventRoutingResult), (int)HttpStatusCode.OK)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
     public async Task<ActionResult<EventRoutingResult>> InjectTestEvent([FromBody] TestEventRequest request)
     {
         try
@@ -340,8 +390,49 @@ public class CrossPlatformEventController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error injecting test event");
-            return StatusCode(500, new { error = "Test event injection failed", message = ex.Message });
+            return StatusCode(500, new ErrorResponse 
+            { 
+                Error = "TestEventInjectionFailed", 
+                Message = "Test event injection failed",
+                Details = new Dictionary<string, object> { ["Exception"] = ex.Message }
+            });
         }
+    }
+
+    /// <summary>
+    /// Get supported platforms and their routing capabilities
+    /// </summary>
+    /// <returns>List of supported platforms and their capabilities</returns>
+    /// <response code="200">Platform capabilities retrieved successfully</response>
+    [HttpGet("platforms")]
+    [ProducesResponseType(typeof(SupportedPlatforms), (int)HttpStatusCode.OK)]
+    public ActionResult<SupportedPlatforms> GetSupportedPlatforms()
+    {
+        return Ok(new SupportedPlatforms
+        {
+            Platforms = new[]
+            {
+                new PlatformCapability
+                {
+                    Name = "GitHub",
+                    EventTypes = new[] { "issues", "pull_request", "push", "release", "discussion" },
+                    RoutingCapabilities = new[] { "webhook_processing", "api_integration", "semantic_search" }
+                },
+                new PlatformCapability
+                {
+                    Name = "Teams",
+                    EventTypes = new[] { "message", "mention", "reaction", "channel_event" },
+                    RoutingCapabilities = new[] { "message_routing", "chat_creation", "notification_delivery" }
+                },
+                new PlatformCapability
+                {
+                    Name = "Azure",
+                    EventTypes = new[] { "resource_event", "deployment", "alert", "metric" },
+                    RoutingCapabilities = new[] { "event_grid_integration", "monitoring_alerts", "resource_management" }
+                }
+            },
+            ReynoldsCoordination = "Maximum Effort™ cross-platform orchestration with supernatural precision! 🎭"
+        });
     }
 
     // Private helper methods for event conversion
@@ -361,48 +452,6 @@ public class CrossPlatformEventController : ControllerBase
             Timestamp = DateTime.UtcNow
         };
     }
-
-    // TEMPORARILY DISABLED: Azure and Teams event conversion methods - missing SDK dependencies
-    // private PlatformEvent ConvertAzureEventToPlatformEvent(AzureEventPayload payload)
-    // {
-    //     return new PlatformEvent
-    //     {
-    //         EventId = payload.EventId,
-    //         EventType = payload.EventType,
-    //         SourcePlatform = "Azure",
-    //         Action = payload.Action,
-    //         Repository = ExtractRepositoryFromAzureEvent(payload),
-    //         Content = $"Azure {payload.EventType}: {payload.Action}",
-    //         Metadata = new Dictionary<string, object>
-    //         {
-    //             ["resource_id"] = payload.ResourceId,
-    //             ["subscription_id"] = payload.SubscriptionId,
-    //             ["resource_group"] = payload.ResourceGroupName,
-    //             ["azure_properties"] = payload.Properties
-    //         },
-    //         Timestamp = payload.Timestamp
-    //     };
-    // }
-
-    // private PlatformEvent ConvertTeamsMessageToPlatformEvent(TeamsMessagePayload payload)
-    // {
-    //     return new PlatformEvent
-    //     {
-    //         EventId = Guid.NewGuid().ToString(),
-    //         EventType = payload.MessageType,
-    //         SourcePlatform = "Teams",
-    //         Action = "message_received",
-    //         UserId = payload.UserId,
-    //         Content = payload.Content,
-    //         Metadata = new Dictionary<string, object>
-    //         {
-    //             ["channel_id"] = payload.ChannelId ?? "",
-    //             ["conversation_id"] = payload.ConversationId ?? "",
-    //             ["teams_metadata"] = payload.Metadata ?? new Dictionary<string, object>()
-    //         },
-    //         Timestamp = payload.Timestamp
-    //     };
-    // }
 
     private string ExtractContentFromGitHubPayload(GitHubWebhookPayload payload)
     {
@@ -451,46 +500,66 @@ public class CrossPlatformEventController : ControllerBase
         var content = pr.Body ?? "";
         return Math.Max(50, content.Length / 10); // Rough estimation
     }
-
-    // TEMPORARILY DISABLED: Azure repository extraction method - missing Azure SDK dependencies
-    // private string? ExtractRepositoryFromAzureEvent(AzureEventPayload payload)
-    // {
-    //     // Try to extract repository information from Azure resource tags or metadata
-    //     if (payload.Properties.TryGetValue("repository", out var repo))
-    //     {
-    //         return repo.ToString();
-    //     }
-    //
-    //     // Default to main repository if resource is related to copilot-powerplatform
-    //     if (payload.ResourceId.Contains("copilot", StringComparison.OrdinalIgnoreCase))
-    //     {
-    //         return "dynamicstms365/copilot-powerplatform";
-    //     }
-    //
-    //     return null;
-    // }
 }
 
-// Supporting classes for API payloads
-// TEMPORARILY DISABLED: Teams payload class - missing Teams SDK dependencies
-// public class TeamsMessagePayload
-// {
-//     public string MessageType { get; set; } = "message";
-//     public string UserId { get; set; } = "";
-//     public string Content { get; set; } = "";
-//     public string? ChannelId { get; set; }
-//     public string? ConversationId { get; set; }
-//     public Dictionary<string, object>? Metadata { get; set; }
-//     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-// }
+// Supporting response models for OpenAPI documentation
+public class CrossPlatformHealthStatus
+{
+    public string Status { get; set; } = string.Empty;
+    public string Service { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }
+    public string Version { get; set; } = string.Empty;
+    public RecentActivityMetrics RecentActivity { get; set; } = new();
+    public string[] Capabilities { get; set; } = Array.Empty<string>();
+    public string ReynoldsStatus { get; set; } = string.Empty;
+}
+
+public class RecentActivityMetrics
+{
+    public int EventsProcessed { get; set; }
+    public double SuccessRate { get; set; }
+    public string AverageProcessingTime { get; set; } = string.Empty;
+}
+
+public class WebhookProcessingResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public string RoutingId { get; set; } = string.Empty;
+    public string[] RoutedPlatforms { get; set; } = Array.Empty<string>();
+}
+
+public class SupportedPlatforms
+{
+    public PlatformCapability[] Platforms { get; set; } = Array.Empty<PlatformCapability>();
+    public string ReynoldsCoordination { get; set; } = string.Empty;
+}
+
+public class PlatformCapability
+{
+    public string Name { get; set; } = string.Empty;
+    public string[] EventTypes { get; set; } = Array.Empty<string>();
+    public string[] RoutingCapabilities { get; set; } = Array.Empty<string>();
+}
 
 public class TestEventRequest
 {
+    [Required]
     public string EventType { get; set; } = "";
+    
+    [Required]
     public string SourcePlatform { get; set; } = "";
+    
     public string? Action { get; set; }
     public string? Repository { get; set; }
     public string? UserId { get; set; }
     public string? Content { get; set; }
     public Dictionary<string, object>? Metadata { get; set; }
+}
+
+public class ErrorResponse
+{
+    public string Error { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public Dictionary<string, object> Details { get; set; } = new();
 }
