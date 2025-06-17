@@ -101,16 +101,16 @@ public class GitHubControllerSyncTests
         var result = await _controller.SynchronizeIssue(repository, issueNumber);
 
         // Assert
-        Assert.That(result, Is.TypeOf<ActionResult<BulkSynchronizationResult>>());
+        Assert.That(result, Is.TypeOf<ActionResult<SynchronizationResult>>());
         var okResult = result.Result as OkObjectResult;
         Assert.That(okResult, Is.Not.Null);
         Assert.That(okResult.StatusCode, Is.EqualTo(200));
         
         dynamic response = okResult.Value;
         var responseJson = System.Text.Json.JsonSerializer.Serialize(response);
-        Assert.That(responseJson, Does.Contain("\"success\":true"));
-        Assert.That(responseJson, Does.Contain($"\"issueNumber\":{issueNumber}"));
-        Assert.That(responseJson, Does.Contain($"\"repository\":\"{repository}\""));
+        Assert.That(responseJson, Does.Contain("\"Success\":true"));
+        Assert.That(responseJson, Does.Contain($"\"IssueNumber\":{issueNumber}"));
+        Assert.That(responseJson, Does.Contain($"\"Repository\":\"{repository}\""));
     }
 
     [Test]
