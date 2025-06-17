@@ -117,7 +117,7 @@ jobs:
       with:
         name: reynolds-mcp-server-${{ matrix.build-strategy }}
         path: |
-          src/CopilotAgent/bin/${{ env.BUILD_CONFIGURATION }}/net8.0/
+          src/CopilotAgent/bin/${{ env.BUILD_CONFIGURATION }}/net9.0/
         retention-days: 7
 
   reynolds-integration-matrix:
