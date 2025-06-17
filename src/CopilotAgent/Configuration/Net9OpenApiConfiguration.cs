@@ -239,11 +239,59 @@ All communication is enhanced with Reynolds' supernatural charm and organization
                 return Task.CompletedTask;
             });
 
-            // Add schema transformer for enhanced documentation
+            // Add schema transformer for enhanced documentation and complex model handling
             options.AddSchemaTransformer((schema, context, cancellationToken) =>
             {
+                // Reynolds: Fix for complex nested model schema generation
+                var typeName = context.JsonTypeInfo.Type.Name;
+                
+                // Add unique schema IDs to prevent conflicts between similar models
+                if (typeName == "GitHubIssuePayload")
+                {
+                    // Webhook payload model
+                    schema.Extensions.Add("x-schema-id", new Microsoft.OpenApi.Any.OpenApiString("GitHubIssuePayload"));
+                }
+                else if (typeName == "GitHubIssue")
+                {
+                    // Internal domain model
+                    schema.Extensions.Add("x-schema-id", new Microsoft.OpenApi.Any.OpenApiString("GitHubIssueInternal"));
+                }
+                else if (typeName == "GitHubPullRequestPayload")
+                {
+                    // Webhook payload model
+                    schema.Extensions.Add("x-schema-id", new Microsoft.OpenApi.Any.OpenApiString("GitHubPullRequestPayload"));
+                }
+                else if (typeName == "GitHubPullRequest")
+                {
+                    // Internal domain model
+                    schema.Extensions.Add("x-schema-id", new Microsoft.OpenApi.Any.OpenApiString("GitHubPullRequestInternal"));
+                }
+                
+                // Handle complex nested models that cause malformed $ref issues
+                if (typeName == "IssuePRSynchronizationReport" ||
+                    typeName == "IssuePRRelation" ||
+                    typeName.Contains("GitHubIssue") ||
+                    typeName.Contains("GitHubPullRequest"))
+                {
+                    // Force inline schema for complex nested structures to prevent malformed $ref generation
+                    schema.Extensions.Add("x-inline-schema", new Microsoft.OpenApi.Any.OpenApiBoolean(true));
+                    
+                    // Add description to clarify the model purpose
+                    if (string.IsNullOrEmpty(schema.Description))
+                    {
+                        schema.Description = typeName switch
+                        {
+                            "IssuePRSynchronizationReport" => "Report containing synchronized issue-PR relationships with Reynolds coordination intelligence",
+                            "IssuePRRelation" => "Individual issue-PR relationship with synchronization status and recommended actions",
+                            "GitHubIssue" => "Internal GitHub issue representation for coordination and analysis",
+                            "GitHubPullRequest" => "Internal GitHub pull request representation for coordination and analysis",
+                            _ => $"Reynolds-enhanced {typeName} model for enterprise coordination"
+                        };
+                    }
+                }
+
                 // Add examples for key request/response types
-                if (context.JsonTypeInfo.Type.Name == "SendMessageRequest")
+                if (typeName == "SendMessageRequest")
                 {
                     schema.Example = new Microsoft.OpenApi.Any.OpenApiObject
                     {
