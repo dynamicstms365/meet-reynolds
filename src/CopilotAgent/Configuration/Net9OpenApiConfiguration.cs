@@ -188,6 +188,13 @@ All communication is enhanced with Reynolds' supernatural charm and organization
                 return Task.CompletedTask;
             });
 
+            // Reynolds: Add document transformer to fix malformed $ref strings at generation time
+            options.AddDocumentTransformer((document, context, cancellationToken) =>
+            {
+                FixMalformedReferences(document);
+                return Task.CompletedTask;
+            });
+
             // Add operation transformer for MCP enhancements
             options.AddOperationTransformer((operation, context, cancellationToken) =>
             {
@@ -310,5 +317,214 @@ All communication is enhanced with Reynolds' supernatural charm and organization
                 return Task.CompletedTask;
             });
         });
+    }
+
+    /// <summary>
+    /// Reynolds: Fix malformed $ref strings with double hash symbols
+    /// Recursively traverses the OpenAPI document and fixes invalid references
+    /// </summary>
+    private static void FixMalformedReferences(OpenApiDocument document)
+    {
+        if (document?.Components?.Schemas == null) return;
+
+        // Fix malformed references in all schemas
+        foreach (var schema in document.Components.Schemas.Values)
+        {
+            FixSchemaReferences(schema);
+        }
+
+        // Fix malformed references in paths
+        if (document.Paths != null)
+        {
+            foreach (var path in document.Paths.Values)
+            {
+                FixPathItemReferences(path);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Recursively fix references in a schema
+    /// </summary>
+    private static void FixSchemaReferences(OpenApiSchema schema)
+    {
+        if (schema == null) return;
+
+        // Fix direct reference - remove malformed references entirely
+        if (!string.IsNullOrEmpty(schema.Reference?.ReferenceV3) &&
+            schema.Reference.ReferenceV3.Contains("#/components/schemas/#/"))
+        {
+            // Remove malformed reference and convert to a generic object schema
+            schema.Reference = null;
+            schema.Type = "object";
+            schema.Description = "Schema reference was malformed and converted to generic object";
+            schema.AdditionalPropertiesAllowed = true;
+        }
+
+        // Fix properties
+        if (schema.Properties != null)
+        {
+            foreach (var property in schema.Properties.Values)
+            {
+                FixSchemaReferences(property);
+            }
+        }
+
+        // Fix items (for arrays)
+        if (schema.Items != null)
+        {
+            FixSchemaReferences(schema.Items);
+        }
+
+        // Fix additionalProperties
+        if (schema.AdditionalProperties != null)
+        {
+            FixSchemaReferences(schema.AdditionalProperties);
+        }
+
+        // Fix allOf, oneOf, anyOf
+        if (schema.AllOf != null)
+        {
+            foreach (var subSchema in schema.AllOf)
+            {
+                FixSchemaReferences(subSchema);
+            }
+        }
+
+        if (schema.OneOf != null)
+        {
+            foreach (var subSchema in schema.OneOf)
+            {
+                FixSchemaReferences(subSchema);
+            }
+        }
+
+        if (schema.AnyOf != null)
+        {
+            foreach (var subSchema in schema.AnyOf)
+            {
+                FixSchemaReferences(subSchema);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Create an inline schema for malformed references as a fallback
+    /// </summary>
+    private static OpenApiSchema CreateInlineSchemaForMalformedReference(string malformedRef)
+    {
+        // Analyze the malformed reference to guess the intended schema type
+        if (malformedRef.Contains("/items/") || malformedRef.Contains("Array"))
+        {
+            return new OpenApiSchema
+            {
+                Type = "array",
+                Items = new OpenApiSchema
+                {
+                    Type = "object",
+                    AdditionalPropertiesAllowed = true
+                },
+                Description = $"Array schema inferred from malformed reference: {malformedRef}"
+            };
+        }
+        
+        return new OpenApiSchema
+        {
+            Type = "object",
+            AdditionalPropertiesAllowed = true,
+            Description = $"Generic object schema for malformed reference: {malformedRef}"
+        };
+    }
+
+    /// <summary>
+    /// Fix references in path items
+    /// </summary>
+    private static void FixPathItemReferences(OpenApiPathItem pathItem)
+    {
+        if (pathItem?.Operations == null) return;
+
+        foreach (var operation in pathItem.Operations.Values)
+        {
+            FixOperationReferences(operation);
+        }
+    }
+
+    /// <summary>
+    /// Fix references in operations
+    /// </summary>
+    private static void FixOperationReferences(OpenApiOperation operation)
+    {
+        if (operation == null) return;
+
+        // Fix request body
+        if (operation.RequestBody?.Content != null)
+        {
+            foreach (var mediaType in operation.RequestBody.Content.Values)
+            {
+                if (mediaType.Schema != null)
+                {
+                    FixSchemaReferences(mediaType.Schema);
+                }
+            }
+        }
+
+        // Fix responses
+        if (operation.Responses != null)
+        {
+            foreach (var response in operation.Responses.Values)
+            {
+                if (response.Content != null)
+                {
+                    foreach (var mediaType in response.Content.Values)
+                    {
+                        if (mediaType.Schema != null)
+                        {
+                            FixSchemaReferences(mediaType.Schema);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fix malformed reference string with double hash symbols
+    /// </summary>
+    private static string FixReferenceString(string reference)
+    {
+        if (string.IsNullOrEmpty(reference)) return reference;
+
+        // Fix malformed references like "#/components/schemas/#/properties/..."
+        if (reference.Contains("#/components/schemas/#/"))
+        {
+            // Reynolds: Replace malformed references with inline schemas
+            if (reference.Contains("/properties/issuePRRelations/items/properties/issue/properties/labels"))
+            {
+                // This should be an array of strings for labels
+                return "#/components/schemas/StringArray";
+            }
+            else if (reference.Contains("/properties/issuePRRelations/items/properties/issue/properties/assignees"))
+            {
+                // This should be an array of strings for assignees
+                return "#/components/schemas/StringArray";
+            }
+            else if (reference.Contains("/properties/issuePRRelations/items/properties/issue/properties/comments"))
+            {
+                // This should reference the GitHubComment schema
+                return "#/components/schemas/GitHubComment";
+            }
+            else if (reference.Contains("/properties/issuePRRelations/items/properties/issue/properties/metadata"))
+            {
+                // This should be a generic object
+                return "#/components/schemas/ObjectDictionary";
+            }
+            else if (reference.Contains("/properties/issuePRRelations/items/properties/relatedPRs/items"))
+            {
+                // This should reference the GitHubPullRequest schema
+                return "#/components/schemas/GitHubPullRequest";
+            }
+        }
+
+        return reference;
     }
 }
