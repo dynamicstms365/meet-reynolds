@@ -72,10 +72,33 @@ V[VIDEO]_S[SCENE]_[DESCRIPTION].md
 - Create remaining 10 scene files for Videos 2 and 3
 - Apply Maximum Effort™ parallel orchestration efficiency to complete the trilogy
 
-## **Technical Specifications**
+## **SORA Production Constraints & Opportunities**
 
-- **Total Runtime:** ~7.5 minutes across all three videos
-- **Scene Count:** 15 individual scenes for distributed generation
-- **Quality Target:** 4K resolution, 16:9 aspect ratio, cinematic production values
-- **Character Consistency:** Reynolds specifications maintained across all scenes
-- **Audio Design:** Professional infomercial production with orchestral elements
+### **⚡ Duration Limits (GAME CHANGER!)**
+- **Available Durations:** 5, 10, 15, or 20 seconds ONLY
+- **Strategic Advantage:** Perfect for micro-scenes and rapid-fire distributed generation
+- **Orchestration Benefit:** More granular scenes = more parallel processing opportunities
+
+### **📱 Aspect Ratio Options**
+- **16:9 (Landscape):** Traditional video, desktop viewing, YouTube
+- **1:1 (Square):** Social media posts, Instagram, LinkedIn
+- **9:16 (Vertical):** TikTok, Instagram Stories, mobile-first content
+
+### **🔇 Silent Cinema Approach**
+- **No Audio:** SORA generates silent videos
+- **Post-Production:** Audio sync and soundtrack added later
+- **Visual Focus:** Pure visual storytelling, physical comedy, text overlays
+- **Advantage:** Concentrate on visual perfection without audio sync concerns
+
+### **🚀 Distributed Generation Strategy**
+- **Micro-Scene Architecture:** Break complex scenes into 5-20 second visual vignettes
+- **Multi-Format Production:** Generate same scene in different aspect ratios
+- **Parallel Processing:** Each micro-scene can be generated simultaneously
+- **Flexible Assembly:** Mix and match micro-scenes for different platform needs
+
+### **Technical Specifications**
+- **Duration Options:** 5s, 10s, 15s, 20s (choose based on content complexity)
+- **Aspect Ratios:** 16:9, 1:1, 9:16 (multi-format for platform optimization)
+- **Quality Target:** 4K resolution when possible, optimized for chosen aspect ratio
+- **Character Consistency:** Reynolds specifications maintained across all micro-scenes
+- **Visual Storytelling:** Silent cinema techniques, clear visual communication
