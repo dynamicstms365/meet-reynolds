@@ -1,0 +1,72 @@
+const axios = require("axios");
+const dotenv = require("dotenv");
+
+dotenv.config();  
+
+async function main() {
+  // You will need to set these environment variables or edit the following values
+  const endpoint = process.env["ENDPOINT_URL"] || "https://ngl-openai-eus2.openai.azure.com/";
+  const deployment = process.env["DEPLOYMENT_NAME"] || "sora";
+  const subscriptionKey = process.env["AZURE_OPENAI_API_KEY"] || "<AZURE_OPENAI_API_KEY>";
+
+  const apiVersion = "preview";
+  const path = `openai/v1/video/generations/jobs`;
+  const params = `?api-version=${apiVersion}`;
+  const constructedUrl = `${endpoint}${path}${params}`;
+  
+  const headers = {
+    'Api-Key': subscriptionKey,
+    'Content-Type': 'application/json'
+  };
+
+  const body = {
+    "prompt": "prompt text",
+    "n_variants": "1",
+    "n_seconds": "5",
+    "height": "480",
+    "width": "854",
+    "model": deployment
+  };
+
+  let response = await axios.post(constructedUrl, body, { headers });
+  console.log(JSON.stringify(response.data, null, 4));
+
+  const jobId = response.data.id;
+  console.log("⏳ Polling job status for ID: ", jobId);
+  let status = response.data.status;
+  const statusUrl = `${endpoint}openai/v1/video/generations/jobs/${jobId}?api-version=${apiVersion}`;
+  while (status !== "succeeded" && status !== "failed") {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    response = await axios.get(statusUrl, { headers });
+    status = response.data.status;
+    console.log("Status:", status);
+  }
+
+  if (status === "succeeded") {
+    const generations = response.data.generations ?? [];
+    if (generations.length > 0) {
+      console.log("✅ Video generation succeeded.");
+      const generationId = generations[0].id;
+      const video_url = `${endpoint}openai/v1/video/generations/${generationId}/content/video${params}`;
+      const videoResponse = await axios.get(video_url, { headers, responseType: "arraybuffer" });
+      if (videoResponse.status === 200) {
+        const outputFilename = "output.mp4";
+        const fs = require("fs");
+        fs.writeFileSync(outputFilename, videoResponse.data);
+        console.log(`Generated video saved as "${outputFilename}"`);
+      } else {
+        console.log("❌ Failed to retrieve video content.");
+      }
+
+    } else {
+      console.log("⚠️ Status is succeeded, but no generations were returned.");
+    }
+  } else {
+    console.log("❌ Video generation failed.");
+    console.log(JSON.stringify(response.data, null, 4));
+  }
+}
+
+main().catch((err) => {  
+  console.error("The sample encountered an error:", err);  
+});
