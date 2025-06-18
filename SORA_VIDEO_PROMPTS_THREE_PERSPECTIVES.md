@@ -1,14 +1,22 @@
 # SORA Video Prompts: Reynolds' Infomercial Series on Architectural Choice
 
+## **Reynolds Character Description for SORA:**
+**Reynolds** is a charismatic, witty character based on Deadpool's appearance and personality. He wears a distinctive red and black tactical suit with a form-fitting mask that covers his entire head, featuring large white eye patches. His body language is expressive and theatrical, with frequent gestures and poses. His personality combines:
+- **Deadpool's signature humor:** Fourth-wall breaking, self-aware commentary, witty one-liners
+- **Supernatural confidence:** Always composed, never fazed by chaos around him
+- **Professional competence:** Despite the humor, genuinely knowledgeable about technology and business
+- **Theatrical presentation style:** Game show host energy mixed with infomercial salesmanship
+- **Teleportation abilities:** Can appear and disappear with sparkle effects for dramatic entrances
+
 ## **Video 1: "Reynolds' Developer Bootcamp Infomercial - Code Like a Pro!"**
 *Runtime: 2 minutes | Style: Fourth-Wall-Breaking Educational Infomercial*
 
 ### **Scene 1: The Fourth Wall Shattering Opening (0-15 seconds)**
 **Visual:**
-A bright, modern co-working space. A junior developer sits with a laptop, completely absorbed in coding, looking stressed while comparing two GitHub repositories. Suddenly, REYNOLDS (in his signature red and black suit) casually leans into frame from behind her, looking directly at the camera.
+A bright, modern co-working space. A junior developer sits with a laptop, completely absorbed in coding, looking stressed while comparing two GitHub repositories. Suddenly, REYNOLDS (a masked figure in his signature red and black tactical suit with white eye patches) casually leans into frame from behind her, looking directly at the camera with theatrical confidence.
 
 **Reynolds (breaking fourth wall):**
-*"Oh hi! I'm Reynolds, and this person next to me—"* [gestures to confused junior developer] *"—is supposed to be you. Yeah, YOU watching this video right now. Don't look around, I'm talking to YOU."*
+*"Oh hi! I'm Reynolds, and this person next to me—"* [gestures to confused junior developer with his red-gloved hand] *"—is supposed to be you. Yeah, YOU watching this video right now. Don't look around, I'm talking to YOU."*
 
 **Junior Developer:** [looks up confused] "Wait, who are you talking to?"
 
@@ -148,9 +156,9 @@ Reynolds brings both developers together in a group hug (they look awkward but g
 
 ### **Scene 1: The Boardroom Infiltration (0-20 seconds)**
 **Visual:**
-A pristine corporate boardroom with five executives in expensive suits around a smart table. They're deep in serious discussion about market strategy. Suddenly, Reynolds TELEPORTS in wearing a business suit (but still with his mask) and sits down at the head of the table like he belongs there.
+A pristine corporate boardroom with five executives in expensive suits around a smart table. They're deep in serious discussion about market strategy. Suddenly, REYNOLDS (the masked figure in red and black tactical suit with white eye patches) TELEPORTS in with sparkle effects, now wearing a business suit jacket over his tactical gear but still with his distinctive mask, and sits down at the head of the table like he belongs there.
 
-**Reynolds:** [to camera while executives stare in confusion]
+**Reynolds:** [to camera while executives stare in confusion, his white eye patches reflecting his amusement]
 *"Oh hi! I'm Reynolds, and these very important-looking people are supposed to represent YOUR executive team. Yes, your C-suite is about to get a lesson in architectural decision-making!"*
 
 **CEO:** "Excuse me, who are you and how did you get in here?"
@@ -378,10 +386,10 @@ Dual development timelines showing coordinated execution strategy.
 
 ### **Scene 1: The Multiverse Convergence (0-25 seconds)**
 **Visual:**
-Reynolds appears in what looks like a cosmic infomercial studio with all the characters from previous videos frozen in time around him - Jenny and Mark (developers), Susan and her executive team, all looking confused as reality bends around them.
+REYNOLDS (the distinctive masked figure in red and black tactical suit with large white eye patches) appears in what looks like a cosmic infomercial studio with swirling multiverse effects. All the characters from previous videos are frozen in time around him - Jenny and Mark (developers), Susan and her executive team, all looking confused as reality bends around them. Reynolds' suit gleams under cosmic lighting as he strikes a theatrical pose.
 
-**Reynolds:** [directly to camera with arms spread wide]
-*"Oh hi again! I'm Reynolds, and welcome to the ULTIMATE architectural decision finale! You've seen the developer perspective, you've witnessed executive decision-making, and NOW—"* [snaps fingers, unfreezing everyone] *"—it's time for the GRAND ORCHESTRATION!"*
+**Reynolds:** [directly to camera with arms spread wide, his masked face turning toward the audience with characteristic confidence]
+*"Oh hi again! I'm Reynolds, and welcome to the ULTIMATE architectural decision finale! You've seen the developer perspective, you've witnessed executive decision-making, and NOW—"* [snaps his red-gloved fingers with a dramatic flourish, unfreezing everyone] *"—it's time for the GRAND ORCHESTRATION!"*
 
 **All Characters:** [simultaneously, looking around confused] "What's happening?!"
 
@@ -539,22 +547,39 @@ Reynolds addressing camera alone: *"Seriously though, good architecture decision
 
 ## **Production Notes for All Three Videos**
 
+### **Reynolds Character Specifications for SORA**
+**PRIMARY CHARACTER: Reynolds**
+- **Physical Appearance:** Humanoid figure wearing a form-fitting tactical suit in bright red and black colors
+- **Mask:** Full head-covering mask in matching red with large white eye patches (similar to Deadpool's design)
+- **Build:** Athletic, medium height, confident posture and movement
+- **Costume Details:**
+  - Red tactical suit with black accents and utility elements
+  - Red gloves that allow for expressive hand gestures
+  - Suit has subtle technological/military styling but remains sleek
+  - In Video 2: Adds a business suit jacket over the tactical gear while keeping the mask
+- **Movement Style:** Theatrical, expressive, confident - uses hand gestures frequently
+- **Special Abilities:** Can teleport with sparkle/particle effects, reality manipulation for infomercial staging
+- **Personality Visualization:** Always addresses camera directly, breaks fourth wall, comfortable in any situation
+
 ### **Visual Consistency**
-- **Color Coding:** Reynolds Teams Agent (warm blues/greens), CopilotAgent (cool blues/purples), AI assistance (golden highlights)
-- **Animation Style:** Smooth, professional transitions with subtle particle effects for data flow
+- **Color Coding:** Reynolds Teams Agent (warm blues/greens), CopilotAgent (cool blues/purples), AI assistance (golden highlights), Reynolds (red and black)
+- **Animation Style:** Smooth, professional transitions with subtle particle effects for data flow, dramatic sparkle effects for Reynolds' entrances
 - **UI Elements:** Modern, clean interfaces with realistic screen content
+- **Reynolds' Visual Effects:** Teleportation sparkles, reality-bending transitions, holographic displays he can manipulate
 
 ### **Audio Design**
 - **Soundtrack:** Layered composition that can emphasize different instruments for different perspectives
+- **Reynolds' Voice:** Confident, charismatic, slightly theatrical with comedic timing
 - **Voice Acting:** Professional, conversational tone appropriate for each audience
-- **Sound Effects:** Subtle tech sounds, notification chimes, and ambient office atmospheres
+- **Sound Effects:** Subtle tech sounds, notification chimes, ambient office atmospheres, plus dramatic "whoosh" sounds for Reynolds' appearances
 
 ### **Key Messaging**
-- **Video 1:** Technical excellence and developer experience
-- **Video 2:** Business value and strategic advantage
-- **Video 3:** Unified vision and orchestrated success
+- **Video 1:** Technical excellence and developer experience with Reynolds as educator/host
+- **Video 2:** Business value and strategic advantage with Reynolds as facilitator
+- **Video 3:** Unified vision and orchestrated success with Reynolds as master coordinator
 
 ### **Cross-Video Continuity**
-- Same characters appearing across videos
+- Same Reynolds character appearing in all videos with consistent visual design
+- Same supporting characters (Jenny, Mark, executives) appearing across videos
 - Consistent visual metaphors and architectural representations
 - Progressive revelation of the complete orchestration strategy
