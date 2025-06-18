@@ -85,18 +85,18 @@ All communication is enhanced with Reynolds' supernatural charm and organization
                     }
                 };
 
-                // Add server information for APIM integration
+                // Add server information for APIM integration - Container Apps as primary backend
                 document.Servers = new List<OpenApiServer>
                 {
                     new OpenApiServer
                     {
-                        Url = "https://ngl-apim.azure-api.net/reynolds",
-                        Description = "Production APIM Environment"
+                        Url = "https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io",
+                        Description = "Production Container Apps Backend (Primary Implementation)"
                     },
                     new OpenApiServer
                     {
-                        Url = "https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io",
-                        Description = "Direct Container App Environment"
+                        Url = "https://ngl-apim.azure-api.net/reynolds",
+                        Description = "APIM Gateway Environment (MCP Conversion Layer)"
                     },
                     new OpenApiServer
                     {
@@ -144,11 +144,14 @@ All communication is enhanced with Reynolds' supernatural charm and organization
                     }
                 };
 
-                // Add MCP-specific extensions
+                // Add MCP-specific extensions for Julia's APIM conversion
                 document.Extensions.Add("x-mcp-compatible", new Microsoft.OpenApi.Any.OpenApiBoolean(true));
                 document.Extensions.Add("x-mcp-version", new Microsoft.OpenApi.Any.OpenApiString("1.0"));
                 document.Extensions.Add("x-reynolds-persona", new Microsoft.OpenApi.Any.OpenApiString("enabled"));
                 document.Extensions.Add("x-apim-integration", new Microsoft.OpenApi.Any.OpenApiString("optimized"));
+                document.Extensions.Add("x-apim-backend-url", new Microsoft.OpenApi.Any.OpenApiString("https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io"));
+                document.Extensions.Add("x-mcp-tools-count", new Microsoft.OpenApi.Any.OpenApiInteger(50));
+                document.Extensions.Add("x-mcp-routing-policy", new Microsoft.OpenApi.Any.OpenApiString("container-apps-backend"));
 
                 // Add tags for better organization
                 document.Tags = new List<OpenApiTag>

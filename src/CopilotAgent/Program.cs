@@ -119,10 +119,11 @@ builder.Services.AddSingleton<EventRoutingMetrics>();
 // Add HTTP context accessor BEFORE MCP registration (Issue #365 fix)
 builder.Services.AddHttpContextAccessor();
 
-// Add Reynolds Enterprise MCP Server with automatic tool discovery and Issue #365 fixes
+// Reynolds: APIM-First MCP Architecture - Julia's conversion approach
+// Custom MCP server kept for fallback/development, APIM handles production MCP conversion
 builder.Services.AddReynoldsMcpServer();
 
-// Initialize Reynolds MCP Server configuration
+// Initialize Reynolds MCP Server configuration (development/fallback mode)
 builder.Services.AddScoped<ReynoldsMcpServerConfiguration>();
 
 // Register Reynolds Teams integration services

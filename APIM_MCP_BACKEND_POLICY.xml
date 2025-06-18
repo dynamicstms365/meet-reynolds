@@ -1,0 +1,84 @@
+<!-- 
+Reynolds APIM Policy for OpenAPI-to-MCP Conversion with Container Apps Backend Routing
+Ensures MCP tool calls route to the actual Azure Container Apps implementation
+-->
+<policies>
+    <inbound>
+        <!-- Set backend service URL to Container Apps -->
+        <set-backend-service 
+            base-url="https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io" />
+        
+        <!-- Add Reynolds coordination headers -->
+        <set-header name="X-APIM-MCP-Gateway" exists-action="override">
+            <value>ngl-apim.azure-api.net</value>
+        </set-header>
+        
+        <set-header name="X-Reynolds-Routing" exists-action="override">
+            <value>APIM-to-ContainerApps</value>
+        </set-header>
+        
+        <!-- Preserve original MCP headers -->
+        <set-header name="X-MCP-Session-ID" exists-action="skip">
+            <value>@(context.RequestId)</value>
+        </set-header>
+        
+        <!-- Add authentication if needed -->
+        <authentication-managed-identity resource="https://management.azure.com/" />
+        
+        <!-- Rate limiting for MCP tools -->
+        <rate-limit calls="1000" renewal-period="60" />
+        
+        <!-- CORS for MCP clients -->
+        <cors allow-credentials="true">
+            <allowed-origins>
+                <origin>*</origin>
+            </allowed-origins>
+            <allowed-methods>
+                <method>GET</method>
+                <method>POST</method>
+                <method>PUT</method>
+                <method>DELETE</method>
+            </allowed-methods>
+            <allowed-headers>
+                <header>*</header>
+            </allowed-headers>
+        </cors>
+    </inbound>
+    
+    <backend>
+        <!-- Forward to Container Apps with retry policy -->
+        <retry condition="@(context.Response.StatusCode >= 500)" count="3" interval="2">
+            <forward-request />
+        </retry>
+    </backend>
+    
+    <outbound>
+        <!-- Add Reynolds coordination response headers -->
+        <set-header name="X-Reynolds-Backend" exists-action="override">
+            <value>github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io</value>
+        </set-header>
+        
+        <set-header name="X-APIM-Trace-Location" exists-action="override">
+            <value>@(context.Deployment.Region)</value>
+        </set-header>
+        
+        <!-- Cache MCP tool responses appropriately -->
+        <cache-store duration="300" />
+    </outbound>
+    
+    <on-error>
+        <!-- Reynolds-style error handling -->
+        <set-status code="500" reason="Reynolds coordination temporarily interrupted" />
+        <set-body>@{
+            return new JObject(
+                new JProperty("error", "MCPRoutingError"),
+                new JProperty("message", "APIM-to-ContainerApps routing temporarily unavailable. Even Reynolds needs proper backend connectivity! 🎭"),
+                new JProperty("details", new JObject(
+                    new JProperty("backend", "github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io"),
+                    new JProperty("gateway", "ngl-apim.azure-api.net/reynolds"),
+                    new JProperty("reynoldsAdvice", "Sequential error handling is dead. Long live parallel fault tolerance!")
+                ))
+            ).ToString();
+        }</set-body>
+    </on-error>
+</policies>
