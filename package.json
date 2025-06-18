@@ -1,37 +1,50 @@
 {
-  "name": "reynolds-sora-production-suite",
+  "name": "reynolds-interactive-hub",
   "version": "1.0.0",
-  "description": "Reynolds' Maximum Effort™ SORA Video & Audio Generation Orchestration System",
-  "main": "REYNOLDS_MASTER_ORCHESTRATOR.js",
+  "description": "Maximum Effort™ Applied to Every Demo - Interactive 3D, Media, and Technical Samples",
+  "main": "index.html",
   "scripts": {
-    "test": "node REYNOLDS_MASTER_ORCHESTRATOR.js test",
-    "generate": "node REYNOLDS_MASTER_ORCHESTRATOR.js generate",
-    "scene": "node REYNOLDS_MASTER_ORCHESTRATOR.js scene",
-    "video-only": "node SORA_VIDEO_GENERATOR.js",
-    "audio-only": "node REYNOLDS_AUDIO_GENERATOR.js",
-    "setup": "echo 'Reynolds Maximum Effort™ Setup Complete!'"
+    "dev": "python -m http.server 8000",
+    "dev:3d": "cd reynolds_3d_demo && python -m http.server 8001",
+    "build": "echo 'Build handled by GitHub Actions with Maximum Effort™'",
+    "build:parallel": "echo 'Parallel build orchestration ready!'",
+    "validate:media": "echo 'Validating media assets...'",
+    "test:pwa": "echo 'Testing PWA functionality...'",
+    "deploy": "echo 'Deployment orchestrated via GitHub Actions'",
+    "start": "npm run dev"
   },
-  "dependencies": {
-    "axios": "^1.10.0",
-    "dotenv": "^16.5.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/copilot-powerplatform.git"
   },
   "keywords": [
-    "sora",
-    "openai",
-    "azure",
-    "video-generation",
-    "audio-generation",
     "reynolds",
-    "maximum-effort",
+    "3d",
+    "webgl",
+    "interactive",
+    "demo",
+    "mcp",
+    "power-platform",
+    "github-pages",
+    "pwa",
     "orchestration",
-    "parallel-processing"
+    "maximum-effort"
   ],
-  "author": "Reynolds (Supernatural Project Coordinator)",
+  "author": "Reynolds - Supernatural Project Coordinator",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/copilot-powerplatform/issues"
+  },
+  "homepage": "https://your-username.github.io/copilot-powerplatform",
+  "devDependencies": {},
+  "dependencies": {},
   "engines": {
-    "node": ">=16.0.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
 }

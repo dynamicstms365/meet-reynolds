@@ -1,0 +1,404 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build site structure
+        run: |
+          # Create the pages directory structure
+          mkdir -p pages
+          
+          # Copy Reynolds 3D Demo
+          cp -r reynolds_3d_demo pages/3d-demo
+          
+          # Copy generated content
+          mkdir -p pages/media
+          cp -r generated_audio pages/media/ 2>/dev/null || echo "No generated_audio directory"
+          cp -r generated_videos pages/media/ 2>/dev/null || echo "No generated_videos directory"
+          cp -r literary_videos pages/media/ 2>/dev/null || echo "No literary_videos directory"
+          
+          # Copy MCP SDK documentation and samples
+          mkdir -p pages/mcp-sdk
+          cp -r mcp-sdk-fork/docs pages/mcp-sdk/ 2>/dev/null || echo "No mcp-sdk docs"
+          cp -r mcp-sdk-fork/samples pages/mcp-sdk/ 2>/dev/null || echo "No mcp-sdk samples"
+          
+          # Copy enterprise samples
+          mkdir -p pages/samples
+          cp -r samples pages/enterprise-samples 2>/dev/null || echo "No samples directory"
+          
+          # Copy documentation
+          mkdir -p pages/docs
+          cp -r docs/* pages/docs/ 2>/dev/null || echo "No docs directory"
+          cp *.md pages/docs/ 2>/dev/null || echo "No markdown files"
+          
+          # Copy Reynolds production content
+          cp -r reynolds_production pages/ 2>/dev/null || echo "No reynolds_production directory"
+
+      - name: Generate site index and navigation
+        run: |
+          cat > pages/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Reynolds Interactive Demo Hub - Maximum Effort™ Orchestration</title>
+              <style>
+                  * {
+                      margin: 0;
+                      padding: 0;
+                      box-sizing: border-box;
+                  }
+                  
+                  body {
+                      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+                      color: white;
+                      min-height: 100vh;
+                      padding: 20px;
+                  }
+                  
+                  .container {
+                      max-width: 1200px;
+                      margin: 0 auto;
+                  }
+                  
+                  .header {
+                      text-align: center;
+                      margin-bottom: 50px;
+                      padding: 40px 0;
+                  }
+                  
+                  .header h1 {
+                      font-size: 3.5em;
+                      margin-bottom: 20px;
+                      background: linear-gradient(45deg, #FFD700, #FFA500);
+                      -webkit-background-clip: text;
+                      -webkit-text-fill-color: transparent;
+                      background-clip: text;
+                      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                  }
+                  
+                  .subtitle {
+                      font-size: 1.5em;
+                      opacity: 0.9;
+                      font-weight: 300;
+                  }
+                  
+                  .reynolds-quote {
+                      font-style: italic;
+                      font-size: 1.2em;
+                      margin: 20px 0;
+                      padding: 20px;
+                      background: rgba(255,255,255,0.1);
+                      border-radius: 10px;
+                      border-left: 4px solid #FFD700;
+                  }
+                  
+                  .demo-grid {
+                      display: grid;
+                      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+                      gap: 30px;
+                      margin-top: 40px;
+                  }
+                  
+                  .demo-card {
+                      background: rgba(255,255,255,0.1);
+                      border-radius: 15px;
+                      padding: 30px;
+                      backdrop-filter: blur(10px);
+                      border: 1px solid rgba(255,255,255,0.2);
+                      transition: all 0.3s ease;
+                      position: relative;
+                      overflow: hidden;
+                  }
+                  
+                  .demo-card:hover {
+                      transform: translateY(-5px);
+                      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                      background: rgba(255,255,255,0.15);
+                  }
+                  
+                  .demo-card::before {
+                      content: '';
+                      position: absolute;
+                      top: 0;
+                      left: 0;
+                      right: 0;
+                      height: 4px;
+                      background: linear-gradient(90deg, #FFD700, #FFA500, #FF6B6B, #4ECDC4);
+                  }
+                  
+                  .demo-card h3 {
+                      font-size: 1.8em;
+                      margin-bottom: 15px;
+                      color: #FFD700;
+                  }
+                  
+                  .demo-card p {
+                      margin-bottom: 20px;
+                      line-height: 1.6;
+                      opacity: 0.9;
+                  }
+                  
+                  .demo-link {
+                      display: inline-block;
+                      padding: 12px 25px;
+                      background: linear-gradient(45deg, #FFD700, #FFA500);
+                      color: #1e3c72;
+                      text-decoration: none;
+                      border-radius: 25px;
+                      font-weight: bold;
+                      transition: all 0.3s ease;
+                      text-transform: uppercase;
+                      letter-spacing: 1px;
+                      font-size: 0.9em;
+                  }
+                  
+                  .demo-link:hover {
+                      transform: scale(1.05);
+                      box-shadow: 0 10px 20px rgba(255,215,0,0.3);
+                  }
+                  
+                  .status-badge {
+                      position: absolute;
+                      top: 15px;
+                      right: 15px;
+                      background: #4ECDC4;
+                      color: #1e3c72;
+                      padding: 5px 12px;
+                      border-radius: 15px;
+                      font-size: 0.8em;
+                      font-weight: bold;
+                      text-transform: uppercase;
+                  }
+                  
+                  .footer {
+                      text-align: center;
+                      margin-top: 60px;
+                      padding: 40px 0;
+                      border-top: 1px solid rgba(255,255,255,0.2);
+                  }
+                  
+                  .tech-stack {
+                      display: flex;
+                      justify-content: center;
+                      flex-wrap: wrap;
+                      gap: 15px;
+                      margin-top: 20px;
+                  }
+                  
+                  .tech-badge {
+                      background: rgba(255,255,255,0.1);
+                      padding: 8px 15px;
+                      border-radius: 20px;
+                      font-size: 0.9em;
+                      border: 1px solid rgba(255,255,255,0.2);
+                  }
+                  
+                  @media (max-width: 768px) {
+                      .header h1 {
+                          font-size: 2.5em;
+                      }
+                      
+                      .demo-grid {
+                          grid-template-columns: 1fr;
+                      }
+                      
+                      .demo-card {
+                          padding: 20px;
+                      }
+                  }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1>Reynolds Interactive Hub</h1>
+                      <p class="subtitle">Maximum Effort™ Applied to Every Demo</p>
+                      <div class="reynolds-quote">
+                          "Sequential execution is dead to me. Welcome to the future of parallel orchestration, where every demo runs with supernatural efficiency and devastating charm."
+                      </div>
+                  </div>
+                  
+                  <div class="demo-grid">
+                      <div class="demo-card">
+                          <div class="status-badge">Interactive</div>
+                          <h3>🎭 3D Reynolds Demo</h3>
+                          <p>Experience Reynolds in full WebGL glory! Interactive 3D model with textures, animations, and enough charm to make other demos jealous.</p>
+                          <a href="3d-demo/" class="demo-link">Launch 3D Experience</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <div class="status-badge">Media Rich</div>
+                          <h3>🎬 Literary Productions</h3>
+                          <p>Generated video content including the legendary "Fourth Wall Opening" - because why break the fourth wall when you can orchestrate it?</p>
+                          <a href="media/literary_videos/" class="demo-link">View Productions</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <div class="status-badge">Technical</div>
+                          <h3>🔧 MCP SDK Samples</h3>
+                          <p>Model Context Protocol samples with enterprise authentication - parallel processing at its finest.</p>
+                          <a href="mcp-sdk/" class="demo-link">Explore SDK</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <div class="status-badge">Enterprise</div>
+                          <h3>🏢 Authentication Samples</h3>
+                          <p>Enterprise-grade authentication samples that coordinate security with the precision of a Reynolds operation.</p>
+                          <a href="enterprise-samples/" class="demo-link">View Samples</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <div class="status-badge">Documentation</div>
+                          <h3>📚 Architecture Docs</h3>
+                          <p>Complete documentation including deployment guides, strategic recommendations, and orchestration wisdom.</p>
+                          <a href="docs/" class="demo-link">Read Docs</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <div class="status-badge">Audio</div>
+                          <h3>🎵 Generated Audio</h3>
+                          <p>AI-generated audio content that hits different when coordinated with Maximum Effort™.</p>
+                          <a href="media/generated_audio/" class="demo-link">Listen Now</a>
+                      </div>
+                  </div>
+                  
+                  <div class="footer">
+                      <p>Orchestrated with Maximum Effort™ by Reynolds</p>
+                      <p style="opacity: 0.7; margin-top: 10px;">Parallel execution applied to every component</p>
+                      
+                      <div class="tech-stack">
+                          <span class="tech-badge">GitHub Actions</span>
+                          <span class="tech-badge">WebGL</span>
+                          <span class="tech-badge">MCP Protocol</span>
+                          <span class="tech-badge">Enterprise Auth</span>
+                          <span class="tech-badge">AI Generation</span>
+                          <span class="tech-badge">Parallel Orchestration</span>
+                      </div>
+                  </div>
+              </div>
+              
+              <script>
+                  // Add some Reynolds-style interactive charm
+                  document.addEventListener('DOMContentLoaded', function() {
+                      const cards = document.querySelectorAll('.demo-card');
+                      
+                      cards.forEach(card => {
+                          card.addEventListener('mouseenter', function() {
+                              this.style.transform = 'translateY(-8px) scale(1.02)';
+                          });
+                          
+                          card.addEventListener('mouseleave', function() {
+                              this.style.transform = 'translateY(0) scale(1)';
+                          });
+                      });
+                      
+                      // Add a subtle animation to the header
+                      const header = document.querySelector('.header h1');
+                      header.style.animation = 'pulse 3s ease-in-out infinite alternate';
+                      
+                      const style = document.createElement('style');
+                      style.textContent = `
+                          @keyframes pulse {
+                              0% { transform: scale(1); }
+                              100% { transform: scale(1.02); }
+                          }
+                      `;
+                      document.head.appendChild(style);
+                  });
+              </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Create media directory listings
+        run: |
+          # Create directory listings for media folders
+          for dir in pages/media/*/; do
+            if [ -d "$dir" ]; then
+              dirname=$(basename "$dir")
+              cat > "$dir/index.html" << EOF
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>$dirname - Reynolds Media Hub</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; background: #1e3c72; color: white; }
+                  h1 { color: #FFD700; }
+                  .file-list { list-style: none; padding: 0; }
+                  .file-list li { margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; }
+                  .file-list a { color: #4ECDC4; text-decoration: none; }
+                  .file-list a:hover { color: #FFD700; }
+                  .back-link { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #FFD700; color: #1e3c72; text-decoration: none; border-radius: 5px; }
+              </style>
+          </head>
+          <body>
+              <a href="../../" class="back-link">← Back to Hub</a>
+              <h1>$dirname</h1>
+              <ul class="file-list">
+          EOF
+              
+              for file in "$dir"*; do
+                if [ -f "$file" ]; then
+                  filename=$(basename "$file")
+                  echo "                  <li><a href=\"$filename\">$filename</a></li>" >> "$dir/index.html"
+                fi
+              done
+              
+              echo "              </ul>" >> "$dir/index.html"
+              echo "          </body>" >> "$dir/index.html"
+              echo "          </html>" >> "$dir/index.html"
+            fi
+          done
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './pages'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
