@@ -303,18 +303,28 @@
                     // Add to scene
                     this.scene.add(this.model);
                     
-                    // Center camera on model
+                    // Reynolds-optimized camera positioning for humanoid models
                     const box = new THREE.Box3().setFromObject(this.model);
                     const center = box.getCenter(new THREE.Vector3());
                     const size = box.getSize(new THREE.Vector3());
                     
+                    // Calculate optimal viewing distance
                     const maxDim = Math.max(size.x, size.y, size.z);
                     const fov = this.camera.fov * (Math.PI / 180);
-                    let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-                    cameraZ *= 1.5; // Add some padding
+                    let cameraDistance = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+                    cameraDistance *= 2.5; // More generous padding for full figure view
                     
-                    this.camera.position.set(center.x, center.y, center.z + cameraZ);
-                    this.controls.target.copy(center);
+                    // Position camera for optimal humanoid viewing angle
+                    // Slightly elevated angle, looking down at the model
+                    const elevationAngle = Math.PI / 12; // 15 degrees
+                    const cameraY = center.y + (size.y * 0.3) + (cameraDistance * Math.sin(elevationAngle));
+                    const cameraZ = center.z + (cameraDistance * Math.cos(elevationAngle));
+                    
+                    this.camera.position.set(center.x, cameraY, cameraZ);
+                    
+                    // Target the upper chest/head area instead of geometric center
+                    const targetY = center.y + (size.y * 0.2); // 20% up from center
+                    this.controls.target.set(center.x, targetY, center.z);
                     this.controls.update();
                     
                     document.getElementById('loading').style.display = 'none';
