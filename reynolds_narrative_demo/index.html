@@ -411,7 +411,7 @@
                     
                     const gltf = await new Promise((resolve, reject) => {
                         loader.load(
-                            '../3d-demo/models/CAUCASIAN%20MAN.glb',
+                            '../reynolds_3d_demo/models/CAUCASIAN%20MAN.glb',
                             resolve,
                             (progress) => {
                                 const percent = Math.round((progress.loaded / progress.total) * 100);
@@ -544,6 +544,9 @@
                     this.skeleton = skeleton;
                     this.findWalkBones();
                     this.hasWalkCycle = true;
+                    
+                    // Immediately fix T-pose by putting arms down
+                    this.ensureArmsDown();
                 } else {
                     console.log('No skeleton found, using simple bob animation');
                     this.useTransformAnimation = true;
@@ -560,27 +563,27 @@
                     const name = bone.name.toLowerCase();
                     console.log(`Bone ${index}: ${bone.name}`);
                     
-                    // Left leg
-                    if (name.includes('left') && (name.includes('thigh') || name.includes('upper') && name.includes('leg'))) {
+                    // Left leg - match actual bone names
+                    if (name.includes('upperleg01_l') || (name.includes('left') && (name.includes('thigh') || name.includes('upper') && name.includes('leg')))) {
                         this.walkBones.leftThigh = bone;
                     }
-                    if (name.includes('left') && (name.includes('shin') || name.includes('lower') && name.includes('leg') || name.includes('calf'))) {
+                    if (name.includes('lowerleg01_l') || (name.includes('left') && (name.includes('shin') || name.includes('lower') && name.includes('leg') || name.includes('calf')))) {
                         this.walkBones.leftShin = bone;
                     }
                     
-                    // Right leg
-                    if (name.includes('right') && (name.includes('thigh') || name.includes('upper') && name.includes('leg'))) {
+                    // Right leg - match actual bone names
+                    if (name.includes('upperleg01_r') || (name.includes('right') && (name.includes('thigh') || name.includes('upper') && name.includes('leg')))) {
                         this.walkBones.rightThigh = bone;
                     }
-                    if (name.includes('right') && (name.includes('shin') || name.includes('lower') && name.includes('leg') || name.includes('calf'))) {
+                    if (name.includes('lowerleg01_r') || (name.includes('right') && (name.includes('shin') || name.includes('lower') && name.includes('leg') || name.includes('calf')))) {
                         this.walkBones.rightShin = bone;
                     }
                     
-                    // Arms
-                    if (name.includes('left') && (name.includes('upper') && name.includes('arm') || name.includes('shoulder'))) {
+                    // Arms - match actual bone names
+                    if (name.includes('upperarm01_l') || (name.includes('left') && (name.includes('upper') && name.includes('arm') || name.includes('shoulder')))) {
                         this.walkBones.leftArm = bone;
                     }
-                    if (name.includes('right') && (name.includes('upper') && name.includes('arm') || name.includes('shoulder'))) {
+                    if (name.includes('upperarm01_r') || (name.includes('right') && (name.includes('upper') && name.includes('arm') || name.includes('shoulder')))) {
                         this.walkBones.rightArm = bone;
                     }
                     
@@ -634,10 +637,56 @@
                 if (this.originalRotations && this.walkBones) {
                     Object.keys(this.walkBones).forEach(key => {
                         if (this.walkBones[key] && this.originalRotations[key]) {
-                            this.walkBones[key].rotation.copy(this.originalRotations[key]);
+                            // For arms, don't reset to T-pose - keep them at sides
+                            if (key.includes('Arm')) {
+                                // Set arms to natural down position instead of T-pose
+                                this.walkBones[key].rotation.x = this.originalRotations[key].x;
+                                this.walkBones[key].rotation.y = this.originalRotations[key].y;
+                                this.walkBones[key].rotation.z = key.includes('left') ? -0.2 : 0.2; // Arms down
+                            } else {
+                                // Reset legs normally
+                                this.walkBones[key].rotation.copy(this.originalRotations[key]);
+                            }
                         }
                     });
                 }
+                
+                // Ensure arms are ALWAYS down, even if bone detection failed
+                this.ensureArmsDown();
+            }
+            
+            ensureArmsDown() {
+                if (!this.skeleton) return;
+                
+                // MAXIMUM EFFORT™ anti-T-pose system using exact bone indices
+                // Bone 10: upperarm01_L, Bone 36: upperarm01_R
+                if (this.skeleton.bones[10] && this.skeleton.bones[10].name === 'upperarm01_L') {
+                    this.skeleton.bones[10].rotation.z = -1.5; // Left arm WAY down
+                    this.skeleton.bones[10].rotation.x = 0;
+                    this.skeleton.bones[10].rotation.y = 0;
+                }
+                
+                if (this.skeleton.bones[36] && this.skeleton.bones[36].name === 'upperarm01_R') {
+                    this.skeleton.bones[36].rotation.z = 1.5; // Right arm WAY down
+                    this.skeleton.bones[36].rotation.x = 0;
+                    this.skeleton.bones[36].rotation.y = 0;
+                }
+                
+                // Backup method - search by name as fallback
+                this.skeleton.bones.forEach((bone, index) => {
+                    if (bone.name === 'upperarm01_L') {
+                        bone.rotation.z = -1.5;
+                        bone.rotation.x = 0;
+                        bone.rotation.y = 0;
+                        console.log(`Forced left arm down on bone ${index}`);
+                    }
+                    if (bone.name === 'upperarm01_R') {
+                        bone.rotation.z = 1.5;
+                        bone.rotation.x = 0;
+                        bone.rotation.y = 0;
+                        console.log(`Forced right arm down on bone ${index}`);
+                    }
+                });
             }
             
             updateProceduralWalk(deltaTime) {
@@ -920,6 +969,9 @@
                 
                 // Update procedural walking animation
                 this.updateProceduralWalk(delta);
+                
+                // Ensure arms are always down (anti-T-pose measure)
+                this.ensureArmsDown();
                 
                 // Update controls
                 this.controls.update();
