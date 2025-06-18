@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reynolds Interactive Hub - Maximum Effort™</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #ffd700;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: #b8c5d6;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .quote {
+            font-style: italic;
+            border-left: 4px solid #ffd700;
+            padding-left: 2rem;
+            margin: 2rem auto;
+            max-width: 700px;
+            color: #e8f4f8;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 1.5rem 2rem;
+            border-radius: 10px;
+        }
+
+        .demos-container {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 3rem;
+            padding: 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .demo-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .demo-card:hover::before {
+            left: 100%;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-10px);
+            border-color: #ffd700;
+            box-shadow: 0 20px 40px rgba(255, 215, 0, 0.2);
+        }
+
+        .demo-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .demo-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #ffd700;
+            margin-bottom: 1rem;
+        }
+
+        .demo-description {
+            font-size: 1rem;
+            color: #b8c5d6;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .demo-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 2rem;
+        }
+
+        .demo-features li {
+            padding: 0.5rem 0;
+            color: #e8f4f8;
+        }
+
+        .demo-features li::before {
+            content: '✨';
+            margin-right: 0.5rem;
+        }
+
+        .launch-btn {
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            color: #1a1a2e;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            position: relative;
+            z-index: 1;
+        }
+
+        .launch-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+        }
+
+        .badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #ff4757;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .interactive {
+            background: #00a8ff;
+        }
+
+        .cinematic {
+            background: #8e44ad;
+        }
+
+        @media (max-width: 768px) {
+            .demos-container {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                padding: 2rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .demo-card {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🎭 Reynolds Interactive Hub</h1>
+        <p>Maximum Effort™ Applied to Every Demo</p>
+        
+        <div class="quote">
+            "Sequential execution is dead to me. Welcome to the future of parallel orchestration, where every demo runs with supernatural efficiency and devastating charm."
+        </div>
+    </header>
+
+    <main class="demos-container">
+        <div class="demo-card">
+            <div class="badge interactive">INTERACTIVE</div>
+            <span class="demo-icon">🎮</span>
+            <h2 class="demo-title">3D Reynolds Demo</h2>
+            <p class="demo-description">
+                Experience Reynolds in full WebGL glory! Interactive 3D model with textures, animations, 
+                and enough charm to make other demos jealous.
+            </p>
+            <ul class="demo-features">
+                <li>Interactive 3D model with orbital controls</li>
+                <li>Professional textures and lighting</li>
+                <li>Real-time animation system</li>
+                <li>Multiple camera angles and perspectives</li>
+            </ul>
+            <a href="reynolds_3d_demo/" class="launch-btn">🚀 LAUNCH 3D EXPERIENCE</a>
+        </div>
+
+        <div class="demo-card">
+            <div class="badge cinematic">CINEMATIC</div>
+            <span class="demo-icon">🎬</span>
+            <h2 class="demo-title">Narrative Experience</h2>
+            <p class="demo-description">
+                Watch Reynolds walk through scenes and tell the story of parallel orchestration with 
+                Maximum Effort™ applied to cinematic storytelling.
+            </p>
+            <ul class="demo-features">
+                <li>5-scene narrative with camera choreography</li>
+                <li>Professional walking animations (NO T-POSE!)</li>
+                <li>Multiple viewing angles and perspectives</li>
+                <li>Interactive story progression controls</li>
+            </ul>
+            <a href="reynolds_narrative_demo/" class="launch-btn">🎭 ENTER STORY MODE</a>
+        </div>
+    </main>
+
+    <script>
+        // Add some interactive sparkle
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.demo-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
