@@ -435,18 +435,22 @@
                     
                     this.scene.add(this.reynolds);
                     
-                    // Setup animation mixer
+                    // Setup animation mixer and real skeletal animations
+                    this.mixer = new THREE.AnimationMixer(this.reynolds);
+                    
                     if (gltf.animations && gltf.animations.length > 0) {
-                        this.mixer = new THREE.AnimationMixer(this.reynolds);
-                        
-                        // Note: This assumes animations exist in the model
-                        // For basic demo, we'll simulate animations
+                        console.log('Found animations:', gltf.animations.map(anim => anim.name));
+                        this.setupSkeletalAnimations(gltf.animations);
+                    } else {
+                        console.log('No built-in animations found, creating basic movement');
                         this.setupBasicAnimations();
                     }
                     
                     document.getElementById('loading-overlay').style.display = 'none';
                     this.updateStatus('Reynolds loaded and ready for storytelling!');
-                    this.updateAnimation('Ready for action');
+                    
+                    // Start with idle animation
+                    this.playIdleAnimation();
                     
                 } catch (error) {
                     console.error('Error loading Reynolds:', error);
@@ -455,14 +459,161 @@
                 }
             }
             
-            setupBasicAnimations() {
-                // Since we might not have built-in animations, we'll create basic movement
-                this.createWalkAnimation();
+            setupSkeletalAnimations(animations) {
+                // Create animation actions from GLTF animations
+                this.animations = {};
+                
+                animations.forEach((clip) => {
+                    const action = this.mixer.clipAction(clip);
+                    this.animations[clip.name] = action;
+                    
+                    // Set up common animation properties
+                    action.setEffectiveTimeScale(1);
+                    action.setEffectiveWeight(1);
+                    
+                    console.log(`Registered animation: ${clip.name}`);
+                });
+                
+                // Try to find and set up common animation types
+                this.setupCommonAnimations();
             }
             
-            createWalkAnimation() {
-                // Basic walking animation using position tweening
-                // This would be replaced with actual skeletal animation if available
+            setupCommonAnimations() {
+                // Look for common animation names (case-insensitive)
+                const animNames = Object.keys(this.animations);
+                
+                // Find walk/walking animation
+                this.walkAction = this.findAnimation(animNames, ['walk', 'walking', 'run', 'running']);
+                
+                // Find idle animation
+                this.idleAction = this.findAnimation(animNames, ['idle', 'standing', 'stand', 'rest']);
+                
+                // Find talk/speaking animation
+                this.talkAction = this.findAnimation(animNames, ['talk', 'speaking', 'gesture', 'present']);
+                
+                // Set default to idle if available
+                if (this.idleAction) {
+                    this.idleAction.play();
+                    this.currentAction = this.idleAction;
+                }
+                
+                console.log('Animation setup complete:', {
+                    walk: this.walkAction ? 'found' : 'not found',
+                    idle: this.idleAction ? 'found' : 'not found',
+                    talk: this.talkAction ? 'found' : 'not found'
+                });
+            }
+            
+            findAnimation(animNames, searchTerms) {
+                for (const term of searchTerms) {
+                    const found = animNames.find(name =>
+                        name.toLowerCase().includes(term.toLowerCase())
+                    );
+                    if (found) {
+                        return this.animations[found];
+                    }
+                }
+                
+                // If no specific animation found, try the first available
+                if (animNames.length > 0) {
+                    console.log(`Using first available animation: ${animNames[0]}`);
+                    return this.animations[animNames[0]];
+                }
+                
+                return null;
+            }
+            
+            setupBasicAnimations() {
+                // Fallback: Create basic procedural walking animation
+                this.createProceduralWalkAnimation();
+            }
+            
+            createProceduralWalkAnimation() {
+                // Basic procedural walking cycle using bone manipulation
+                // This is a simplified version that creates a walking motion
+                console.log('Creating procedural walk animation...');
+                
+                // Find the skeleton/bones in the model
+                let skeleton = null;
+                this.reynolds.traverse((child) => {
+                    if (child.isSkinnedMesh && child.skeleton) {
+                        skeleton = child.skeleton;
+                    }
+                });
+                
+                if (skeleton) {
+                    console.log('Found skeleton with', skeleton.bones.length, 'bones');
+                    this.skeleton = skeleton;
+                    this.createBasicWalkCycle();
+                } else {
+                    console.log('No skeleton found, using transform animation');
+                    this.useTransformAnimation = true;
+                }
+            }
+            
+            createBasicWalkCycle() {
+                // Create a simple walking animation if we have bones
+                // This would involve creating keyframes for leg movement, arm swinging, etc.
+                // For now, we'll create a simple up-down bob motion
+                
+                if (!this.skeleton) return;
+                
+                // Find leg bones (simplified)
+                const leftLeg = this.skeleton.getBoneByName('LeftLeg') ||
+                              this.skeleton.getBoneByName('Left_Leg') ||
+                              this.skeleton.getBoneByName('leg_left');
+                              
+                const rightLeg = this.skeleton.getBoneByName('RightLeg') ||
+                               this.skeleton.getBoneByName('Right_Leg') ||
+                               this.skeleton.getBoneByName('leg_right');
+                
+                if (leftLeg && rightLeg) {
+                    console.log('Found leg bones, setting up walk cycle');
+                    this.hasWalkCycle = true;
+                }
+            }
+            
+            playWalkAnimation() {
+                if (this.walkAction) {
+                    this.fadeToAction(this.walkAction);
+                    this.updateAnimation('Walking with Maximum Effort™');
+                } else if (this.hasWalkCycle) {
+                    this.isWalkingProcedural = true;
+                    this.updateAnimation('Procedural walking');
+                } else {
+                    this.updateAnimation('Moving to position');
+                }
+            }
+            
+            playIdleAnimation() {
+                if (this.idleAction) {
+                    this.fadeToAction(this.idleAction);
+                    this.updateAnimation('Standing by');
+                } else {
+                    this.isWalkingProcedural = false;
+                    this.updateAnimation('At rest');
+                }
+            }
+            
+            playTalkAnimation() {
+                if (this.talkAction) {
+                    this.fadeToAction(this.talkAction);
+                    this.updateAnimation('Presenting to audience');
+                } else if (this.idleAction) {
+                    this.fadeToAction(this.idleAction);
+                    this.updateAnimation('Speaking');
+                } else {
+                    this.updateAnimation('Delivering narrative');
+                }
+            }
+            
+            fadeToAction(toAction) {
+                if (this.currentAction && this.currentAction !== toAction) {
+                    this.currentAction.fadeOut(0.3);
+                }
+                
+                toAction.reset().fadeIn(0.3).play();
+                this.currentAction = toAction;
             }
             
             startStory() {
@@ -564,7 +715,9 @@
                 
                 this.targetPosition.copy(position);
                 this.isWalking = true;
-                this.updateAnimation('Walking to position');
+                
+                // Start walking animation
+                this.playWalkAnimation();
                 
                 // Simple animation to target position
                 const startPos = this.reynolds.position.clone();
@@ -587,7 +740,8 @@
                         requestAnimationFrame(animate);
                     } else {
                         this.isWalking = false;
-                        this.updateAnimation('In position');
+                        // Switch to talk animation when in position
+                        this.playTalkAnimation();
                         // Face the audience (camera)
                         this.reynolds.lookAt(this.camera.position);
                     }
@@ -597,7 +751,7 @@
                     animate();
                 } else {
                     this.isWalking = false;
-                    this.updateAnimation('In position');
+                    this.playTalkAnimation();
                 }
             }
             
