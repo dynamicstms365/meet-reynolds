@@ -9,7 +9,7 @@ class ReynoldsSoraGenerator {
   constructor() {
     this.endpoint = process.env["ENDPOINT_URL"] || "https://ngl-openai-eus2.openai.azure.com/";
     this.deployment = process.env["DEPLOYMENT_NAME"] || "sora";
-    this.subscriptionKey = process.env["AZURE_OPENAI_API_KEY"] || "***REMOVED***";
+    this.subscriptionKey = process.env["AZURE_OPENAI_API_KEY"] || "<AZURE_OPENAI_API_KEY>";
     this.apiVersion = "preview";
     this.outputDir = "./generated_videos";
     

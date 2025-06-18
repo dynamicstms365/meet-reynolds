@@ -8,7 +8,7 @@ dotenv.config();
 class ReynoldsAudioGenerator {
   constructor() {
     this.endpoint = process.env["ENDPOINT_URL"] || "https://ngl-openai-eus2.openai.azure.com/";
-    this.subscriptionKey = process.env["AZURE_OPENAI_API_KEY"] || "***REMOVED***";
+    this.subscriptionKey = process.env["AZURE_OPENAI_API_KEY"] || "<AZURE_OPENAI_API_KEY>";
     this.apiVersion = "2024-06-01";
     this.outputDir = "./generated_audio";
     

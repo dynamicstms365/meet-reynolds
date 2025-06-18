@@ -53,7 +53,7 @@ cp .env.example .env
 
 # Edit .env with your actual values:
 # ENDPOINT_URL=https://ngl-openai-eus2.openai.azure.com/
-# AZURE_OPENAI_API_KEY=***REMOVED***
+# AZURE_OPENAI_API_KEY=your_azure_openai_api_key_here
 # DEPLOYMENT_NAME=sora
 ```
 
