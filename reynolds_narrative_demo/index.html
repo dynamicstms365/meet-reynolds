@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎭 Reynolds Narrative Experience - Maximum Effort™ Storytelling</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e);
+            font-family: 'Courier New', monospace;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #scene-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #story-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.3);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .story-btn {
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ff5252);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .story-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .story-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        #narrative-display {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #4ECDC4;
+            backdrop-filter: blur(15px);
+            z-index: 90;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0 0 25px rgba(78, 205, 196, 0.3);
+        }
+        
+        #narrative-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #4ECDC4;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+        
+        .reynolds-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: #FFD700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        }
+        
+        #camera-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #FFD700;
+            backdrop-filter: blur(10px);
+        }
+        
+        .camera-btn {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px 12px;
+            background: #FFD700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .camera-btn:hover {
+            background: #FFA500;
+            transform: scale(1.05);
+        }
+        
+        #loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            color: #ff6b6b;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 107, 107, 0.3);
+            border-top: 4px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .scene-info {
+            position: absolute;
+            bottom: 120px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            font-size: 14px;
+            max-width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div>Loading Reynolds Narrative Experience...</div>
+        <div style="font-size: 16px; margin-top: 10px; opacity: 0.8;">Maximum Effort™ Applied to Storytelling</div>
+    </div>
+    
+    <div id="scene-container">
+        <div id="narrative-display">
+            <div class="reynolds-title">🎭 Reynolds Presents</div>
+            <div id="narrative-text">
+                Welcome to the Reynolds Narrative Experience. Get ready for storytelling with Maximum Effort™ applied to every scene, every gesture, every moment of dramatic tension.
+            </div>
+        </div>
+        
+        <div id="camera-controls">
+            <div style="color: #FFD700; font-weight: bold; margin-bottom: 10px; text-align: center;">📹 Camera</div>
+            <button class="camera-btn" onclick="narrativeDemo.setCameraAngle('front')">Front View</button>
+            <button class="camera-btn" onclick="narrativeDemo.setCameraAngle('side')">Side View</button>
+            <button class="camera-btn" onclick="narrativeDemo.setCameraAngle('overhead')">Overhead</button>
+            <button class="camera-btn" onclick="narrativeDemo.setCameraAngle('cinematic')">Cinematic</button>
+            <button class="camera-btn" onclick="narrativeDemo.resetScene()">Reset Scene</button>
+        </div>
+        
+        <div class="scene-info">
+            <strong>🎬 Scene Status:</strong><br>
+            <span id="scene-status">Ready for Maximum Effort™</span><br><br>
+            <strong>🎭 Animation:</strong><br>
+            <span id="animation-status">Standing by</span>
+        </div>
+    </div>
+    
+    <div id="story-controls">
+        <button class="story-btn" id="start-story" onclick="narrativeDemo.startStory()">▶️ Start Story</button>
+        <button class="story-btn" id="next-scene" onclick="narrativeDemo.nextScene()" disabled>⏭️ Next Scene</button>
+        <button class="story-btn" id="pause-story" onclick="narrativeDemo.pauseStory()" disabled>⏸️ Pause</button>
+        <button class="story-btn" id="reset-story" onclick="narrativeDemo.resetStory()">🔄 Reset</button>
+    </div>
+
+    <!-- Three.js and dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        class ReynoldsNarrativeDemo {
+            constructor() {
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.reynolds = null;
+                this.mixer = null;
+                this.clock = new THREE.Clock();
+                
+                // Story state
+                this.currentScene = 0;
+                this.isPlaying = false;
+                this.isPaused = false;
+                
+                // Animation and movement
+                this.walkAction = null;
+                this.idleAction = null;
+                this.talkAction = null;
+                this.reynoldsPosition = new THREE.Vector3(0, 0, 0);
+                this.targetPosition = new THREE.Vector3(0, 0, 0);
+                this.isWalking = false;
+                this.walkSpeed = 2;
+                
+                // Scene elements
+                this.stage = null;
+                this.lighting = {};
+                this.cameraPositions = {
+                    front: { pos: new THREE.Vector3(0, 1.7, 8), target: new THREE.Vector3(0, 1.7, 0) },
+                    side: { pos: new THREE.Vector3(8, 1.7, 0), target: new THREE.Vector3(0, 1.7, 0) },
+                    overhead: { pos: new THREE.Vector3(0, 10, 2), target: new THREE.Vector3(0, 0, 0) },
+                    cinematic: { pos: new THREE.Vector3(-5, 2, 5), target: new THREE.Vector3(0, 1.7, 0) }
+                };
+                
+                // Story script
+                this.storyScript = [
+                    {
+                        text: "Welcome, friends, to a demonstration of what happens when you apply Maximum Effort™ to absolutely everything you do.",
+                        position: new THREE.Vector3(-3, 0, 0),
+                        camera: 'cinematic',
+                        duration: 4000
+                    },
+                    {
+                        text: "You see, most people approach tasks with what I call 'sequential thinking' - doing one thing after another like some kind of digital caveman.",
+                        position: new THREE.Vector3(0, 0, 2),
+                        camera: 'front',
+                        duration: 5000
+                    },
+                    {
+                        text: "But Reynolds? Reynolds orchestrates. Reynolds coordinates. Reynolds applies parallel execution to EVERYTHING.",
+                        position: new THREE.Vector3(3, 0, 0),
+                        camera: 'side',
+                        duration: 4500
+                    },
+                    {
+                        text: "Take this very demo, for instance. While I'm talking, the camera is moving, the lighting is adjusting, and the story is progressing - all in perfect harmony.",
+                        position: new THREE.Vector3(0, 0, -2),
+                        camera: 'overhead',
+                        duration: 5500
+                    },
+                    {
+                        text: "Sequential execution is dead to me. Long live parallel orchestration! And that, my friends, is how you apply Maximum Effort™ to absolutely everything.",
+                        position: new THREE.Vector3(0, 0, 0),
+                        camera: 'cinematic',
+                        duration: 5000
+                    }
+                ];
+                
+                this.init();
+                this.setupScene();
+                this.loadReynolds();
+                this.animate();
+            }
+            
+            init() {
+                // Scene setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x0a0a0a);
+                
+                // Camera setup  
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.camera.position.copy(this.cameraPositions.front.pos);
+                
+                // Renderer setup
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                
+                document.getElementById('scene-container').appendChild(this.renderer.domElement);
+                
+                // Controls
+                this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.target.copy(this.cameraPositions.front.target);
+                
+                // Resize handler
+                window.addEventListener('resize', () => this.onWindowResize());
+                
+                this.updateStatus('Scene initialized with Maximum Effort™');
+            }
+            
+            setupScene() {
+                // Create stage/ground
+                const stageGeometry = new THREE.PlaneGeometry(20, 20);
+                const stageMaterial = new THREE.MeshLambertMaterial({ 
+                    color: 0x2a2a2a,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                this.stage = new THREE.Mesh(stageGeometry, stageMaterial);
+                this.stage.rotation.x = -Math.PI / 2;
+                this.stage.receiveShadow = true;
+                this.scene.add(this.stage);
+                
+                // Lighting setup
+                this.setupLighting();
+                
+                // Add some atmospheric elements
+                this.addAtmosphere();
+                
+                this.updateStatus('Stage and lighting orchestrated');
+            }
+            
+            setupLighting() {
+                // Ambient light
+                this.lighting.ambient = new THREE.AmbientLight(0x404040, 0.4);
+                this.scene.add(this.lighting.ambient);
+                
+                // Key light (main character lighting)
+                this.lighting.key = new THREE.DirectionalLight(0xffffff, 1.2);
+                this.lighting.key.position.set(5, 8, 5);
+                this.lighting.key.castShadow = true;
+                this.lighting.key.shadow.mapSize.width = 2048;
+                this.lighting.key.shadow.mapSize.height = 2048;
+                this.scene.add(this.lighting.key);
+                
+                // Fill light (softer, opposite side)
+                this.lighting.fill = new THREE.DirectionalLight(0x4ECDC4, 0.6);
+                this.lighting.fill.position.set(-3, 4, 2);
+                this.scene.add(this.lighting.fill);
+                
+                // Rim light (dramatic edge lighting)
+                this.lighting.rim = new THREE.DirectionalLight(0xff6b6b, 0.8);
+                this.lighting.rim.position.set(0, 3, -5);
+                this.scene.add(this.lighting.rim);
+                
+                // Spotlight for dramatic effect
+                this.lighting.spot = new THREE.SpotLight(0xFFD700, 1.5, 15, Math.PI / 6, 0.3);
+                this.lighting.spot.position.set(0, 10, 0);
+                this.lighting.spot.target.position.set(0, 0, 0);
+                this.lighting.spot.castShadow = true;
+                this.scene.add(this.lighting.spot);
+                this.scene.add(this.lighting.spot.target);
+            }
+            
+            addAtmosphere() {
+                // Add some particle effects for atmosphere
+                const particleCount = 100;
+                const particles = new THREE.BufferGeometry();
+                const positions = new Float32Array(particleCount * 3);
+                
+                for (let i = 0; i < particleCount * 3; i += 3) {
+                    positions[i] = (Math.random() - 0.5) * 40;     // x
+                    positions[i + 1] = Math.random() * 20;        // y
+                    positions[i + 2] = (Math.random() - 0.5) * 40; // z
+                }
+                
+                particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                
+                const particleMaterial = new THREE.PointsMaterial({
+                    color: 0x4ECDC4,
+                    size: 0.1,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                
+                const particleSystem = new THREE.Points(particles, particleMaterial);
+                this.scene.add(particleSystem);
+            }
+            
+            async loadReynolds() {
+                const loader = new THREE.GLTFLoader();
+                
+                try {
+                    this.updateStatus('Loading Reynolds with Maximum Effort™...');
+                    
+                    const gltf = await new Promise((resolve, reject) => {
+                        loader.load(
+                            '../reynolds_3d_demo/models/CAUCASIAN MAN.glb',
+                            resolve,
+                            (progress) => {
+                                const percent = Math.round((progress.loaded / progress.total) * 100);
+                                this.updateStatus(`Loading Reynolds: ${percent}%`);
+                            },
+                            reject
+                        );
+                    });
+                    
+                    this.reynolds = gltf.scene;
+                    this.reynolds.scale.set(1, 1, 1);
+                    this.reynolds.position.copy(this.reynoldsPosition);
+                    
+                    // Setup shadows
+                    this.reynolds.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    
+                    this.scene.add(this.reynolds);
+                    
+                    // Setup animation mixer
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        this.mixer = new THREE.AnimationMixer(this.reynolds);
+                        
+                        // Note: This assumes animations exist in the model
+                        // For basic demo, we'll simulate animations
+                        this.setupBasicAnimations();
+                    }
+                    
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    this.updateStatus('Reynolds loaded and ready for storytelling!');
+                    this.updateAnimation('Ready for action');
+                    
+                } catch (error) {
+                    console.error('Error loading Reynolds:', error);
+                    this.updateStatus('Failed to load Reynolds model');
+                    document.getElementById('loading-overlay').style.display = 'none';
+                }
+            }
+            
+            setupBasicAnimations() {
+                // Since we might not have built-in animations, we'll create basic movement
+                this.createWalkAnimation();
+            }
+            
+            createWalkAnimation() {
+                // Basic walking animation using position tweening
+                // This would be replaced with actual skeletal animation if available
+            }
+            
+            startStory() {
+                if (this.isPlaying) return;
+                
+                this.isPlaying = true;
+                this.currentScene = 0;
+                this.playCurrentScene();
+                
+                document.getElementById('start-story').disabled = true;
+                document.getElementById('next-scene').disabled = false;
+                document.getElementById('pause-story').disabled = false;
+            }
+            
+            playCurrentScene() {
+                if (this.currentScene >= this.storyScript.length) {
+                    this.endStory();
+                    return;
+                }
+                
+                const scene = this.storyScript[this.currentScene];
+                
+                // Update narrative text
+                document.getElementById('narrative-text').innerHTML = scene.text;
+                
+                // Move Reynolds to position
+                this.moveReynoldsTo(scene.position);
+                
+                // Set camera angle
+                this.setCameraAngle(scene.camera);
+                
+                // Update status
+                this.updateStatus(`Scene ${this.currentScene + 1} of ${this.storyScript.length}`);
+                this.updateAnimation('Presenting to audience');
+                
+                // Auto-advance after duration (optional)
+                setTimeout(() => {
+                    if (this.isPlaying && !this.isPaused) {
+                        this.nextScene();
+                    }
+                }, scene.duration);
+            }
+            
+            nextScene() {
+                if (!this.isPlaying) return;
+                
+                this.currentScene++;
+                this.playCurrentScene();
+            }
+            
+            pauseStory() {
+                this.isPaused = !this.isPaused;
+                const pauseBtn = document.getElementById('pause-story');
+                pauseBtn.textContent = this.isPaused ? '▶️ Resume' : '⏸️ Pause';
+                
+                this.updateAnimation(this.isPaused ? 'Paused' : 'Presenting to audience');
+            }
+            
+            resetStory() {
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.currentScene = 0;
+                
+                // Reset UI
+                document.getElementById('start-story').disabled = false;
+                document.getElementById('next-scene').disabled = true;
+                document.getElementById('pause-story').disabled = true;
+                document.getElementById('pause-story').textContent = '⏸️ Pause';
+                
+                // Reset narrative
+                document.getElementById('narrative-text').innerHTML = 
+                    "Welcome to the Reynolds Narrative Experience. Get ready for storytelling with Maximum Effort™ applied to every scene, every gesture, every moment of dramatic tension.";
+                
+                // Reset Reynolds position
+                this.moveReynoldsTo(new THREE.Vector3(0, 0, 0));
+                this.setCameraAngle('front');
+                
+                this.updateStatus('Ready for Maximum Effort™');
+                this.updateAnimation('Standing by');
+            }
+            
+            endStory() {
+                this.isPlaying = false;
+                
+                document.getElementById('narrative-text').innerHTML = 
+                    "And that concludes our Reynolds Narrative Experience! Sequential storytelling is dead. Long live parallel orchestrated entertainment!";
+                
+                this.updateStatus('Story complete - Maximum Effort™ achieved!');
+                this.updateAnimation('Taking a bow');
+                
+                // Auto-reset after a pause
+                setTimeout(() => {
+                    this.resetStory();
+                }, 3000);
+            }
+            
+            moveReynoldsTo(position) {
+                if (!this.reynolds) return;
+                
+                this.targetPosition.copy(position);
+                this.isWalking = true;
+                this.updateAnimation('Walking to position');
+                
+                // Simple animation to target position
+                const startPos = this.reynolds.position.clone();
+                const distance = startPos.distanceTo(position);
+                const duration = (distance / this.walkSpeed) * 1000;
+                
+                const startTime = Date.now();
+                
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Lerp between positions
+                    this.reynolds.position.lerpVectors(startPos, position, progress);
+                    
+                    // Rotate to face movement direction if moving
+                    if (progress < 1 && distance > 0.1) {
+                        const direction = new THREE.Vector3().subVectors(position, startPos).normalize();
+                        this.reynolds.lookAt(this.reynolds.position.clone().add(direction));
+                        requestAnimationFrame(animate);
+                    } else {
+                        this.isWalking = false;
+                        this.updateAnimation('In position');
+                        // Face the audience (camera)
+                        this.reynolds.lookAt(this.camera.position);
+                    }
+                };
+                
+                if (distance > 0.1) {
+                    animate();
+                } else {
+                    this.isWalking = false;
+                    this.updateAnimation('In position');
+                }
+            }
+            
+            setCameraAngle(angleName) {
+                if (!this.cameraPositions[angleName]) return;
+                
+                const targetPos = this.cameraPositions[angleName].pos;
+                const targetLookAt = this.cameraPositions[angleName].target;
+                
+                // Smooth camera transition
+                const startPos = this.camera.position.clone();
+                const startTarget = this.controls.target.clone();
+                const duration = 2000;
+                const startTime = Date.now();
+                
+                const animateCamera = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easeProgress = this.easeInOutCubic(progress);
+                    
+                    this.camera.position.lerpVectors(startPos, targetPos, easeProgress);
+                    this.controls.target.lerpVectors(startTarget, targetLookAt, easeProgress);
+                    this.controls.update();
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateCamera);
+                    }
+                };
+                
+                animateCamera();
+            }
+            
+            easeInOutCubic(t) {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            }
+            
+            resetScene() {
+                this.camera.position.copy(this.cameraPositions.front.pos);
+                this.controls.target.copy(this.cameraPositions.front.target);
+                this.controls.update();
+            }
+            
+            updateStatus(message) {
+                document.getElementById('scene-status').textContent = message;
+            }
+            
+            updateAnimation(message) {
+                document.getElementById('animation-status').textContent = message;
+            }
+            
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                const delta = this.clock.getDelta();
+                
+                // Update animation mixer
+                if (this.mixer) {
+                    this.mixer.update(delta);
+                }
+                
+                // Update controls
+                this.controls.update();
+                
+                // Dynamic lighting effects
+                const time = Date.now() * 0.001;
+                if (this.lighting.rim) {
+                    this.lighting.rim.intensity = 0.8 + Math.sin(time) * 0.2;
+                }
+                
+                // Render
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+        
+        // Initialize when page loads
+        let narrativeDemo;
+        window.addEventListener('load', () => {
+            narrativeDemo = new ReynoldsNarrativeDemo();
+        });
+    </script>
+</body>
+</html>

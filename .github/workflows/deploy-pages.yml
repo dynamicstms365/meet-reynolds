@@ -45,6 +45,9 @@ jobs:
           # Copy Reynolds 3D Demo
           cp -r reynolds_3d_demo pages/3d-demo
           
+          # Copy Reynolds Narrative Demo
+          cp -r reynolds_narrative_demo pages/narrative-demo
+          
           # Copy generated content
           mkdir -p pages/media
           cp -r generated_audio pages/media/ 2>/dev/null || echo "No generated_audio directory"
@@ -261,6 +264,13 @@ jobs:
                           <h3>🎭 3D Reynolds Demo</h3>
                           <p>Experience Reynolds in full WebGL glory! Interactive 3D model with textures, animations, and enough charm to make other demos jealous.</p>
                           <a href="3d-demo/" class="demo-link">Launch 3D Experience</a>
+                      </div>
+                      
+                      <div class="demo-card">
+                          <div class="status-badge">Cinematic</div>
+                          <h3>🎬 Narrative Experience</h3>
+                          <p>Watch Reynolds walk through scenes and tell the story of parallel orchestration with Maximum Effort™ applied to cinematic storytelling.</p>
+                          <a href="narrative-demo/" class="demo-link">Enter Story Mode</a>
                       </div>
                       
                       <div class="demo-card">
