@@ -529,9 +529,7 @@
             }
             
             createProceduralWalkAnimation() {
-                // Basic procedural walking cycle using bone manipulation
-                // This is a simplified version that creates a walking motion
-                console.log('Creating procedural walk animation...');
+                console.log('Creating simple procedural walk animation...');
                 
                 // Find the skeleton/bones in the model
                 let skeleton = null;
@@ -544,33 +542,64 @@
                 if (skeleton) {
                     console.log('Found skeleton with', skeleton.bones.length, 'bones');
                     this.skeleton = skeleton;
-                    this.createBasicWalkCycle();
+                    this.findWalkBones();
+                    this.hasWalkCycle = true;
                 } else {
-                    console.log('No skeleton found, using transform animation');
+                    console.log('No skeleton found, using simple bob animation');
                     this.useTransformAnimation = true;
                 }
             }
             
-            createBasicWalkCycle() {
-                // Create a simple walking animation if we have bones
-                // This would involve creating keyframes for leg movement, arm swinging, etc.
-                // For now, we'll create a simple up-down bob motion
-                
+            findWalkBones() {
                 if (!this.skeleton) return;
                 
-                // Find leg bones (simplified)
-                const leftLeg = this.skeleton.getBoneByName('LeftLeg') ||
-                              this.skeleton.getBoneByName('Left_Leg') ||
-                              this.skeleton.getBoneByName('leg_left');
-                              
-                const rightLeg = this.skeleton.getBoneByName('RightLeg') ||
-                               this.skeleton.getBoneByName('Right_Leg') ||
-                               this.skeleton.getBoneByName('leg_right');
+                this.walkBones = {};
                 
-                if (leftLeg && rightLeg) {
-                    console.log('Found leg bones, setting up walk cycle');
-                    this.hasWalkCycle = true;
-                }
+                // Try to find bones by common naming patterns
+                this.skeleton.bones.forEach((bone, index) => {
+                    const name = bone.name.toLowerCase();
+                    console.log(`Bone ${index}: ${bone.name}`);
+                    
+                    // Left leg
+                    if (name.includes('left') && (name.includes('thigh') || name.includes('upper') && name.includes('leg'))) {
+                        this.walkBones.leftThigh = bone;
+                    }
+                    if (name.includes('left') && (name.includes('shin') || name.includes('lower') && name.includes('leg') || name.includes('calf'))) {
+                        this.walkBones.leftShin = bone;
+                    }
+                    
+                    // Right leg
+                    if (name.includes('right') && (name.includes('thigh') || name.includes('upper') && name.includes('leg'))) {
+                        this.walkBones.rightThigh = bone;
+                    }
+                    if (name.includes('right') && (name.includes('shin') || name.includes('lower') && name.includes('leg') || name.includes('calf'))) {
+                        this.walkBones.rightShin = bone;
+                    }
+                    
+                    // Arms
+                    if (name.includes('left') && (name.includes('upper') && name.includes('arm') || name.includes('shoulder'))) {
+                        this.walkBones.leftArm = bone;
+                    }
+                    if (name.includes('right') && (name.includes('upper') && name.includes('arm') || name.includes('shoulder'))) {
+                        this.walkBones.rightArm = bone;
+                    }
+                    
+                    // Try alternative naming
+                    if (name.includes('l_') && name.includes('thigh')) this.walkBones.leftThigh = bone;
+                    if (name.includes('r_') && name.includes('thigh')) this.walkBones.rightThigh = bone;
+                    if (name.includes('l_') && name.includes('shin')) this.walkBones.leftShin = bone;
+                    if (name.includes('r_') && name.includes('shin')) this.walkBones.rightShin = bone;
+                });
+                
+                console.log('Found walk bones:', this.walkBones);
+                
+                // Store original rotations for reset
+                this.originalRotations = {};
+                Object.keys(this.walkBones).forEach(key => {
+                    if (this.walkBones[key]) {
+                        this.originalRotations[key] = this.walkBones[key].rotation.clone();
+                    }
+                });
             }
             
             playWalkAnimation() {
@@ -579,9 +608,13 @@
                     this.updateAnimation('Walking with Maximum Effort™');
                 } else if (this.hasWalkCycle) {
                     this.isWalkingProcedural = true;
+                    this.walkTime = 0;
                     this.updateAnimation('Procedural walking');
                 } else {
-                    this.updateAnimation('Moving to position');
+                    // Simple bob animation for models without bones
+                    this.isWalkingSimple = true;
+                    this.walkTime = 0;
+                    this.updateAnimation('Simple walking motion');
                 }
             }
             
@@ -591,8 +624,75 @@
                     this.updateAnimation('Standing by');
                 } else {
                     this.isWalkingProcedural = false;
+                    this.isWalkingSimple = false;
+                    this.resetBonesToOriginal();
                     this.updateAnimation('At rest');
                 }
+            }
+            
+            resetBonesToOriginal() {
+                if (this.originalRotations && this.walkBones) {
+                    Object.keys(this.walkBones).forEach(key => {
+                        if (this.walkBones[key] && this.originalRotations[key]) {
+                            this.walkBones[key].rotation.copy(this.originalRotations[key]);
+                        }
+                    });
+                }
+            }
+            
+            updateProceduralWalk(deltaTime) {
+                if (!this.isWalkingProcedural && !this.isWalkingSimple) return;
+                
+                this.walkTime += deltaTime * 4; // Walking speed multiplier
+                
+                if (this.isWalkingSimple) {
+                    // Simple bob animation
+                    const bobAmount = Math.sin(this.walkTime * 8) * 0.05;
+                    this.reynolds.position.y += bobAmount;
+                    return;
+                }
+                
+                if (!this.walkBones || !this.originalRotations) return;
+                
+                // Procedural walking cycle using sine waves
+                const walkCycle = this.walkTime;
+                
+                // Left leg - forward swing
+                if (this.walkBones.leftThigh) {
+                    const leftLegSwing = Math.sin(walkCycle) * 0.3;
+                    this.walkBones.leftThigh.rotation.x = this.originalRotations.leftThigh.x + leftLegSwing;
+                }
+                
+                if (this.walkBones.leftShin) {
+                    const leftKnee = Math.max(0, Math.sin(walkCycle * 2) * 0.5);
+                    this.walkBones.leftShin.rotation.x = this.originalRotations.leftShin.x + leftKnee;
+                }
+                
+                // Right leg - opposite phase
+                if (this.walkBones.rightThigh) {
+                    const rightLegSwing = Math.sin(walkCycle + Math.PI) * 0.3;
+                    this.walkBones.rightThigh.rotation.x = this.originalRotations.rightThigh.x + rightLegSwing;
+                }
+                
+                if (this.walkBones.rightShin) {
+                    const rightKnee = Math.max(0, Math.sin((walkCycle + Math.PI) * 2) * 0.5);
+                    this.walkBones.rightShin.rotation.x = this.originalRotations.rightShin.x + rightKnee;
+                }
+                
+                // Arm swinging - opposite to legs
+                if (this.walkBones.leftArm) {
+                    const leftArmSwing = Math.sin(walkCycle + Math.PI) * 0.2;
+                    this.walkBones.leftArm.rotation.x = this.originalRotations.leftArm.x + leftArmSwing;
+                }
+                
+                if (this.walkBones.rightArm) {
+                    const rightArmSwing = Math.sin(walkCycle) * 0.2;
+                    this.walkBones.rightArm.rotation.x = this.originalRotations.rightArm.x + rightArmSwing;
+                }
+                
+                // Body bob
+                const bodyBob = Math.sin(walkCycle * 2) * 0.02;
+                this.reynolds.position.y = this.reynoldsPosition.y + bodyBob;
             }
             
             playTalkAnimation() {
@@ -817,6 +917,9 @@
                 if (this.mixer) {
                     this.mixer.update(delta);
                 }
+                
+                // Update procedural walking animation
+                this.updateProceduralWalk(delta);
                 
                 // Update controls
                 this.controls.update();
