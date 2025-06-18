@@ -9,12 +9,11 @@
     "scene": "node REYNOLDS_MASTER_ORCHESTRATOR.js scene",
     "video-only": "node SORA_VIDEO_GENERATOR.js",
     "audio-only": "node REYNOLDS_AUDIO_GENERATOR.js",
-    "install": "npm install",
     "setup": "echo 'Reynolds Maximum Effort™ Setup Complete!'"
   },
   "dependencies": {
-    "axios": "^1.6.0",
-    "dotenv": "^16.3.1"
+    "axios": "^1.10.0",
+    "dotenv": "^16.5.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
