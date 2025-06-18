@@ -1,0 +1,71 @@
+# 🎭 Reynolds Command Center - GitHub Pages Configuration
+
+title: "Reynolds Command Center"
+description: "Maximum Effort™ Dashboard for Enterprise Coordination and APIM MCP Conversion"
+author: "Reynolds Organization"
+email: "reynolds@nextgeneration.com"
+
+# GitHub Pages settings
+theme: null
+plugins: []
+
+# Site settings
+url: "https://dynamicstms365.github.io"
+baseurl: "/meet-reynolds"
+
+# Navigation
+nav_links:
+  - title: "Command Center"
+    url: "/"
+  - title: "APIM Conversion"
+    url: "/APIM_MCP_CONVERSION_READY.html"
+  - title: "Documentation"
+    url: "/enterprise-coordination-playbook.html"
+  - title: "GitHub Repository"
+    url: "https://github.com/dynamicstms365/meet-reynolds"
+
+# Reynolds branding
+brand:
+  name: "Reynolds"
+  tagline: "Maximum Effort™ Applied to Every Coordination"
+  motto: "Sequential execution is dead. Long live parallel orchestration!"
+
+# Features
+features:
+  - "Julia's APIM MCP Conversion Ready"
+  - "Container Apps Health Monitoring"
+  - "Enterprise Documentation Hub"
+  - "GitHub Integration Dashboard"
+  - "Real-time System Status"
+  - "Quick Action Coordination"
+
+# Analytics (if needed)
+google_analytics: null
+
+# Social links
+social:
+  github: "https://github.com/dynamicstms365/meet-reynolds"
+  container_apps: "https://github-copilot-bot.salmonisland-520555ec.eastus.azurecontainerapps.io"
+  apim_gateway: "https://ngl-apim.azure-api.net/reynolds"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - .gitignore
+  - .git/
+  - node_modules/
+  - vendor/
+  - Gemfile
+  - Gemfile.lock
+
+# Include files in processing
+include:
+  - _pages
+  - assets
