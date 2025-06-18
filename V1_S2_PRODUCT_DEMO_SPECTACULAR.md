@@ -3,8 +3,10 @@
 ## **Scene Specifications**
 - **Video:** 1 (Developer Bootcamp)
 - **Scene:** 2 of 5
-- **Duration:** 30 seconds (15-45 seconds)
+- **Duration:** 20 seconds (SORA optimal for visual content)
 - **Title:** "Reynolds' Product Demo Spectacular"
+- **Formats:** Landscape (16:9), Square (1:1), Vertical (9:16)
+- **Audio Approach:** Silent cinema with text overlays for dialogue
 
 ## **Reynolds Character Description**
 **Reynolds** is a charismatic, witty character based on Deadpool's appearance and personality. He wears a distinctive red and black tactical suit with a form-fitting mask that covers his entire head, featuring large white eye patches. He can snap his fingers to transform reality and teleport between locations with sparkle effects.
@@ -72,8 +74,17 @@ Reynolds snaps his fingers with a dramatic flourish, and the modern co-working s
 - **Character Development:** Jenny and Mark increasingly bewildered but going along
 
 ### **Technical Specifications**
-- **Duration:** Exactly 30 seconds
-- **Aspect Ratio:** 16:9, 4K resolution
+- **Duration:** Exactly 20 seconds (SORA optimized)
+- **Multi-Format Production:**
+  - **Landscape (16:9):** Primary format for desktop/TV viewing
+  - **Square (1:1):** Instagram/social media optimization  
+  - **Vertical (9:16):** TikTok/mobile-first engagement
+- **Resolution:** 4K for all formats
 - **Color Palette:** Infomercial golds/blues with Reynolds' red/black accent
 - **Key Visual:** Reality transformation showcasing Reynolds' supernatural abilities
 - **Focus:** Product demonstration with theatrical flair
+- **Silent Cinema Approach:** Visual storytelling with text overlays replacing spoken dialogue
+- **Text Overlay Guidelines:** 
+  - Large, readable fonts optimized for each aspect ratio
+  - High contrast colors for accessibility
+  - Animated text entries synchronized with Reynolds' gestures

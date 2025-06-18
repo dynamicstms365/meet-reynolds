@@ -3,8 +3,10 @@
 ## **Scene Specifications**
 - **Video:** 1 (Developer Bootcamp)
 - **Scene:** 5 of 5 (Finale)
-- **Duration:** 15 seconds (105-120 seconds)
+- **Duration:** 15 seconds (SORA optimal for finale impact)
 - **Title:** "The Call to Action Finale"
+- **Formats:** Landscape (16:9), Square (1:1), Vertical (9:16)
+- **Audio Approach:** Silent cinema with text overlays for dialogue
 
 ## **Reynolds Character Description**
 **Reynolds** is a charismatic, witty character based on Deadpool's appearance and personality. He wears a distinctive red and black tactical suit with a form-fitting mask that covers his entire head, featuring large white eye patches. He demonstrates supernatural confidence and wisdom while delivering the final message.
@@ -85,12 +87,18 @@ Immediately back to character with theatrical energy:
 Scene transitions smoothly to end card: "Reynolds' Architectural Bootcamp - Where Decisions Meet Maximum Effort™"
 
 ### **Technical Specifications**
-- **Duration:** Exactly 15 seconds
-- **Aspect Ratio:** 16:9, 4K resolution
+- **Duration:** Exactly 15 seconds (SORA optimized)
+- **Multi-Format Production:**
+  - **Landscape (16:9):** Group shot with balanced composition
+  - **Square (1:1):** Intimate close-up optimized for social engagement
+  - **Vertical (9:16):** Dynamic vertical framing with mobile-first design
+- **Resolution:** 4K for all formats
 - **Color Palette:** Warm, inspirational with Reynolds' signature red/black accents
 - **Key Visual:** Group harmony with orchestrated solution displays
 - **Focus:** Wisdom delivery with call to action energy
 - **Emotional Tone:** Inspiring confidence with practical guidance
+- **Silent Cinema Approach:** Visual storytelling with inspiring text overlays
+- **Text Design:** Bold, action-oriented typography with motivational energy
 
 ### **Transition Notes**
 - **To Video 2:** Sets up executive perspective as natural evolution

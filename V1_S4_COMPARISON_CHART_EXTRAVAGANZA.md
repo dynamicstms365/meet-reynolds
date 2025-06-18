@@ -3,8 +3,10 @@
 ## **Scene Specifications**
 - **Video:** 1 (Developer Bootcamp)
 - **Scene:** 4 of 5
-- **Duration:** 30 seconds (75-105 seconds)
+- **Duration:** 20 seconds (SORA optimal for visual spectacle)
 - **Title:** "The Comparison Chart Extravaganza"
+- **Formats:** Landscape (16:9), Square (1:1), Vertical (9:16)
+- **Audio Approach:** Silent cinema with text overlays for dialogue
 
 ## **Reynolds Character Description**
 **Reynolds** is a charismatic, witty character based on Deadpool's appearance and personality. He wears a distinctive red and black tactical suit with a form-fitting mask that covers his entire head, featuring large white eye patches. He can create holographic displays and wields a laser pointer that shoots actual lasers.
@@ -88,8 +90,14 @@ Reynolds establishes that both architectural approaches have merit, setting up t
 Chart explosion creates spectacular visual transition into the final group harmony scene, with confetti and sparkles providing motion continuity.
 
 ### **Technical Specifications**
-- **Duration:** Exactly 30 seconds
-- **Aspect Ratio:** 16:9, 4K resolution
+- **Duration:** Exactly 20 seconds (SORA optimized)
+- **Multi-Format Production:**
+  - **Landscape (16:9):** Full chart visibility with wide angle laser show
+  - **Square (1:1):** Chart-focused with Reynolds positioned dynamically  
+  - **Vertical (9:16):** Stacked chart elements optimized for mobile viewing
+- **Resolution:** 4K for all formats
 - **Color Palette:** Vibrant chart colors with Reynolds' signature red/black
 - **Key Visual:** Floating holographic comparison chart with laser interaction
 - **Focus:** Data visualization spectacle with decision-making clarity
+- **Silent Cinema Approach:** Visual storytelling with animated text replacing dialogue
+- **Chart Animation:** Self-explanatory visual elements with minimal text overlay dependency

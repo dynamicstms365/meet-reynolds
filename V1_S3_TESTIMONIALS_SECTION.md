@@ -3,8 +3,10 @@
 ## **Scene Specifications**
 - **Video:** 1 (Developer Bootcamp)
 - **Scene:** 3 of 5
-- **Duration:** 30 seconds (45-75 seconds)
+- **Duration:** 15 seconds (SORA optimal for dialogue scenes)
 - **Title:** "The 'Testimonials' Section"
+- **Formats:** Landscape (16:9), Square (1:1), Vertical (9:16)
+- **Audio Approach:** Silent cinema with text overlays for dialogue
 
 ## **Reynolds Character Description**
 **Reynolds** is a charismatic, witty character based on Deadpool's appearance and personality. He wears a distinctive red and black tactical suit with a form-fitting mask that covers his entire head, featuring large white eye patches. He operates as a talk show host with supernatural reality manipulation abilities.
@@ -87,8 +89,14 @@ Reynolds snaps his fingers and creates a fake testimonial set with:
 Scene ends with both solutions displayed prominently on split-screen, setting up for the comparison chart in Scene 4.
 
 ### **Technical Specifications**
-- **Duration:** Exactly 30 seconds
-- **Aspect Ratio:** 16:9, 4K resolution
+- **Duration:** Exactly 15 seconds (SORA optimized)
+- **Multi-Format Production:**
+  - **Landscape (16:9):** Interview setup with wide shots
+  - **Square (1:1):** Close-up focus on facial expressions and reactions
+  - **Vertical (9:16):** Mobile-optimized with dynamic framing
+- **Resolution:** 4K for all formats
 - **Color Scheme:** Talk show blues and golds with Reynolds' red/black prominence
 - **Focus:** Interview dynamic with testimonial authenticity parody
 - **Key Moment:** Reynolds dismissing actual facts in favor of infomercial hyperbole
+- **Silent Cinema Approach:** Visual storytelling with text overlays for all dialogue
+- **Text Animation:** Talk show-style lower thirds and speech bubbles with personality-matched fonts
