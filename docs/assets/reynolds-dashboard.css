@@ -376,3 +376,224 @@ body {
     transform: translate(-50%, -50%);
     font-size: 2rem;
 }
+/* Operations Monitor Styles */
+.operations-monitor {
+    border-left-color: #28a745;
+}
+
+.logging-console {
+    border-left-color: #6f42c1;
+}
+
+.operations-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    background: var(--reynolds-light);
+    padding: 12px;
+    border-radius: var(--reynolds-border-radius);
+    border-left: 3px solid var(--reynolds-primary);
+}
+
+.stat-item strong {
+    display: block;
+    color: var(--reynolds-dark);
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+
+.stat-item span {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--reynolds-primary);
+}
+
+.current-operations {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: var(--reynolds-border-radius);
+    padding: 10px;
+}
+
+.operation-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: white;
+    border-radius: 4px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.operation-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.op-status {
+    font-size: 1.2rem;
+    min-width: 25px;
+}
+
+.op-status.running {
+    animation: pulse 2s infinite;
+}
+
+.op-status.success {
+    color: var(--reynolds-success);
+}
+
+.op-status.error {
+    color: var(--reynolds-danger);
+}
+
+.op-status.waiting {
+    color: var(--reynolds-warning);
+}
+
+.op-text {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--reynolds-dark);
+}
+
+/* Logging Console Styles */
+.console-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.console-controls select {
+    padding: 8px 12px;
+    border: 1px solid var(--reynolds-secondary);
+    border-radius: var(--reynolds-border-radius);
+    background: white;
+    font-size: 0.9rem;
+}
+
+.console-output {
+    background: #1e1e1e;
+    color: #ffffff;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 0.8rem;
+    padding: 15px;
+    border-radius: var(--reynolds-border-radius);
+    height: 300px;
+    overflow-y: auto;
+    border: 1px solid #333;
+}
+
+.log-entry {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid #333;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-time {
+    color: #888;
+    min-width: 80px;
+    font-size: 0.75rem;
+}
+
+.log-level {
+    min-width: 60px;
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
+.log-level.INFO {
+    color: #4CAF50;
+}
+
+.log-level.WARNING {
+    color: #FF9800;
+}
+
+.log-level.ERROR {
+    color: #f44336;
+}
+
+.log-level.DEBUG {
+    color: #2196F3;
+}
+
+.log-message {
+    flex: 1;
+    color: #fff;
+    word-wrap: break-word;
+}
+
+/* Enhanced Action Grid */
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.action-btn.logs {
+    background: #6f42c1;
+    color: white;
+}
+
+.action-btn.ops {
+    background: #20c997;
+    color: white;
+}
+
+/* Scrollbar Styling */
+.console-output::-webkit-scrollbar,
+.current-operations::-webkit-scrollbar {
+    width: 8px;
+}
+
+.console-output::-webkit-scrollbar-track,
+.current-operations::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 4px;
+}
+
+.console-output::-webkit-scrollbar-thumb,
+.current-operations::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 4px;
+}
+
+.console-output::-webkit-scrollbar-thumb:hover,
+.current-operations::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+/* Animation for operations */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Auto-scroll indicator */
+.console-output.auto-scroll::after {
+    content: '📥 Auto-scrolling...';
+    position: absolute;
+    bottom: 5px;
+    right: 10px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+}

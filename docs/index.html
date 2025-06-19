@@ -95,6 +95,60 @@
                 </div>
             </section>
 
+            <!-- Live Operations Monitor -->
+            <section class="dashboard-card operations-monitor">
+                <h2>⚡ Live Operations</h2>
+                <div class="status-indicator active">🟢 Monitoring Active</div>
+                <div class="card-content">
+                    <div class="operations-stats">
+                        <div class="stat-item">
+                            <strong>Current Operations:</strong>
+                            <span id="current-ops-count">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <strong>Success Rate:</strong>
+                            <span id="success-rate">---%</span>
+                        </div>
+                        <div class="stat-item">
+                            <strong>Last Activity:</strong>
+                            <span id="last-activity">--</span>
+                        </div>
+                    </div>
+                    <div class="current-operations" id="current-operations">
+                        <div class="operation-item">
+                            <span class="op-status waiting">⏳</span>
+                            <span class="op-text">Waiting for operations...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Logging Console -->
+            <section class="dashboard-card logging-console">
+                <h2>📋 Live Logging Console</h2>
+                <div class="status-indicator active">🟢 Streaming</div>
+                <div class="card-content">
+                    <div class="console-controls">
+                        <button class="btn secondary" onclick="toggleLogging()">⏸️ Pause</button>
+                        <button class="btn secondary" onclick="clearLogs()">🗑️ Clear</button>
+                        <button class="btn secondary" onclick="downloadLogs()">💾 Download</button>
+                        <select id="log-level" onchange="setLogLevel()">
+                            <option value="all">All Levels</option>
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                    </div>
+                    <div class="console-output" id="console-output">
+                        <div class="log-entry info">
+                            <span class="log-time">23:45:00</span>
+                            <span class="log-level">INFO</span>
+                            <span class="log-message">🎭 Reynolds Operations Dashboard initialized with Maximum Effort™</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Quick Actions -->
             <section class="dashboard-card quick-actions">
                 <h2>⚡ Quick Actions</h2>
@@ -103,6 +157,8 @@
                     <button class="action-btn deploy" onclick="triggerDeployment()">🚀 Deploy Updates</button>
                     <button class="action-btn test" onclick="testAPIMConversion()">🧪 Test APIM</button>
                     <button class="action-btn docs" onclick="generateDocs()">📋 Generate Docs</button>
+                    <button class="action-btn logs" onclick="fetchRecentLogs()">📊 Fetch Logs</button>
+                    <button class="action-btn ops" onclick="refreshOperations()">🔄 Refresh Ops</button>
                 </div>
             </section>
         </main>
