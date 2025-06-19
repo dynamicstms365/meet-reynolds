@@ -11,13 +11,13 @@ namespace CopilotAgent.Middleware;
 public class ReynoldsTelemetryMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly TelemetryClient _telemetryClient;
+    private readonly TelemetryClient? _telemetryClient;
     private readonly ILogger<ReynoldsTelemetryMiddleware> _logger;
 
     public ReynoldsTelemetryMiddleware(
         RequestDelegate next,
-        TelemetryClient telemetryClient,
-        ILogger<ReynoldsTelemetryMiddleware> logger)
+        ILogger<ReynoldsTelemetryMiddleware> logger,
+        TelemetryClient? telemetryClient = null)
     {
         _next = next;
         _telemetryClient = telemetryClient;
@@ -57,7 +57,7 @@ public class ReynoldsTelemetryMiddleware
             requestTelemetry.Properties["Reynolds.GitHubDelivery"] = context.Request.Headers["X-GitHub-Delivery"].ToString();
             
             // Track as custom event
-            _telemetryClient.TrackEvent("Reynolds.GitHubWebhook", new Dictionary<string, string>
+            _telemetryClient?.TrackEvent("Reynolds.GitHubWebhook", new Dictionary<string, string>
             {
                 ["Event"] = githubEvent,
                 ["Delivery"] = context.Request.Headers["X-GitHub-Delivery"].ToString(),
@@ -76,7 +76,7 @@ public class ReynoldsTelemetryMiddleware
             requestTelemetry.Properties["Reynolds.MCPOperation"] = mcpOperation;
             
             // Track as custom event
-            _telemetryClient.TrackEvent("Reynolds.MCPOperation", new Dictionary<string, string>
+            _telemetryClient?.TrackEvent("Reynolds.MCPOperation", new Dictionary<string, string>
             {
                 ["Operation"] = mcpOperation,
                 ["Path"] = context.Request.Path,
@@ -91,7 +91,7 @@ public class ReynoldsTelemetryMiddleware
         {
             requestTelemetry.Properties["Reynolds.TeamsInteraction"] = "true";
             
-            _telemetryClient.TrackEvent("Reynolds.TeamsInteraction", new Dictionary<string, string>
+            _telemetryClient?.TrackEvent("Reynolds.TeamsInteraction", new Dictionary<string, string>
             {
                 ["Path"] = context.Request.Path,
                 ["Method"] = context.Request.Method,
@@ -116,13 +116,13 @@ public class ReynoldsTelemetryMiddleware
                 context.Response.ContentType ?? "Unknown";
 
             // Reynolds: Track performance metrics
-            _telemetryClient.TrackMetric("Reynolds.RequestDuration", stopwatch.ElapsedMilliseconds);
-            _telemetryClient.TrackMetric("Reynolds.ResponseStatusCode", context.Response.StatusCode);
+            _telemetryClient?.TrackMetric("Reynolds.RequestDuration", stopwatch.ElapsedMilliseconds);
+            _telemetryClient?.TrackMetric("Reynolds.ResponseStatusCode", context.Response.StatusCode);
 
             // Reynolds: Track successful operations
             if (context.Response.StatusCode < 400)
             {
-                _telemetryClient.TrackEvent("Reynolds.SuccessfulOperation", new Dictionary<string, string>
+                _telemetryClient?.TrackEvent("Reynolds.SuccessfulOperation", new Dictionary<string, string>
                 {
                     ["OperationType"] = operationType,
                     ["Duration"] = stopwatch.ElapsedMilliseconds.ToString(),
@@ -139,7 +139,7 @@ public class ReynoldsTelemetryMiddleware
             requestTelemetry.ResponseCode = "500";
 
             // Track exception
-            _telemetryClient.TrackException(ex, new Dictionary<string, string>
+            _telemetryClient?.TrackException(ex, new Dictionary<string, string>
             {
                 ["Reynolds.RequestId"] = requestId,
                 ["Reynolds.OperationType"] = operationType,
@@ -154,7 +154,7 @@ public class ReynoldsTelemetryMiddleware
         finally
         {
             // Reynolds: Always track the request telemetry
-            _telemetryClient.TrackRequest(requestTelemetry);
+            _telemetryClient?.TrackRequest(requestTelemetry);
         }
     }
 
