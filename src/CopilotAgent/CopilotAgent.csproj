@@ -74,7 +74,6 @@
     <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.21.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.PerfCounterCollector" Version="2.21.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.EventCounterCollector" Version="2.21.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.Extensibility.PerfCounterCollector" Version="2.21.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0" />
     
     <!-- MCP SDK packages - Version aligned to prevent type conflicts -->

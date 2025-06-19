@@ -82,15 +82,9 @@ builder.Services.ConfigureTelemetryModule<Microsoft.ApplicationInsights.Extensib
 // Reynolds: Add custom telemetry initializers for enterprise context
 builder.Services.AddSingleton<Microsoft.ApplicationInsights.Extensibility.ITelemetryInitializer, ReynoldsTelemetryInitializer>();
 
-// Reynolds: Configure sampling for optimal performance with Maximum Effort™
-builder.Services.Configure<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>(config =>
-{
-    config.DefaultTelemetrySink.TelemetryProcessorChainBuilder
-        .UseAdaptiveSampling(
-            maxTelemetryItemsPerSecond: 50,
-            excludedTypes: "Event;Exception;Request;Dependency;Trace")
-        .Build();
-});
+// Reynolds: Configure Application Insights for Maximum Effort™ telemetry
+builder.Services.AddSingleton<ReynoldsTelemetryInitializer>();
+builder.Services.ConfigureOptions<ReynoldsTelemetryConfiguration>();
 
 Log.Information("🎭 Reynolds: Application Insights configured with supernatural telemetry tracking");
 
