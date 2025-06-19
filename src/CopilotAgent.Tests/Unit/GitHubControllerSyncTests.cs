@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using CopilotAgent.Controllers;
 using CopilotAgent.Services;
+using Shared.Models;
 
 namespace CopilotAgent.Tests.Unit;
 
@@ -45,8 +46,9 @@ public class GitHubControllerSyncTests
         var result = await _controller.TestConnectivity();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.IsNotNull(okResult.Value);
+        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        var okResult = (OkObjectResult)result;
+        Assert.That(okResult.Value, Is.Not.Null);
     }
 
     [Test]
@@ -65,8 +67,9 @@ public class GitHubControllerSyncTests
         var result = await _controller.GetInstallationInfo();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.IsNotNull(okResult.Value);
+        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        var okResult = (OkObjectResult)result;
+        Assert.That(okResult.Value, Is.Not.Null);
     }
 
     [Test]
@@ -80,7 +83,7 @@ public class GitHubControllerSyncTests
 
         // Assert
         // This test validates the webhook validation flow
-        Assert.IsNotNull(result);
+        Assert.That(result, Is.Not.Null);
     }
 
     [Test]
@@ -90,7 +93,8 @@ public class GitHubControllerSyncTests
         var result = await _controller.GetRateLimit();
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        Assert.IsNotNull(okResult.Value);
+        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        var okResult = (OkObjectResult)result;
+        Assert.That(okResult.Value, Is.Not.Null);
     }
 }
