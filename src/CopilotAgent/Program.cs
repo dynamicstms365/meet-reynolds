@@ -28,7 +28,7 @@ Log.Logger = new LoggerConfiguration()
     .Enrich.WithThreadId()
     .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
     .WriteTo.Seq(
-        serverUrl: System.Environment.GetEnvironmentVariable("SEQ_SERVER_URL") ?? "http://seq:80",
+        serverUrl: System.Environment.GetEnvironmentVariable("SEQ_SERVER_URL") ?? "https://seq-logger.salmonisland-520555ec.eastus.azurecontainerapps.io",
         apiKey: System.Environment.GetEnvironmentVariable("SEQ_API_KEY"),
         restrictedToMinimumLevel: LogEventLevel.Debug)
     .CreateLogger();
