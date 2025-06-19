@@ -6,12 +6,14 @@ using CopilotAgent.Startup;
 using CopilotAgent.MCP;
 using CopilotAgent.Bot;
 using CopilotAgent.Configuration;
+using CopilotAgent.Telemetry;
 using Octokit.Webhooks;
 using Octokit.Webhooks.AspNetCore;
 using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol;
 using Serilog;
 using Serilog.Events;
+using System.Diagnostics;
 
 // Reynolds: Maximum Effort™ structured logging with Seq integration
 // Configure Serilog for supernatural visibility into Chris Taylor communication system
@@ -46,6 +48,51 @@ builder.Services.AddEndpointsApiExplorer();
 
 // Reynolds: .NET 9.0 OpenAPI configuration with Maximum Effort™ MCP integration
 builder.Services.AddReynoldsOpenApiWithMcpSupport();
+
+// Reynolds: Application Insights Telemetry with Maximum Effort™ - Supernatural Visibility
+var appInsightsConnectionString = System.Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")
+    ?? "InstrumentationKey=12345678-1234-1234-1234-123456789abc;IngestionEndpoint=https://eastus-1.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
+
+Log.Information("🎭 Reynolds: Configuring Application Insights with supernatural telemetry capabilities");
+
+builder.Services.AddApplicationInsightsTelemetry(options =>
+{
+    options.ConnectionString = appInsightsConnectionString;
+    options.EnableAdaptiveSampling = true;
+    options.EnableQuickPulseMetricStream = true;
+    options.EnableDebugLogger = false; // Use Serilog instead
+    options.EnableHeartbeat = true;
+    options.AddAutoCollectedMetricExtractor = true;
+    options.EnableActiveTelemetryConfigurationSetup = true;
+    options.EnableAuthenticationTrackingJavaScript = true;
+    options.EnableDependencyTrackingTelemetryModule = true;
+    options.EnableEventCounterCollectionModule = true;
+    options.EnablePerformanceCounterCollectionModule = true;
+    options.EnableAppServicesHeartbeatTelemetryModule = true;
+    options.EnableAzureInstanceMetadataTelemetryModule = true;
+    options.EnableDiagnosticsTelemetryModule = true;
+});
+
+// Reynolds: Configure Application Insights telemetry processors for enhanced tracking
+builder.Services.ConfigureTelemetryModule<Microsoft.ApplicationInsights.Extensibility.PerfCounterCollector.QuickPulse.QuickPulseTelemetryModule>((module, o) =>
+{
+    module.AuthenticationApiKey = System.Environment.GetEnvironmentVariable("APPINSIGHTS_QUICKPULSE_API_KEY");
+});
+
+// Reynolds: Add custom telemetry initializers for enterprise context
+builder.Services.AddSingleton<Microsoft.ApplicationInsights.Extensibility.ITelemetryInitializer, ReynoldsTelemetryInitializer>();
+
+// Reynolds: Configure sampling for optimal performance with Maximum Effort™
+builder.Services.Configure<Microsoft.ApplicationInsights.Extensibility.TelemetryConfiguration>(config =>
+{
+    config.DefaultTelemetrySink.TelemetryProcessorChainBuilder
+        .UseAdaptiveSampling(
+            maxTelemetryItemsPerSecond: 50,
+            excludedTypes: "Event;Exception;Request;Dependency;Trace")
+        .Build();
+});
+
+Log.Information("🎭 Reynolds: Application Insights configured with supernatural telemetry tracking");
 
 // Register Copilot Agent services
 builder.Services.AddScoped<IPowerPlatformAgent, PowerPlatformAgent>();
@@ -183,6 +230,10 @@ if (!app.Environment.IsProduction())
 }
 
 app.UseAuthorization();
+
+// Reynolds: Add supernatural telemetry middleware for Maximum Effort™ request tracking
+app.UseMiddleware<ReynoldsTelemetryMiddleware>();
+app.Logger.LogInformation("🎭 Reynolds: Supernatural telemetry middleware activated with Maximum Effort™");
 
 // Reynolds MCP Server endpoints are automatically configured via AddReynoldsMcpServer() with WithHttpTransport()
 // Default endpoints: /mcp/capabilities, /mcp/sse, /mcp/tools/{toolName}

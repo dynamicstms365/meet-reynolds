@@ -68,6 +68,15 @@
     <PackageReference Include="Microsoft.Bot.Builder.Azure" Version="4.21.2" />
     <PackageReference Include="Microsoft.Bot.Configuration" Version="4.21.2" />
     
+    <!-- Reynolds: Application Insights Telemetry with Maximum Effort™ -->
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.21.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.DependencyCollector" Version="2.21.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.PerfCounterCollector" Version="2.21.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.EventCounterCollector" Version="2.21.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.Extensibility.PerfCounterCollector" Version="2.21.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.ApplicationInsights" Version="2.21.0" />
+    
     <!-- MCP SDK packages - Version aligned to prevent type conflicts -->
     <PackageReference Include="ModelContextProtocol" Version="0.2.0-preview.3" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" Version="0.2.0-preview.3" />

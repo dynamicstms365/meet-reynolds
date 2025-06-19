@@ -1,0 +1,1 @@
+InstrumentationKey=12345678-1234-1234-1234-123456789abc;IngestionEndpoint=https://eastus-1.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/
