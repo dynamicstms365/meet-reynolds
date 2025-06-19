@@ -51,9 +51,23 @@ builder.Services.AddReynoldsOpenApiWithMcpSupport();
 
 // Reynolds: Application Insights Telemetry with Maximum Effort™ - Supernatural Visibility
 var appInsightsConnectionString = System.Environment.GetEnvironmentVariable("APPLICATIONINSIGHTS_CONNECTION_STRING")
-    ?? "InstrumentationKey=12345678-1234-1234-1234-123456789abc;IngestionEndpoint=https://eastus-1.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
+    ?? builder.Configuration.GetConnectionString("ApplicationInsights")
+    ?? System.Environment.GetEnvironmentVariable("APPINSIGHTS_CONNECTION_STRING");
 
-Log.Information("🎭 Reynolds: Configuring Application Insights with supernatural telemetry capabilities");
+if (string.IsNullOrEmpty(appInsightsConnectionString))
+{
+    Log.Warning("🎭 Reynolds: Application Insights connection string not found - telemetry will be limited to SEQ only");
+    Log.Information("🔧 To enable Application Insights, set APPLICATIONINSIGHTS_CONNECTION_STRING environment variable");
+    Log.Information("🔧 Expected format: InstrumentationKey=your-key;IngestionEndpoint=https://region.in.applicationinsights.azure.com/");
+}
+else
+{
+    Log.Information("🎭 Reynolds: Configuring Application Insights with supernatural telemetry capabilities");
+    Log.Information("🔧 Application Insights endpoint: {Endpoint}",
+        appInsightsConnectionString.Contains("IngestionEndpoint=")
+            ? appInsightsConnectionString.Split("IngestionEndpoint=")[1].Split(";")[0]
+            : "Classic endpoint");
+}
 
 builder.Services.AddApplicationInsightsTelemetry(options =>
 {
@@ -109,6 +123,9 @@ builder.Services.AddScoped<ICliMonitoringService, CliMonitoringService>();
 // Register CLI services
 builder.Services.AddScoped<IPacCliService, PacCliService>();
 builder.Services.AddScoped<IM365CliService, M365CliService>();
+
+// Register Reynolds startup diagnostics service for Maximum Effort™ configuration validation
+builder.Services.AddScoped<IStartupDiagnosticsService, StartupDiagnosticsService>();
 
 // Register GitHub integration services
 builder.Services.AddHttpClient<IGitHubAppAuthService, GitHubAppAuthService>();
@@ -179,6 +196,33 @@ else
 }
 
 var app = builder.Build();
+
+// Reynolds: Execute startup diagnostics with Maximum Effort™ configuration validation
+try
+{
+    using var scope = app.Services.CreateScope();
+    var diagnosticsService = scope.ServiceProvider.GetRequiredService<IStartupDiagnosticsService>();
+    
+    // Log system information
+    await diagnosticsService.LogSystemInformationAsync();
+    
+    // Validate all configurations
+    var diagnosticsResult = await diagnosticsService.ValidateConfigurationAsync();
+    
+    if (diagnosticsResult.HasCriticalIssues)
+    {
+        Log.Warning("⚠️ Reynolds: Critical configuration issues detected - application may not function optimally");
+        Log.Warning("🔧 Reynolds: Review the configuration recommendations above for Maximum Effort™ operation");
+    }
+    else
+    {
+        Log.Information("✅ Reynolds: All critical configurations validated - ready for supernatural coordination!");
+    }
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "⚠️ Reynolds: Startup diagnostics encountered minor turbulence - continuing with caution");
+}
 
 // Configure HTTP request pipeline - Reynolds: .NET 9.0 OpenAPI with Maximum Effort™ APIM integration
 

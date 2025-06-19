@@ -33,28 +33,43 @@ public class GitHubAppAuthService : IGitHubAppAuthService
 
     public async Task<GitHubAppAuthentication> GetInstallationTokenAsync()
     {
+        _logger.LogDebug("🎭 Reynolds: Attempting to obtain GitHub App installation token with Maximum Effort™");
+        
         // Check if we have a valid cached token
         if (_cachedToken != null && _cachedToken.ExpiresAt > DateTime.UtcNow.AddMinutes(5))
         {
+            _logger.LogDebug("🎭 Reynolds: Using cached GitHub token (expires at {ExpiresAt})", _cachedToken.ExpiresAt);
             return _cachedToken;
+        }
+
+        if (_cachedToken != null)
+        {
+            _logger.LogInformation("🎭 Reynolds: Cached token expired at {ExpiresAt}, obtaining fresh token", _cachedToken.ExpiresAt);
         }
 
         try
         {
             // Check if we're running in GitHub Actions with a pre-generated token
             var githubToken = System.Environment.GetEnvironmentVariable("GITHUB_TOKEN");
-            if (!string.IsNullOrEmpty(githubToken) && IsGitHubActionsEnvironment())
+            var isGitHubActions = IsGitHubActionsEnvironment();
+            
+            _logger.LogDebug("🎭 Reynolds: Environment analysis - GitHub Actions: {IsGitHubActions}, GITHUB_TOKEN present: {HasToken}",
+                isGitHubActions, !string.IsNullOrEmpty(githubToken));
+            
+            if (!string.IsNullOrEmpty(githubToken) && isGitHubActions)
             {
-                _logger.LogInformation("Using GitHub Actions generated token");
+                _logger.LogInformation("🎭 Reynolds: Using GitHub Actions generated token with supernatural efficiency");
                 return await CreateTokenFromGitHubActions(githubToken);
             }
 
             // Fall back to manual JWT generation
+            _logger.LogInformation("🎭 Reynolds: Generating GitHub App JWT token manually");
             return await GenerateInstallationTokenManually();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to obtain GitHub App installation token");
+            _logger.LogError(ex, "💥 Reynolds: Failed to obtain GitHub App installation token - supernatural coordination compromised");
+            _logger.LogError("🔧 Reynolds: Verify NGL_DEVOPS_APP_ID, NGL_DEVOPS_PRIVATE_KEY, and NGL_DEVOPS_INSTALLATION_ID configuration");
             throw;
         }
     }
@@ -88,36 +103,72 @@ public class GitHubAppAuthService : IGitHubAppAuthService
 
     private async Task<GitHubAppAuthentication> GenerateInstallationTokenManually()
     {
-        var appId = _configuration["NGL_DEVOPS_APP_ID"] ?? 
+        _logger.LogDebug("🎭 Reynolds: Starting manual GitHub App token generation with Maximum Effort™");
+        
+        var appId = _configuration["NGL_DEVOPS_APP_ID"] ??
                    System.Environment.GetEnvironmentVariable("NGL_DEVOPS_APP_ID");
-        var installationId = _configuration["NGL_DEVOPS_INSTALLATION_ID"] ?? 
+        var installationId = _configuration["NGL_DEVOPS_INSTALLATION_ID"] ??
                            System.Environment.GetEnvironmentVariable("NGL_DEVOPS_INSTALLATION_ID");
-        var privateKeyPem = _configuration["NGL_DEVOPS_PRIVATE_KEY"] ?? 
+        var privateKeyPem = _configuration["NGL_DEVOPS_PRIVATE_KEY"] ??
                           System.Environment.GetEnvironmentVariable("NGL_DEVOPS_PRIVATE_KEY");
+
+        _logger.LogDebug("🔧 Reynolds: Configuration analysis - AppId: {HasAppId}, InstallationId: {HasInstallationId}, PrivateKey: {HasPrivateKey}",
+            !string.IsNullOrEmpty(appId) ? "PRESENT" : "MISSING",
+            !string.IsNullOrEmpty(installationId) ? "PRESENT" : "MISSING",
+            !string.IsNullOrEmpty(privateKeyPem) ? "PRESENT" : "MISSING");
 
         if (string.IsNullOrEmpty(appId) || string.IsNullOrEmpty(privateKeyPem))
         {
+            _logger.LogError("💥 Reynolds: Critical GitHub App credentials missing!");
+            _logger.LogError("🔧 Required configuration:");
+            _logger.LogError("   - NGL_DEVOPS_APP_ID: {Status}", string.IsNullOrEmpty(appId) ? "MISSING" : "PRESENT");
+            _logger.LogError("   - NGL_DEVOPS_PRIVATE_KEY: {Status}", string.IsNullOrEmpty(privateKeyPem) ? "MISSING" : "PRESENT");
+            _logger.LogError("   - NGL_DEVOPS_INSTALLATION_ID: {Status} (optional - will auto-resolve)", string.IsNullOrEmpty(installationId) ? "MISSING" : "PRESENT");
+            
             throw new InvalidOperationException("GitHub App credentials not configured. Required: NGL_DEVOPS_APP_ID, NGL_DEVOPS_PRIVATE_KEY (and optionally NGL_DEVOPS_INSTALLATION_ID)");
         }
+
+        _logger.LogInformation("🎭 Reynolds: GitHub App credentials validated - App ID: {AppId}", appId);
 
         // If installation ID is not provided, try to resolve it automatically
         if (string.IsNullOrEmpty(installationId))
         {
+            _logger.LogInformation("🔍 Reynolds: Installation ID not provided - attempting supernatural auto-resolution");
             installationId = await ResolveInstallationIdAsync(appId, privateKeyPem);
+            _logger.LogInformation("✨ Reynolds: Successfully resolved installation ID: {InstallationId}", installationId);
+        }
+        else
+        {
+            _logger.LogInformation("🎯 Reynolds: Using provided installation ID: {InstallationId}", installationId);
         }
 
-        // Generate JWT token for GitHub App authentication
-        var jwtToken = GenerateJwtToken(appId, privateKeyPem);
+        try
+        {
+            // Generate JWT token for GitHub App authentication
+            _logger.LogDebug("🔐 Reynolds: Generating JWT token for GitHub App authentication");
+            var jwtToken = GenerateJwtToken(appId, privateKeyPem);
+            _logger.LogDebug("✅ Reynolds: JWT token generated successfully");
 
-        // Exchange JWT for installation access token
-        var installationToken = await GetInstallationAccessTokenAsync(installationId, jwtToken);
-
-        _cachedToken = installationToken;
-        _logger.LogInformation("🎭 Reynolds: Successfully obtained GitHub App installation token for App ID {AppId}", appId);
-        _logger.LogDebug("Token expires at {ExpiresAt}, permissions: {Permissions}",
-            installationToken.ExpiresAt, string.Join(", ", installationToken.Permissions));
-        
-        return installationToken;
+            // Exchange JWT for installation access token
+            _logger.LogDebug("🔄 Reynolds: Exchanging JWT for installation access token");
+            var installationToken = await GetInstallationAccessTokenAsync(installationId, jwtToken);
+            
+            _cachedToken = installationToken;
+            _logger.LogInformation("🎭 Reynolds: Successfully obtained GitHub App installation token for App ID {AppId}", appId);
+            _logger.LogInformation("⏰ Reynolds: Token expires at {ExpiresAt} (valid for {ValidFor})",
+                installationToken.ExpiresAt,
+                installationToken.ExpiresAt - DateTime.UtcNow);
+            _logger.LogDebug("🔑 Reynolds: Token permissions: {Permissions}",
+                string.Join(", ", installationToken.Permissions));
+            
+            return installationToken;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "💥 Reynolds: Failed during manual token generation process");
+            _logger.LogError("🔧 Reynolds: Check GitHub App configuration and network connectivity");
+            throw;
+        }
     }
 
     private async Task<string> ResolveInstallationIdAsync(string appId, string privateKeyPem)
